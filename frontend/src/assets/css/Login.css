@@ -1,0 +1,65 @@
+.login-container {
+    background-color: #ede8e8;
+    background-image: url('../img/téléchargement.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    font-family: 'Times New Roman', Times, serif !important;
+}
+
+
+
+.logo-title-container {
+    display: flex;
+
+    gap: 15px;
+    position: relative;
+    width: 100%;
+
+    flex-wrap: nowrap;
+}
+
+
+.login-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    left: 1%;
+}
+
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0;
+    font-style: italic;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Responsive tablette et mobile */
+@media (max-width: 768px) {
+    .login-logo {
+        height: 32px;
+    }
+
+    .login-title {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 375px) {
+    .logo-title-container {
+        gap: 8px;
+    }
+
+    .login-logo {
+        height: 28px;
+    }
+
+    .login-title {
+        font-size: 1rem;
+    }
+}

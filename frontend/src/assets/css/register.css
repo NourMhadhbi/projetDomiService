@@ -1,0 +1,115 @@
+.registre-background {
+    background-image: url('../img/téléchargement.png'), url('../img/background.jpg');
+    background-repeat: no-repeat, no-repeat;
+    background-position: center center, center center;
+    background-attachment: fixed, fixed;
+    background-size: cover, cover;
+    backdrop-filter: blur(4px);
+    min-height: 100vh;
+    padding-top: 40px;
+    background-color: #d2cccc;
+    margin: 0;
+    padding: 0;
+}
+
+.card {
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+}
+
+
+.registre-background,
+.card,
+.container,
+form,
+input,
+select,
+textarea,
+.buttom,
+label,
+.h3,
+fieldset,
+legend {
+    font-family: 'Times New Roman', Times, serif !important;
+}
+
+.form-label {
+    font-weight: 700;
+}
+
+
+.h3 {
+    font-size: 27px;
+    font-style: italic;
+    font-weight: bold;
+}
+
+legend,
+.form-label {
+    font-weight: 700;
+}
+
+.text-center.mb-4 {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+}
+
+/* Logo positionné à gauche */
+.text-center.mb-4 img {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Titre toujours centré */
+.text-center.mb-4 h3 {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .text-center.mb-4 {
+        padding-left: 110px;
+        gap: 0;
+        min-height: 50px;
+    }
+
+    .text-center.mb-4 img {
+        height: 32px;
+        left: 8px;
+    }
+
+    .text-center.mb-4 h3 {
+        font-size: 1.2rem;
+        padding: 0 20px;
+    }
+}
+
+/* Petits mobiles (ex: iPhone SE, 320px) */
+@media (max-width: 375px) {
+    .text-center.mb-4 {
+        padding-left: 90px;
+        gap: 0;
+        min-height: 1px;
+    }
+
+    .text-center.mb-4 img {
+        height: 28px;
+        left: 6px;
+    }
+
+    .text-center.mb-4 h3 {
+        font-size: 1rem;
+        padding: 0 10px;
+
+    }
+}

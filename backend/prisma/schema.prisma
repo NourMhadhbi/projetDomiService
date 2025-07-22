@@ -1,0 +1,216 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum Role {
+  CLIENT
+  PRESTATAIRE
+  ADMIN
+  ENTREPRISE
+}
+enum Genre{
+  FEMME 
+  HOMME
+  AUTRE
+}
+
+enum StatutRDV {
+  EN_ATTENTE
+  CONFIRME
+  TERMINE
+  ANNULE
+}
+enum StatutFavori {
+  FAVORI
+  NON_FAVORI
+}
+model Utilisateur {
+  id            Int             @id @default(autoincrement()) @db.UnsignedInt
+  nom           String         @db.VarChar(255)
+  prenom        String         @db.VarChar(255)
+  email         String?          @unique @db.VarChar(255)
+  motDePasse    String          @db.VarChar(255)
+  role          Role
+  genre         Genre
+  image         String? 
+  prestataire   Prestataire?
+  client        Client?
+  admin          Admin? 
+ 
+  messagesEnvoyes     Message[]       @relation("MessagesEnvoyes")
+  messagesRecus       Message[]       @relation("MessagesRecus")
+  notifications       Notification[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+
+}
+model Client {
+  utilisateurIdCl Int @db.UnsignedInt     @id @unique
+  utilisateur    Utilisateur     @relation(fields: [utilisateurIdCl], references: [id])
+  adresse        String     @db.VarChar(255)
+  ville        String     @db.VarChar(255)
+  numTel         String?     @db.VarChar(255)
+  
+  isActive       Boolean        @default(false)
+  rendezVous     RendezVous[]
+  avis           Avis[]
+  favorisPrestataires FavorisPrestataire[]
+  historiquePrestataire HistoriquePrestataire []
+  signalements   Signalement[]
+}
+model Admin {
+  utilisateurIdAd Int @db.UnsignedInt     @id @unique
+  utilisateur    Utilisateur     @relation(fields: [utilisateurIdAd], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now())
+  }
+model Prestataire {
+  utilisateurIdPre Int @id @db.UnsignedInt  
+  utilisateur      Utilisateur @relation(fields: [utilisateurIdPre], references: [id])
+
+  adresse          String
+  ville            String
+  numTel           String?
+  tarifDeplacement Float?
+  experience       String?   @db.MediumText 
+  competence       String?  @db.MediumText 
+  Spécialite       String?  @db.MediumText 
+  descriptionCourte String? @db.MediumText 
+  isActive         Boolean    @default(false)
+  serviceId        Int
+  service          Service    @relation(fields: [serviceId], references: [id])
+  entreprise     Entreprise?
+  rendezVous       RendezVous[]
+  avis             Avis[]
+  signalementsRecus Signalement[]
+  favorisPrestataires FavorisPrestataire[]
+  historiquePrestataire HistoriquePrestataire[]
+
+
+}
+
+model Entreprise {
+  prestataireId    Int @id @db.UnsignedInt 
+  prestataire      Prestataire @relation(fields: [prestataireId], references: [utilisateurIdPre])
+  nomEntreprise    String
+  siteWeb          String?
+  identifiant      String @unique
+}
+
+model Service {
+  id          Int         @id @default(autoincrement())
+  nom         String
+  description String?
+ // tarifMoyen  Float?
+ etatArchive   Boolean    @default(false)
+
+   prestataires   Prestataire[]
+   // entreprises   Entreprise[]
+}
+model RendezVous {
+  id              Int         @id @default(autoincrement())
+  date            DateTime
+ raison            String?    @db.MediumText 
+  lieuDintervention         String
+  statut          StatutRDV   @default(EN_ATTENTE)
+  clientId        Int @db.UnsignedInt
+  prestataireId   Int @db.UnsignedInt
+ // entrepriseId  Int? @db.UnsignedInt
+ 
+  client          Client      @relation(fields: [clientId], references: [utilisateurIdCl])
+  prestataire     Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
+  //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+
+  notifications   Notification[]
+  messages        Message[]
+}
+
+model Avis {
+  id             Int         @id @default(autoincrement())
+  commentaire    String?
+  note     Int?
+  aime           Boolean   @default(false)
+  date           DateTime    @default(now())
+   etatArchive   Boolean    @default(false)
+  clientId       Int @db.UnsignedInt
+  prestataireId  Int @db.UnsignedInt
+  //entrepriseId  Int? @db.UnsignedInt
+
+  client         Client     @relation(fields: [clientId], references: [utilisateurIdCl])
+  prestataire    Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
+  //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+
+}
+
+model Signalement {
+  id             Int         @id @default(autoincrement())
+  motif          String
+  date           DateTime    @default(now())
+  clientId       Int @db.UnsignedInt
+  prestataireId  Int @db.UnsignedInt
+  //entrepriseId  Int @db.UnsignedInt
+  client         Client      @relation(fields: [clientId], references: [utilisateurIdCl])
+  prestataire    Prestataire @relation(fields: [prestataireId], references: [utilisateurIdPre])
+ // entreprise    Entreprise @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+}
+
+model Message {
+  id               Int         @id @default(autoincrement())
+  contenu          String
+  dateEnvoi        DateTime    @default(now())
+  expediteurId     Int @db.UnsignedInt
+  destinataireId   Int @db.UnsignedInt
+
+  rendezVousId     Int?
+  expediteur       Utilisateur @relation("MessagesEnvoyes", fields: [expediteurId], references: [id])
+  destinataire     Utilisateur @relation("MessagesRecus", fields: [destinataireId], references: [id])
+
+  rendezVous       RendezVous? @relation(fields: [rendezVousId], references: [id])
+}
+
+model Notification {
+  id              Int          @id @default(autoincrement())
+  contenu         String
+  dateEnvoi       DateTime     @default(now())
+  estLue          Boolean      @default(false)
+  utilisateurId   Int @db.UnsignedInt
+  rendezVousId    Int?
+  utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id])
+  rendezVous      RendezVous?  @relation(fields: [rendezVousId], references: [id])
+
+}
+
+model HistoriquePrestataire {
+  id            Int          @id @default(autoincrement())
+  clientId      Int @db.UnsignedInt
+  prestataireId Int @db.UnsignedInt
+  dateVisite    DateTime     @default(now())
+  client        Client       @relation(fields: [clientId], references: [utilisateurIdCl])
+  prestataire   Prestataire  @relation(fields: [prestataireId], references: [utilisateurIdPre])
+  @@unique([clientId, prestataireId])
+}
+model FavorisPrestataire {
+  id            Int              @id @default(autoincrement())
+  clientId      Int @db.UnsignedInt
+  prestataireId Int @db.UnsignedInt
+  dateAjout     DateTime         @default(now())
+  statut        StatutFavori     @default(FAVORI)
+
+  client        Client           @relation(fields: [clientId], references: [utilisateurIdCl])
+  prestataire   Prestataire      @relation(fields: [prestataireId], references: [utilisateurIdPre])
+
+  @@unique([clientId, prestataireId])
+}

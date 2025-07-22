@@ -1,0 +1,324 @@
+const express = require('express');
+const { PrismaClient } = require('@prisma/client')
+const nodemailer = require('nodemailer');
+const prisma = new PrismaClient()
+const router = express.Router();
+var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'domiservicesm@gmail.com',
+        pass: 'kwql ykzw kdhd kggh'
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+})
+const sendMailToUser = async (userEmail, subject, htmlContent) => {
+    try {
+        const mailOptions = {
+            from: '"DomiService" <mhadhbi.nour106@gmail.com>',
+            to: userEmail,
+            subject: subject,
+            html: htmlContent,
+        };
+        await transporter.sendMail(mailOptions);
+        console.log(`Email envoyé à ${userEmail}`);
+    } catch (error) {
+        console.error(`Erreur envoi mail à ${userEmail} :`, error);
+    }
+};
+// ajouter avis 
+router.post("/Ajouteravis", async (req, res) => {
+    const {
+        commentaire,
+        note,
+        aime,
+        clientId,
+        prestataireId,
+
+    } = req.body;
+
+    if (!clientId || !prestataireId) {
+        return res.status(400).json({ message: "clientId est obligatoire." });
+    }
+
+
+
+    try {
+        // Créer l'avis
+        const nouvelAvis = await prisma.avis.create({
+            data: {
+                commentaire: commentaire || null,
+                note: note,
+                aime: aime,
+                client: { connect: { utilisateurIdCl: clientId } },
+                prestataire: { connect: { utilisateurIdPre: prestataireId } },
+
+            },
+            include: {
+                client: { include: { utilisateur: true } },
+                prestataire: {
+                    include: {
+                        utilisateur: true,
+                        entreprise: true
+                    }
+                }
+
+            },
+        });
+        destinataireNom = nouvelAvis.prestataire.entreprise
+            ? nouvelAvis.prestataire.entreprise.nomEntreprise
+            : nouvelAvis.prestataire.utilisateur.nom;
+
+
+        destinataireUser = nouvelAvis.prestataire.utilisateur;
+        if (destinataireUser?.email && destinataireUser?.email.trim() !== "") {
+            const sujet = "Nouvel avis reçu - DomiService";
+            const messageHtml = `
+                <p>Bonjour ${destinataireNom},</p>
+                <p>Vous avez reçu un nouvel avis de la part de ${nouvelAvis.client.utilisateur.nom} ${nouvelAvis.client.utilisateur.prenom}.</p>
+                <p>
+                    Note: ${nouvelAvis.note ?? 'Non spécifiée'}<br>
+                    ${nouvelAvis.aime ? "Ils aiment votre service.<br>" : ""}
+                    ${nouvelAvis.commentaire ? `Commentaire: ${nouvelAvis.commentaire}<br>` : ""}
+                </p>
+                <p>Cordialement,<br>DomiService</p>
+            `;
+
+
+            await sendMailToUser(destinataireUser.email, sujet, messageHtml);
+
+
+
+        }
+        const contenuNotification = `
+                Vous avez reçu un nouvel avis de ${nouvelAvis.client.utilisateur.nom} ${nouvelAvis.client.utilisateur.prenom}.
+                Note: ${nouvelAvis.note ?? 'Non spécifiée'}.
+                ${nouvelAvis.aime ? "Ils aiment votre service." : ""}
+                ${nouvelAvis.commentaire ? `Commentaire: ${nouvelAvis.commentaire}` : ""}
+            `;
+
+        await prisma.notification.create({
+            data: {
+                contenu: contenuNotification.trim(),
+                utilisateurId: prestataireId,
+            },
+        });
+        res.status(201).json(nouvelAvis);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+//modifier avis 
+router.put("/Modifieravis/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    const { commentaire, note, aime } = req.body;
+
+    try {
+
+        const avisModifie = await prisma.avis.update({
+            where: { id },
+            data: {
+                commentaire: commentaire ?? undefined,
+                note: note ?? undefined,
+                aime: aime !== undefined ? aime : undefined,
+            },
+            include: {
+                client: { include: { utilisateur: true } },
+                prestataire: { include: { utilisateur: true, entreprise: { include: { utilisateur: true } } } },
+            },
+        });
+
+
+        const contenuNotif = `
+      Avis modifié :
+      Note : ${avisModifie.note ?? 'Non spécifiée'}.
+      ${avisModifie.aime ? "Le client apprécie votre service." : ""}
+      ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}` : ""}
+    `.trim();
+
+
+        let destinataireNom = "";
+        const utilisateurDestinataire = avisModifie.prestataire?.utilisateur;
+
+        if (avisModifie.prestataire.entreprise) {
+            destinataireNom = avisModifie.prestataire.entreprise.nomEntreprise;
+        } else {
+            destinataireNom = utilisateurDestinataire.nom;
+        }
+        if (utilisateurDestinataire) {
+
+            await prisma.notification.create({
+                data: {
+                    contenu: contenuNotif,
+                    utilisateurId: utilisateurDestinataire.id,
+
+                },
+            });
+
+            if (utilisateurDestinataire.email && utilisateurDestinataire.email.trim() !== "") {
+                const sujet = "Mise à jour de votre avis - DomiService";
+                const messageHtml = `
+        <p>Bonjour ${destinataireNom},</p>
+        <p>Un client a modifié son avis concernant votre service :</p>
+        <p>
+          <strong>Note :</strong> ${avisModifie.note ?? 'Non spécifiée'}<br>
+          ${avisModifie.aime ? "Le client apprécie votre service.<br>" : ""}
+          ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}<br>` : ""}
+        </p>
+        <p>Cordialement,<br>L’équipe DomiService</p>
+      `;
+
+                await sendMailToUser(utilisateurDestinataire.email, sujet, messageHtml);
+            }
+        }
+
+        res.json(avisModifie);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+//Archiver avis 
+router.put("/archiveAvis/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+        const avisArchive = await prisma.avis.update({
+            where: { id },
+            data: { etatArchive: true },
+        });
+        res.json({ message: "Avis archivé avec succès", avisArchive });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+//Récupérer un avis par ID
+router.get("/:id", async (req, res) => {
+    const id = Number(req.params.id);
+
+    try {
+        const avis = await prisma.avis.findUnique({
+            where: { id },
+            include: {
+                client: { include: { utilisateur: true } },
+                prestataire: { include: { utilisateur: true, entreprise: { include: { utilisateur: true } } } },
+            },
+        });
+
+        if (!avis) return res.status(404).json({ message: "Avis non trouvé." });
+
+        res.json(avis);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+//Lister avis d’un client (commentaire non nul, non archivé)
+router.get("/client/:clientId", async (req, res) => {
+    const clientId = Number(req.params.clientId);
+
+    try {
+        const avisClient = await prisma.avis.findMany({
+            where: {
+                clientId,
+                commentaire: { not: null },
+                etatArchive: false,
+            },
+            include: {
+                prestataire: { include: { utilisateur: true } },
+                entreprise: { include: { utilisateur: true } },
+            },
+        });
+
+        res.json(avisClient);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+// afficher la liste des avis par prestataire
+router.get('/prestataire/:prestataireId', async (req, res) => {
+    try {
+        const { prestataireId } = req.params;
+
+        const avis = await prisma.avis.findMany({
+            where: { prestataireId: Number(prestataireId), etatArchive: false },
+            include: {
+                client: { include: { utilisateur: true } },
+                prestataire: { include: { utilisateur: true, entreprise: true } },
+            },
+        });
+
+        res.json({ success: true, avis });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: "Erreur lors de la récupération des avis du prestataire" });
+    }
+});
+
+
+// afficher la liste des avis par entreprise
+// router.get('/entreprise/:entrepriseId', async (req, res) => {
+//     try {
+//         const { entrepriseId } = req.params;
+
+//         const avis = await prisma.avis.findMany({
+//             where: { entrepriseId: Number(entrepriseId), etatArchive: false },
+//             include: {
+//                 client: { include: { utilisateur: true } },
+//             },
+//         });
+
+//         res.json({ success: true, avis });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ success: false, error: "Erreur lors de la récupération des avis de l'entreprise" });
+//     }
+// });
+
+
+//statistique intervenant
+router.get("/statistiques/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (Number.isNaN(id)) {
+        return res.status(400).json({ message: "ID invalide" });
+    }
+
+    try {
+        const avis = await prisma.avis.findMany({
+            where: { prestataireId: id, etatArchive: false },
+            include: {
+                prestataire: {
+                    include: {
+                        entreprise: true
+                    }
+                }
+            },
+        });
+
+        const totalAvis = avis.length;
+        const totalAime = avis.filter(a => a.aime).length;
+        const sommeNotes = avis.reduce((sum, a) => sum + (a.note ?? 0), 0);
+
+        const moyenneNote = totalAvis ? (sommeNotes / totalAvis) : 0;
+        const tauxSatisfaction = totalAvis ? (totalAime / totalAvis) * 100 : 0;
+
+        res.json({
+            totalAvis,
+            totalAime,
+            moyenneNote: Number(moyenneNote.toFixed(1)),
+            tauxSatisfaction: Number(tauxSatisfaction.toFixed(1)),
+        });
+    } catch (error) {
+        console.error("Erreur statistiques dynamique :", error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+
+module.exports = router;
