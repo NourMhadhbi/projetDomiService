@@ -40,25 +40,37 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
             </Typography>
             <Divider sx={{ borderColor: 'rgba(243, 234, 234, 0.93)' }} />
             <List>
-                <ListItem button onClick={() => navigate('/mes-rendez-vous')}>
+                <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
                     <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.9rem' }} />
                 </ListItem>
-                <ListItem button>
-                    <ListItemText primary="Historique" sx={{ color: 'white' }} />
+
+                <ListItem
+                    button
+                    onClick={() => {
+                        window.open('/historique', '_blank');
+                        toggleDrawer(false)(); // appelle la fonction ici
+                    }}
+                >
+                    <ListItemText primary="Historique" sx={{ color: 'white', cursor: 'pointer' }} />
                 </ListItem>
-                <ListItem button>
+
+                <ListItem button component={NavLink} to="/carnet-de-contacts" onClick={toggleDrawer(false)}>
                     <ListItemText primary="Carnet de contacts (Intervenants favoris)" sx={{ color: 'white' }} />
                 </ListItem>
-                <ListItem button>
+
+                <ListItem button component={NavLink} to="/intervenants-bloques" onClick={toggleDrawer(false)}>
                     <ListItemText primary="Intervenants bloqués(non favoris)" sx={{ color: 'white' }} />
                 </ListItem>
-                <ListItem button>
+
+                <ListItem button component={NavLink} to="/intervenants-signales" onClick={toggleDrawer(false)}>
                     <ListItemText primary="Intervenants signalés" sx={{ color: 'white' }} />
                 </ListItem>
-                <ListItem button>
+
+                <ListItem button component={NavLink} to="/mes-avis" onClick={toggleDrawer(false)}>
                     <ListItemText primary="Mes avis" sx={{ color: 'white' }} />
                 </ListItem>
             </List>
+
         </Box>
     );
 

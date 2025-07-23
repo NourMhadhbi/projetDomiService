@@ -16,6 +16,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import Registre from './composants/Inscription/Registre';
 import PrivateRoute from './composants/PrivateRoute';
 import ListeRendezVous from'./composants/ListeDesRendezVous/ListeDesRendezVousCL';
+import Historique from './composants/Historique/Historiques';
 // import { fetchUserFromToken } from './features/AuthSlice'; // chemin vers ton thunk
 function App() {
   const [count, setCount] = useState(0)
@@ -31,6 +32,7 @@ function App() {
         <Route path="/accueil" element={<HomePage />} />
         <Route path="/calendrier/:id" element={<PrivateRoute><CalendrierRendezVous /> </PrivateRoute>} />
         <Route path="/mes-rendez-vous" element={<PrivateRoute><ListeRendezVous /> </PrivateRoute>} />
+        <Route path="/historique" element={<PrivateRoute><Historique /> </PrivateRoute>} />
         <Route path="/testCalendrie" element={<TestCalendrie />} />
         <Route path='/login' element={<Login />} />
         <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />

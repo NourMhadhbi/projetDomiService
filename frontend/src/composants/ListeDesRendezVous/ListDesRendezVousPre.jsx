@@ -4,8 +4,7 @@ import {
     Box, Paper, IconButton, Tooltip, Typography, Chip
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+
 
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -141,7 +140,8 @@ const ListeRendezVous = () => {
             headerName: 'Actions',
             sortable: false,
             filterable: false,
-           
+            align: 'right',
+            headerAlign: 'right',
             renderCell: ({ row }) => {
                 const { rdv } = row;
                 const isEditable = rdv.statut === 'EN_ATTENTE';
@@ -202,7 +202,7 @@ const ListeRendezVous = () => {
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
-            <Box className="container mt-4" sx={{ minHeight: 500, width: '95%', maxWidth: '100vw', }}>
+            <Box className="container mt-4" sx={{ minHeight: 500,  width: '95%',  maxWidth: '100vw', }}>
                 <Box mb={3}>
                     <Box display="flex" alignItems="center">
                         <FontAwesomeIcon icon={faCalendarAlt} style={{ fontSize: 35, color: '#ff6b00', marginRight: 10 }} />

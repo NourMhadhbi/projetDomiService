@@ -59,6 +59,7 @@ const CalendrierRendezVous = () => {
         date: '',
         heure: '',
         lieuDintervention: '',
+        raison: '',
         clientId: client?.utilisateurIdCl,
         prestataireId: id ? parseInt(id) : null,
     });
@@ -146,7 +147,7 @@ const CalendrierRendezVous = () => {
                     confirmButtonColor: '#198754' // vert Bootstrap
                 });
             }
-            // dispatch(fetchByIntervenant(id));
+            dispatch(fetchByIntervenant(id));
 
             setPanelOpen(false);
             setPopoverEventId(null);
@@ -188,7 +189,7 @@ const CalendrierRendezVous = () => {
             setPanelOpen(false);
             setPopoverEventId(null);
             setAnchorEl(null);
-
+            dispatch(fetchByIntervenant(id));
             Swal.fire({
                 icon: 'success',
                 title: 'Rendez-vous supprimé',
@@ -243,7 +244,7 @@ const CalendrierRendezVous = () => {
 
     return (
         <>
-            <Header isClientConnected={isLoggedIn} />
+            <Header isClientConnected={isLoggedIn} intervenant={intervenant} />
             <div className="mt-2 mb-4 px-3">
                 <style>{`
                     /* Style personnalisé FullCalendar */
@@ -366,7 +367,7 @@ const CalendrierRendezVous = () => {
                     open={panelOpen}
                     onClose={() => setPanelOpen(false)}
                     onSave={onSave}
-                    rendezVousActuel={rendezVousActuel}
+
                     eventData={formData}
                     intervenant={intervenant}
                     setEventData={setFormData}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Row, Col, Button, Form } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
-import logo from '../../assets/img/logo.jpg';
+import logo from '../../assets/img/logo.png';
 import image from '../../assets/img/background.jpg';
 
 const VerificationCode = () => {

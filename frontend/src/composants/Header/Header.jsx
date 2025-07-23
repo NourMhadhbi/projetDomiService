@@ -7,7 +7,7 @@ import AuthPanelModal from './AuthModals';
 import ProfilMenu from './ProfilMenu';
 import SideMenu from './SideMenu';
 // import { blue } from '@mui/material/colors';
-// import logo from '../../assets/img/logo.jpg';
+// import logo from '../../assets/img/logo.png';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { fetchServicesNA, fetchService } from '../../features/ServiceSlice';
@@ -92,6 +92,29 @@ const Header = ({ isClientConnected, intervenant }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isSearchOpen]);
+    let title = "Service";
+    let breadcrumbItems = [
+        { label: "Accueil", to: "/" }
+    ];
+
+    if (location.pathname === "/mes-rendez-vous") {
+        title = "Mes rendez-vous";
+        breadcrumbItems.push({ label: "Mes rendez-vous", to: null }); // dernier élément sans lien
+    } else if (location.pathname.startsWith("/ficheintervenant") || location.pathname.startsWith("/calendrier")) {
+        title = service?.nom || "Service";
+
+        breadcrumbItems.push({
+            label: intervenant?.prestataire?.entreprise ? "Entreprise" : "Prestataire",
+            to: null,
+        });
+
+        breadcrumbItems.push({
+            label: intervenant?.prestataire?.entreprise
+                ? intervenant.prestataire.entreprise.nomEntreprise
+                : intervenant?.nom || "Intervenant",
+            to: null,
+        });
+    }
     if (servicesLoading) return <p>Chargement...</p>;
     if (servicesError) return <p>Erreur Services: {servicesError}</p>;
     return (
@@ -111,7 +134,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" /> Route L'afrane km1.5
                             </span>
                         </div>
-                        {(isClientConnected && location.pathname === `/ficheintervenant/${intervenant?.id}`) && (
+                        {(isClientConnected && location.pathname !== `/calendrier/${intervenant?.id}`) && (
                             <button
                                 className="btn btn-warning btn-obtenir-rdv-top ms-auto me-2"
                                 onClick={() => navigate(`/calendrier/${intervenant.id}`)}
@@ -357,22 +380,24 @@ const Header = ({ isClientConnected, intervenant }) => {
 
             <div className="page-header">
                 <div className="container text-center">
-                    <h1 className="page-title mb-3">
-                        {service?.nom || "Service"}
-                    </h1>
+                    <h1 className="page-title mb-3">{title}</h1>
                     <nav aria-label="breadcrumb">
                         <ol className="breadcrumb justify-content-center mb-0">
-                            <li className="breadcrumb-item">
-                                <NavLink to="/" className="text-warning">Accueil</NavLink>
-                            </li>
-                            <li className="breadcrumb-item" aria-current="page">
-                                {intervenant?.prestataire?.entreprise ? "Entreprise" : "Prestataire"}
-                            </li>
-                            <li className="breadcrumb-item active" aria-current="page">
-                                {intervenant?.prestataire?.entreprise
-                                    ? intervenant.prestataire.entreprise.nomEntreprise
-                                    : intervenant?.nom || "Intervenant"}
-                            </li>
+                            {breadcrumbItems.map((item, idx) => (
+                                <li
+                                    key={idx}
+                                    className={`breadcrumb-item${item.to ? "" : " active"}`}
+                                    aria-current={item.to ? undefined : "page"}
+                                >
+                                    {item.to ? (
+                                        <NavLink to={item.to} className="text-warning">
+                                            {item.label}
+                                        </NavLink>
+                                    ) : (
+                                        item.label
+                                    )}
+                                </li>
+                            ))}
                         </ol>
                     </nav>
                 </div>

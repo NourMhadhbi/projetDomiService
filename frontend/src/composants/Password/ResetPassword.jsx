@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { useFormik } from 'formik';
 
-import logo from '../../assets/img/logo.jpg';
+import logo from '../../assets/img/logo.png';
 import image from '../../assets/img/background.jpg';
 import AuthService from '../../services/Authservice';
 

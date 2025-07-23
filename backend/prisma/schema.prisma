@@ -119,6 +119,8 @@ model Service {
 
    prestataires   Prestataire[]
    // entreprises   Entreprise[]
+     createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 model RendezVous {
   id              Int         @id @default(autoincrement())
@@ -136,6 +138,8 @@ model RendezVous {
 
   notifications   Notification[]
   messages        Message[]
+    createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 
 model Avis {
@@ -152,7 +156,8 @@ model Avis {
   client         Client     @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire    Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
   //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
-
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 
 model Signalement {
@@ -165,6 +170,8 @@ model Signalement {
   client         Client      @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire    Prestataire @relation(fields: [prestataireId], references: [utilisateurIdPre])
  // entreprise    Entreprise @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+   createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 
 model Message {
@@ -179,6 +186,8 @@ model Message {
   destinataire     Utilisateur @relation("MessagesRecus", fields: [destinataireId], references: [id])
 
   rendezVous       RendezVous? @relation(fields: [rendezVousId], references: [id])
+    createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 
 model Notification {
@@ -190,6 +199,8 @@ model Notification {
   rendezVousId    Int?
   utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id])
   rendezVous      RendezVous?  @relation(fields: [rendezVousId], references: [id])
+    createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 
 }
 
@@ -200,7 +211,9 @@ model HistoriquePrestataire {
   dateVisite    DateTime     @default(now())
   client        Client       @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire   Prestataire  @relation(fields: [prestataireId], references: [utilisateurIdPre])
-  @@unique([clientId, prestataireId])
+
+    createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }
 model FavorisPrestataire {
   id            Int              @id @default(autoincrement())
@@ -213,4 +226,6 @@ model FavorisPrestataire {
   prestataire   Prestataire      @relation(fields: [prestataireId], references: [utilisateurIdPre])
 
   @@unique([clientId, prestataireId])
+    createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
 }

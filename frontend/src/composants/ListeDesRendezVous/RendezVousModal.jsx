@@ -21,14 +21,13 @@ export default function RendezVousModal({
     eventData,
     intervenant,
     setEventData,
-    dateReadonly,
-    mode // 'ajout' ou 'modification'
+
 }) {
-    const isModification = mode === 'modification';
+
 
     const handleChange = (key, value) => {
-        // setEventData(prev => ({ ...prev, [key]: value }));
-        setEventData?.(prev => ({ ...prev, [key]: value }));
+        setEventData(prev => ({ ...prev, [key]: value }));
+        // setEventData?.(prev => ({ ...prev, [key]: value }));
     };
 
     return (
@@ -36,7 +35,7 @@ export default function RendezVousModal({
 
             <Box sx={{ bgcolor: '#FFEFD5', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="h6">
-                    {isModification ? 'Modifier un rendez-vous' : 'Ajouter un rendez-vous'}
+                    {'Modifier un rendez-vous'}
                 </Typography>
                 <IconButton onClick={onClose}>
                     <CloseIcon />
@@ -48,8 +47,8 @@ export default function RendezVousModal({
                     label="Nom & Prénom de l’intervenant"
                     fullWidth
                     value={
-                        intervenant?.prestataire?.entreprise?.nomEntreprise
-                            ? intervenant.prestataire.entreprise.nomEntreprise
+                        intervenant?.entreprise?.nomEntreprise
+                            ? intervenant.entreprise.nomEntreprise
                             : intervenant?.nom || ''
                     }
                     onChange={e => handleChange('intervenant', e.target.value)}
@@ -59,7 +58,7 @@ export default function RendezVousModal({
                 <TextField
                     label="Raison du rendez-vous"
                     fullWidth
-                    value={eventData?.raison || ''}
+                    value={eventData?.raison}
                     onChange={e => handleChange('raison', e.target.value)}
                     margin="normal"
 
@@ -68,7 +67,7 @@ export default function RendezVousModal({
                 <TextField
                     label="Lieu d’intervention"
                     fullWidth
-                    value={eventData?.lieuDintervention || ''}
+                    value={eventData?.lieuDintervention}
                     onChange={e => handleChange('lieuDintervention', e.target.value)}
                     margin="normal"
 
@@ -80,10 +79,10 @@ export default function RendezVousModal({
                             label="Date"
                             type="date"
                             fullWidth
-                            value={eventData?.date || ''}
+                            value={eventData?.date}
                             onChange={e => handleChange('date', e.target.value)}
                             margin="normal"
-                            InputProps={{ readOnly: dateReadonly }}
+                            InputProps={{ readOnly: false }}
                             InputLabelProps={{ shrink: true }}
                         />
                     </Grid>
@@ -92,7 +91,7 @@ export default function RendezVousModal({
                             label="Heure"
                             type="time"
                             fullWidth
-                            value={eventData?.heure || ''}
+                            value={eventData?.heure}
                             onChange={e => handleChange('heure', e.target.value)}
                             margin="normal"
 
@@ -130,7 +129,7 @@ export default function RendezVousModal({
                 </Button>
 
                 <Button
-                    onClick={onSave}
+                    // onClick={onSave}
                     variant="outlined"
                     startIcon={<SaveIcon />}
                     sx={{
@@ -149,7 +148,7 @@ export default function RendezVousModal({
                         }
                     }}
                 >
-                    {isModification ? 'Modifier' : 'Ajouter'}
+                    Modifier
                 </Button>
 
             </DialogActions>

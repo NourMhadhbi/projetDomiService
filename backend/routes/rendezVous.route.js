@@ -639,6 +639,12 @@ router.get('/rendezVousByClient/:idClient', async (req, res) => {
                 client: {
                     include: { utilisateur: true }
                 },
+                prestataire: {
+                    include: {
+                        utilisateur: true,
+                        entreprise: true
+                    }
+                }
 
             }
         });

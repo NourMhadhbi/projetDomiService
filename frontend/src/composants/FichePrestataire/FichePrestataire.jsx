@@ -14,7 +14,7 @@ import { fetchIntervenantbyId } from '../../features/UtilisateurSlice';
 import { getAvisByPrestataire } from "../../features/AvisSlice";
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useParams } from 'react-router-dom';
-
+import { createHistorique } from '../../features/HistoriqueSlice';
 function App() {
     const { id } = useParams();
     const dispatch = useDispatch();
@@ -49,7 +49,20 @@ function App() {
             dispatch(getAvisByPrestataire(id));
         }
     }, [id, dispatch, isFichePage]);
+    useEffect(() => {
+        if (
+            isFichePage &&
+            isLoggedIn &&
 
+            id
+        ) {
+         
+            dispatch(createHistorique({
+                clientId: user.utilisateurIdCl,
+                prestataireId:parseInt(id)
+            }));
+        }
+    }, [isFichePage, isLoggedIn, id, intervenant, user, dispatch]);
     if (intervenantLoading || avisLoading) return <p>Chargement...</p>;
     if (intervenantError) return <p>Erreur Intervenant: {intervenantError}</p>;
     if (avisError) return <p>Erreur Avis: {avisError}</p>;

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Typography from '@mui/material/Typography';
 import image from '../assets/img/background.jpg';
 import '../assets/css/Login.css';
-import logo from '../assets/img/logo.jpg';
+import logo from '../assets/img/logo.png';
 import { login } from '../features/AuthSlice';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
 

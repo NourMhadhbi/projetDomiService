@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import validationSchema from './validationSchema'; // adapte le chemin
 import '../../assets/css/register.css';
-import logo from '../../assets/img/logo.jpg';
+import logo from '../../assets/img/logo.png';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 import { Form, InputGroup, Button } from 'react-bootstrap';
