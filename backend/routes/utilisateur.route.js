@@ -5,6 +5,7 @@ const twilio = require('twilio');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -40,7 +41,19 @@ const generateRefreshToken = (user) => {
 //     });
 // }
 
+async function geocodeAdresse(adresse) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`;
+    const response = await fetch(url);
+    const data = await response.json();
 
+    if (!data || data.length === 0) return null;
+
+    const { lat, lon } = data[0];
+    return {
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lon),
+    };
+}
 router.post('/register', async (req, res) => {
     try {
         await prisma.$transaction(async (prisma) => {
@@ -95,7 +108,7 @@ router.post('/register', async (req, res) => {
 
             const salt = await bcrypt.genSalt(10);
             const motDePasseCrypte = await bcrypt.hash(motDePasse, salt);
-
+            const coords = await geocodeAdresse(`${adresse}, ${ville}`);
             const userCreate = await prisma.utilisateur.create({
                 data: {
                     nom,
@@ -115,7 +128,9 @@ router.post('/register', async (req, res) => {
                         utilisateurIdCl: userCreate.id,
                         numTel,
                         adresse,
-                        ville
+                        ville,
+                        latitude: coords?.latitude ?? null,
+                        longitude: coords?.longitude ?? null,
                     },
                     include: { utilisateur: true }
                 });
@@ -170,6 +185,8 @@ router.post('/register', async (req, res) => {
                         adresse,
                         ville,
                         numTel,
+                        latitude: coords?.latitude ?? null,
+                        longitude: coords?.longitude ?? null,
                         descriptionCourte, Spécialite,
                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
                         serviceId: Number(serviceId)
@@ -189,6 +206,8 @@ router.post('/register', async (req, res) => {
                         adresse,
                         ville,
                         numTel,
+                        latitude: coords?.latitude ?? null,
+                        longitude: coords?.longitude ?? null,
                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
                         serviceId: Number(serviceId),
                         isActive: false
@@ -220,6 +239,9 @@ router.post('/register', async (req, res) => {
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: admin });
             }
         });
+        if (!coords) {
+            return res.status(400).json({ error: "Impossible de géocoder l'adresse" });
+        }
     } catch (err) {
         console.log(err);
         res.status(500).send({ success: false, message: err.message });
@@ -315,7 +337,7 @@ router.get('/activeClient/utilisateur', async (req, res) => {
                     <h2>Votre compte a été activé avec succès!</h2>
                     <p>Vous pouvez maintenant vous connecter à votre compte.</p>
                     <div class="center">
-                   <a href="http://localhost:3000/login">Se connecter</a>
+                   <a href="http://localhost:5173/login">Se connecter</a>
                 </div>                
                 </div>
             </body>
@@ -518,7 +540,7 @@ router.post('/login', async (req, res) => {
                             utilisateurIdPre: utilisateur.id
                         },
                         include: {
-                            utilisateur: true
+                            utilisateur: true,entreprise:true
                         }
                     })
                     return res.status(200).send({
@@ -542,7 +564,7 @@ router.post('/login', async (req, res) => {
                         }
                     })
                     return res.status(200).send({
-                        success: true, token, refreshToken, utilisateur: admin
+                        success: true, token, refreshToken, user: admin
                     })
                 }
             } else {
@@ -628,8 +650,12 @@ router.put('/:id', async (req, res) => {
 
             if (user.role === 'CLIENT') {
                 const { numTel, ville, adresse } = req.body;
+                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
 
-                const updateData = { numTel, ville, adresse };
+                const updateData = {
+                    numTel, ville, adresse, latitude: coords?.latitude ?? null,
+                    longitude: coords?.longitude ?? null,
+                };
 
                 if (emailChanged) {
                     updateData.isActive = false;
@@ -679,18 +705,19 @@ router.put('/:id', async (req, res) => {
                     experience, competence,
                     nomEntreprise, siteWeb, identifiant, Spécialite, descriptionCourte
                 } = req.body;
-
+                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
                 // 1. Mise à jour du prestataire
                 const prestataireData = {
                     adresse, ville, numTel, tarifDeplacement,
-                    experience, competence, Spécialite, descriptionCourte
+                    experience, competence, Spécialite, descriptionCourte, latitude: coords?.latitude ?? null,
+                    longitude: coords?.longitude ?? null,
 
                 };
 
                 if (emailChanged) prestataireData.isActive = false;
 
                 const prestataireUpdated = await prisma.prestataire.update({
-                    where: { id },
+                    where: { utilisateurIdPre: id },
                     data: prestataireData,
                     include: { utilisateur: true }
                 });
@@ -892,12 +919,19 @@ router.get('/getintervenant', async (req, res) => {
 
         const Intervenants = await prisma.utilisateur.findMany({
             where: {
+
                 role: {
                     in: [PRESTATAIRE, ENTREPRISE]
+                }, prestataire: {
+                    isActive: true
                 }
             },
             include: {
-                prestataire: true
+                prestataire: {
+                    include: {
+                        entreprise: true
+                    }
+                }
 
             }
         });
@@ -926,4 +960,119 @@ router.get('/intervenant/:id', async (req, res) => {
         res.status(404).json({ erreur: error.message })
     }
 })
+
+const toRadians = (deg) => deg * Math.PI / 180;
+
+function calculerDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // distance en kilomètres
+}
+
+router.get('/prestataires-proches/:clientId', async (req, res) => {
+    try {
+        const client = await prisma.client.findUnique({
+            where: { utilisateurIdCl: parseInt(req.params.clientId) },
+            include: { utilisateur: true }
+        });
+
+        if (!client || client.latitude == null || client.longitude == null) {
+            return res.status(404).json({ message: "Client introuvable ou coordonnées manquantes" });
+        }
+
+        const prestataires = await prisma.prestataire.findMany({
+            include: { utilisateur: true, entreprise: true }
+        });
+
+        const proches = prestataires
+            .map((p) => {
+                if (p.latitude == null || p.longitude == null) return null;
+                const distance = calculerDistance(client.latitude, client.longitude, p.latitude, p.longitude);
+                return { ...p, distance };
+            })
+            .filter((p) => p && p.distance <= 20)
+            .sort((a, b) => a.distance - b.distance)
+
+
+        res.json(proches);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+// GET /api/prestataires
+router.get('/prestataires', async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 8,
+            type,
+            ville,
+            sort 
+        } = req.query;
+
+        const take = parseInt(limit);
+        const skip = (parseInt(page) - 1) * take;
+
+        const whereClause = {};
+
+        // Filtrer par type (PRESTATAIRE ou ENTREPRISE)
+        if (type) {
+            whereClause.utilisateur = {
+                role: type
+            };
+        }
+
+        // Filtrer par ville
+        if (ville) {
+            whereClause.ville = {
+                equals: ville.toLowerCase()
+            };
+        }
+
+        const orderByClause = {};
+
+        if (sort === 'tarifAsc') {
+            orderByClause.tarifDedeplacement = 'asc';
+        } else if (sort === 'tarifDesc') {
+            orderByClause.tarifDedeplacement = 'desc';
+        } else if (sort === 'ville') {
+            orderByClause.ville = 'asc';
+        }
+
+        const prestataires = await prisma.prestataire.findMany({
+            where: whereClause,
+            include: {
+                utilisateur: true,
+                entreprise: true
+            },
+            skip,
+            take,
+            orderBy: Object.keys(orderByClause).length > 0 ? orderByClause : undefined
+        });
+
+        const total = await prisma.prestataire.count({ where: whereClause });
+
+        res.json({
+            data: prestataires,
+            total,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / take)
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+
 module.exports = router;

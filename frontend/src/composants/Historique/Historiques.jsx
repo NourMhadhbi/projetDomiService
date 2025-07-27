@@ -11,7 +11,7 @@ import ListIcon from '@mui/icons-material/List';
 import logo from '../../assets/img/logo.png';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDernierHistorique, deleteHistorique } from '../../features/HistoriqueSlice';
-
+import SearchIcon from '@mui/icons-material/Search';
 const Historique = () => {
     const dispatch = useDispatch();
     const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -40,10 +40,18 @@ const Historique = () => {
     useEffect(() => {
         if (historiqueData) {
             const filteredData = historiqueData.filter(item => {
-                const nom = item.prestataire.utilisateur?.nom || item.prestataire.entreprise?.nomEntreprise || "";
+                const nom = item.prestataire.entreprise?.nomEntreprise || item.prestataire.utilisateur?.nom || "";
                 const prenom = item.prestataire.utilisateur?.prenom || "";
                 const service = item.prestataire.service?.nom || "";
-                const fullText = `${nom} ${prenom} ${service} ${new Date(item.dateVisite).toLocaleDateString("fr-FR")}`.toLowerCase();
+                const dateVisite = new Date(item.dateVisite);
+                const heure = dateVisite.toISOString().substring(11, 16);
+                const dateFr = dateVisite.toLocaleDateString("fr-FR", {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                });
+                const fullText = `${nom} ${prenom} ${service} ${new Date(item.dateVisite).toLocaleDateString("fr-FR")}  ${dateFr} ${heure}`.toLowerCase();
                 return fullText.includes(searchTerm.toLowerCase());
             });
             setFiltered(filteredData);
@@ -64,42 +72,72 @@ const Historique = () => {
         setMenuItemId(null);
     };
     //supprimer les selections
-    const handleDeleteOne = (id) => {
+    const handleDeleteOne = async (id) => {
         const item = historiqueData.find((x) => x.id === id);
         if (item) {
-            dispatch(deleteHistorique({
+            await dispatch(deleteHistorique({
                 clientId: item.clientId,
                 prestataireId: item.prestataireId,
-                dateVisite: item.dateVisite, // doit être ISO
-            }));
+
+                dateVisite: new Date(item.dateVisite).toISOString(),
+            }
+            )).unwrap();
+            await dispatch(fetchDernierHistorique({ clientId: user.utilisateurIdCl })).unwrap();
         }
+
         setSelected((prev) => prev.filter(x => x !== id));
         handleMenuClose();
     };
 
-    const handleDeleteSelected = () => {
-        selected.forEach((id) => {
+    const handleDeleteSelected = async () => {
+        for (const id of selected) {
             const item = historiqueData.find((x) => x.id === id);
             if (item) {
-                dispatch(deleteHistorique({
+                await dispatch(deleteHistorique({
                     clientId: item.clientId,
                     prestataireId: item.prestataireId,
-                    dateVisite: item.dateVisite,
-                }));
+                    dateVisite: new Date(item.dateVisite).toISOString(),
+                })).unwrap();
             }
-        });
+        }
+
+        await dispatch(fetchDernierHistorique({ clientId: user.utilisateurIdCl })).unwrap();
         setSelected([]);
     };
+
+    // const handleDeleteOne = async (id) => {
+    //     await dispatch(deleteHistorique(id)).unwrap();
+    //     setSelected((prev) => prev.filter(x => x !== id));
+    //     handleMenuClose();
+    // };
+
+    // const handleDeleteSelected = async () => {
+    //     for (const id of selected) {
+    //         const item = historiqueData.find((x) => x.id === id);
+    //         if (item) {
+    //             await dispatch(deleteHistorique(item.id)).unwrap();
+    //         }
+    //     }
+
+    //     await dispatch(fetchDernierHistorique({ clientId: user.utilisateurIdCl })).unwrap();
+    //     setSelected([]);
+    // };
+
     const formatDateOnly = (dateStr) => {
         const date = new Date(dateStr);
-        return date.toLocaleDateString("fr-FR", {
+        const iso = date.toISOString(); // exemple : "2025-07-24T05:18:00.000Z"
+        const [year, month, day] = iso.substring(0, 10).split('-');
+
+        // Format : jeudi 24 juillet 2025
+        const dateUTC = new Date(`${year}-${month}-${day}T00:00:00Z`);
+
+        return dateUTC.toLocaleDateString('fr-FR', {
             weekday: 'long',
             day: '2-digit',
             month: 'long',
             year: 'numeric',
         });
     };
-
     const groupedByDate = filtered.reduce((acc, item) => {
         const key = formatDateOnly(item.dateVisite);
         if (!acc[key]) acc[key] = [];
@@ -160,18 +198,34 @@ const Historique = () => {
                     </Box>
 
                     {/* Recherche */}
-                    <Box sx={{ mb: 2 }}>
+
+
+                    <Box sx={{ mb: 2, position: 'relative', width: '100%', maxWidth: 400 }}>
                         <input
                             type="text"
-                            placeholder="Rechercher par nom, spécialité ou date"
+                            placeholder="Rechercher par nom, spécialité ,heure ou date"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             style={{
-                                padding: "8px 12px", borderRadius: "999px",
-                                border: "1px solid #ccc", width: "100%", maxWidth: 400
+                                padding: "8px 36px 8px 12px",  // espace à droite pour l'icône
+                                borderRadius: "999px",
+                                border: "1px solid #ccc",
+                                width: "100%",
+                                boxSizing: "border-box",
+                            }}
+                        />
+                        <SearchIcon
+                            sx={{
+                                position: 'absolute',
+                                right: 10,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: '#888',
+                                pointerEvents: 'none'
                             }}
                         />
                     </Box>
+
 
                     {/* Affichage par groupe de dates */}
                     {Object.entries(groupedByDate).map(([date, items]) => (
@@ -191,9 +245,7 @@ const Historique = () => {
                                     : `${utilisateur.prenom} ${utilisateur.nom}`
 
 
-                                const heure = new Date(item.dateVisite).toLocaleTimeString("fr-FR", {
-                                    hour: "2-digit", minute: "2-digit"
-                                });
+                                const heure = new Date(item.dateVisite).toISOString().substring(11, 16);
 
                                 return (
                                     <ListItem

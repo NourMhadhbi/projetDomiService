@@ -122,7 +122,7 @@ router.post("/ajoutRendezvous", async (req, res) => {
             data: {
                 contenu: `Un nouveau rendez-vous avec le client ${client.utilisateur.nom} ${client.utilisateur.prenom} le ${dateFormattee} à ${heureFormattee} a été ajouté.`,
                 utilisateurId: utilisateurIdNotification,
-                rendezVousId: rendezVous.id,
+
             },
         });
 
@@ -203,7 +203,7 @@ router.put("/modifierRendezVous/:id", async (req, res) => {
                 data: {
                     contenu: messageNotif,
                     utilisateurId: destinataireNotif,
-                    rendezVousId: id,
+
                 },
             });
         }
@@ -335,7 +335,7 @@ router.put("/confirmerRDV/:id", async (req, res) => {
                 data: {
                     contenu: message,
                     utilisateurId: destinataireNotif,
-                    rendezVousId: id,
+
                 },
             });
         }
@@ -344,7 +344,7 @@ router.put("/confirmerRDV/:id", async (req, res) => {
             const messageHtml = `
             <p>Bonjour ${client.utilisateur.prenom},</p>
             <p>Nous vous confirmons que votre rendez-vous avec <strong>${nomAuteur}</strong> (service : <strong>${nomService}</strong>) a bien été validé.</p>
-            <p><strong>Date :</strong> ${dateRDV} à ${heureAffichee}<br>
+            <p><strong>Date :</strong> ${dateRDV} à ${heureFormattee}<br>
             <strong>Lieu :</strong> ${lieu}</p>
             <p>Merci de votre confiance.<br>
             L’équipe DomiService</p>
@@ -422,7 +422,7 @@ router.put("/annulerRDV/:id", async (req, res) => {
                 data: {
                     contenu: message,
                     utilisateurId: destinataireNotif,
-                    rendezVousId: id,
+
                 },
             });
         }
@@ -430,7 +430,7 @@ router.put("/annulerRDV/:id", async (req, res) => {
             const sujet = "Annulation de votre rendez-vous - DomiService";
             const messageHtml = `
             <p>Bonjour ${client.utilisateur.prenom},</p>
-            <p>Nous vous informons que votre rendez-vous avec <strong>${nomAuteur}</strong> (service : <strong>${nomService}</strong>) prévu le ${dateRDV} à ${heureAffichee} a été <strong>annulé</strong>.</p>
+            <p>Nous vous informons que votre rendez-vous avec <strong>${nomAuteur}</strong> (service : <strong>${nomService}</strong>) prévu le ${dateRDV} à ${heureFormattee} a été <strong>annulé</strong>.</p>
             <p><strong>Lieu prévu :</strong> ${lieu}</p>
             <p>Nous restons à votre disposition pour toute nouvelle prise de rendez-vous.</p>
             <p>Merci de votre compréhension.<br>
@@ -542,7 +542,7 @@ cron.schedule("0 9 * * *", async () => {
                 data: {
                     contenu: contenuNotif,
                     utilisateurId: rdv.client.utilisateurIdCl,
-                    rendezVousId: rdv.id,
+
                 },
             });
 
@@ -583,7 +583,7 @@ cron.schedule("0 9 * * *", async () => {
                 data: {
                     contenu: contenuNotif,
                     utilisateurId: prestataireUser.id,
-                    rendezVousId: rdv.id,
+
                 },
             });
 

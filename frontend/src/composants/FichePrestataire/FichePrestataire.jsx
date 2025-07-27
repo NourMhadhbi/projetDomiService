@@ -14,7 +14,7 @@ import { fetchIntervenantbyId } from '../../features/UtilisateurSlice';
 import { getAvisByPrestataire } from "../../features/AvisSlice";
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useParams } from 'react-router-dom';
-import { createHistorique } from '../../features/HistoriqueSlice';
+import { createHistorique, fetchDernierHistorique } from '../../features/HistoriqueSlice';
 function App() {
     const { id } = useParams();
     const dispatch = useDispatch();
@@ -50,19 +50,30 @@ function App() {
         }
     }, [id, dispatch, isFichePage]);
     useEffect(() => {
-        if (
-            isFichePage &&
-            isLoggedIn &&
+        const ajouterEtRafraichir = async () => {
+            try {
+                const action = await dispatch(createHistorique({
+                    clientId: user.utilisateurIdCl,
+                    prestataireId: parseInt(id)
+                }));
 
-            id
-        ) {
-         
-            dispatch(createHistorique({
-                clientId: user.utilisateurIdCl,
-                prestataireId:parseInt(id)
-            }));
+                if (createHistorique.fulfilled.match(action)) {
+                    // Seulement si l'ajout a réussi
+                    dispatch(fetchDernierHistorique({ clientId: user.utilisateurIdCl }));
+                } else {
+                    // Ajout refusé (ex: doublon minute)
+                    console.warn("Historique déjà existant, pas de rechargement.");
+                }
+            } catch (err) {
+                console.error("Erreur dans createHistorique :", err);
+            }
+        };
+
+        if (isFichePage && isLoggedIn && id) {
+            ajouterEtRafraichir();
         }
-    }, [isFichePage, isLoggedIn, id, intervenant, user, dispatch]);
+    }, [isFichePage, isLoggedIn, id, dispatch, user.utilisateurIdCl]);
+
     if (intervenantLoading || avisLoading) return <p>Chargement...</p>;
     if (intervenantError) return <p>Erreur Intervenant: {intervenantError}</p>;
     if (avisError) return <p>Erreur Avis: {avisError}</p>;

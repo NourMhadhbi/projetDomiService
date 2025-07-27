@@ -8,6 +8,8 @@ import ProfilMenu from './ProfilMenu';
 import SideMenu from './SideMenu';
 // import { blue } from '@mui/material/colors';
 // import logo from '../../assets/img/logo.png';
+import AccueilSlider from '../Accueil/AccueilSlider';
+import AccueilSliderAdmin from '../Admin/AccueilAdmin/AccueilSliderAdmin';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { fetchServicesNA, fetchService } from '../../features/ServiceSlice';
@@ -23,10 +25,12 @@ import {
 
 
 const Header = ({ isClientConnected, intervenant }) => {
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { id } = useParams();
     console.log("id", id);
     const dispatch = useDispatch();
-
+    const [ongletActif, setOngletActif] = useState("services");
+    const [filteredServices, setFilteredServices] = useState([]);
     console.log("client", isClientConnected);
 
     const {
@@ -41,6 +45,8 @@ const Header = ({ isClientConnected, intervenant }) => {
 
 
     const location = useLocation();
+    const isAccueil = location.pathname === "/accueil";
+    const isAccueilAdmin = location.pathname === "/admin/dashboard";
     /*  États locaux du composant  */
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openSubmenu, setOpenSubmenu] = useState(null);
@@ -73,11 +79,23 @@ const Header = ({ isClientConnected, intervenant }) => {
     const handleSearch = (e) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            alert(`Recherche pour: ${searchQuery}`);
-            setSearchQuery('');
+            if (ongletActif === 'prestataires') {
+                navigate(`/prestataires?search=${encodeURIComponent(searchQuery.trim())}`);
+            }
             setIsSearchOpen(false);
+            setSearchQuery('');
         }
     };
+    //pour recherche service 
+    useEffect(() => {
+        if (ongletActif === 'services') {
+            const query = searchQuery.toLowerCase();
+            const resultats = services.filter((s) =>
+                s.nom.toLowerCase().includes(query)
+            );
+            setFilteredServices(resultats);
+        }
+    }, [searchQuery, services, ongletActif]);
 
     /*  Effet pour fermer la recherche au clic hors  */
     useEffect(() => {
@@ -93,8 +111,9 @@ const Header = ({ isClientConnected, intervenant }) => {
         };
     }, [isSearchOpen]);
     let title = "Service";
+    let titre1 = "";
     let breadcrumbItems = [
-        { label: "Accueil", to: "/" }
+        { label: "Accueil", to: "/accueil" }
     ];
 
     if (location.pathname === "/mes-rendez-vous") {
@@ -115,11 +134,56 @@ const Header = ({ isClientConnected, intervenant }) => {
             to: null,
         });
     }
+    else if (location.pathname === "/MapAdresse") {
+        title = "Localisation";
+        const params = new URLSearchParams(location.search);
+
+        if (params.get('adresseA')) {
+            titre1 = "Mes avis";
+        } else if (params.get('adresseP')) {
+            titre1 = "Fiche Prestataire";
+        } else if (params.get('adresse')) {
+            titre1 = "Mes rendez-vous";
+        }
+
+        if (titre1) {
+            breadcrumbItems.push({ label: titre1, to: null });
+        }
+        breadcrumbItems.push({ label: "Localisation", to: null });
+    } else if (location.pathname === "/mes-avis") {
+        title = "Mes avis";
+        breadcrumbItems.push({ label: "Mes avis", to: null });
+    }
+    else if (location.pathname.startsWith("/prestataires")) {
+        title = "Prestataires & Entreprises";
+
+        const params = new URLSearchParams(location.search);
+
+
+        if (params.get('service')) {
+
+            breadcrumbItems.push({ label: "service", to: null });
+        } else if (params.get('proche')) {
+
+            breadcrumbItems.push({ label: "Prestataires et entreprises proches de vous", to: null });
+        }
+        else if (params.get('search')) {
+
+            breadcrumbItems.push({ label: "Recherche", to: null });
+        }
+
+        else if (params.get('consultes')) {
+
+            breadcrumbItems.push({ label: "Prestataires et entreprises les plus consultés", to: null });
+        }
+
+        breadcrumbItems.push({ label: "Prestataires & Entreprises", to: null });
+    }
     if (servicesLoading) return <p>Chargement...</p>;
     if (servicesError) return <p>Erreur Services: {servicesError}</p>;
     return (
         <>
-            {/* Top Header conforme à la capture */}
+
             <div className="top-header">
                 <div className="container">
                     <div className="d-flex justify-content-between align-items-center">
@@ -134,7 +198,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" /> Route L'afrane km1.5
                             </span>
                         </div>
-                        {(isClientConnected && location.pathname !== `/calendrier/${intervenant?.id}`) && (
+                        {(isClientConnected && location.pathname === `/ficheintervenant/${intervenant?.id}` && user?.utilisateur?.role === 'CLIENT') && (
                             <button
                                 className="btn btn-warning btn-obtenir-rdv-top ms-auto me-2"
                                 onClick={() => navigate(`/calendrier/${intervenant.id}`)}
@@ -173,7 +237,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                             <ul className="navbar-nav ms-auto">
                                 <li className="nav-item">
                                     <NavLink
-                                        to="/"
+                                        to="/accueil"
                                         className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
                                     >
                                         Accueil
@@ -205,13 +269,16 @@ const Header = ({ isClientConnected, intervenant }) => {
 
                                         {services && services.map((service) => (
                                             <li key={service.id}>
-                                                <NavLink
-                                                    to={`/services/${service.id}`}
-                                                    className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
+                                                <a
+                                                    href={`/prestataires?service=${service.id}`}
+                                                    className="dropdown-item"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     onClick={() => setOpenSubmenu(null)}
                                                 >
                                                     {service.nom}
-                                                </NavLink>
+                                                </a>
+
                                             </li>
                                         ))}
                                     </ul>
@@ -320,13 +387,13 @@ const Header = ({ isClientConnected, intervenant }) => {
                             >
                                 <FontAwesomeIcon icon={faSearch} />
                             </button>
-                            <NotificationMenu />
+                            <NotificationMenu isClientConnected={isLoggedIn} user={user} />
 
                             {isClientConnected ? (
                                 <>
 
                                     <div className="ms-3 mt-3 mt-lg-0">
-                                        <ProfilMenu /*user={user}*/ />
+                                        <ProfilMenu user={user} />
                                     </div>
                                     <div className="ms-2 d-flex align-items-center me-0">
                                         <SideMenu color="#1a3a6c" />
@@ -352,6 +419,23 @@ const Header = ({ isClientConnected, intervenant }) => {
                 <div className="search-panel">
                     <div className="container search-container">
                         <form onSubmit={handleSearch} className="search-form">
+                            <div className="search-tabs d-flex justify-content-center mb-3">
+                                <button
+                                    type="button"
+                                    className={`btn ${ongletActif === 'prestataires' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
+                                    onClick={() => setOngletActif('prestataires')}
+                                >
+                                    Prestataires / Entreprises
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn ${ongletActif === 'services' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
+                                    onClick={() => setOngletActif('services')}
+                                >
+                                    Services
+                                </button>
+                            </div>
+
                             <input
                                 type="text"
                                 className="form-control"
@@ -374,36 +458,88 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 <FontAwesomeIcon icon={faTimes} />
                             </button>
                         </form>
+
+                        {/*  Résultats filtrés : services */}
+                        {ongletActif === 'services' && searchQuery && (
+                            <div className="resultats-services bg-white shadow-sm rounded p-3 mt-2">
+                                {filteredServices.length > 0 ? (
+                                    filteredServices.map((s) => (
+                                        <div
+                                            key={s.id}
+                                            className="d-flex justify-content-between align-items-center border-bottom py-2"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => {
+                                                navigate(`/prestataires?service=${s.id}`);
+                                                setIsSearchOpen(false);
+                                                setSearchQuery('');
+                                            }}
+                                        >
+                                            <div>
+                                                <img
+                                                    src={s.image ? `/${s.image}` : '/default-image.jpg'}
+                                                    alt={s.nom}
+                                                    style={{
+                                                        width: '60px',
+                                                        height: '60px',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '8px',
+                                                        marginRight: '12px'
+                                                    }}
+                                                />
+                                                <div>
+                                                    <strong>{s.nom}</strong><br />
+                                                    <small className="text-muted">
+                                                        {s.description?.slice(0, 80)}...
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-muted text-center">Aucun service trouvé</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            {isAccueilAdmin ? (<div className="page-header-accueil">
+                <AccueilSliderAdmin />
+            </div>
+            ) : isAccueil ? (
+                <div className="page-header-accueil">
+                    <AccueilSlider />
+                </div>
+            ) : (
+                <div className="page-header">
+                    <div className="container text-center text-white">
+                        <h1 className="page-title mb-3">{title}</h1>
+                        <nav aria-label="breadcrumb">
+                            <ol className="breadcrumb justify-content-center mb-0">
+                                {breadcrumbItems.map((item, idx) => (
+                                    <li
+                                        key={idx}
+                                        className={`breadcrumb-item${item.to ? "" : " active"}`}
+                                        aria-current={item.to ? undefined : "page"}
+                                    >
+                                        {item.to ? (
+                                            <NavLink to={item.to} className="text-warning">
+                                                {item.label}
+                                            </NavLink>
+                                        ) : (
+                                            item.label
+                                        )}
+                                    </li>
+                                ))}
+                            </ol>
+                        </nav>
                     </div>
                 </div>
             )}
 
-            <div className="page-header">
-                <div className="container text-center">
-                    <h1 className="page-title mb-3">{title}</h1>
-                    <nav aria-label="breadcrumb">
-                        <ol className="breadcrumb justify-content-center mb-0">
-                            {breadcrumbItems.map((item, idx) => (
-                                <li
-                                    key={idx}
-                                    className={`breadcrumb-item${item.to ? "" : " active"}`}
-                                    aria-current={item.to ? undefined : "page"}
-                                >
-                                    {item.to ? (
-                                        <NavLink to={item.to} className="text-warning">
-                                            {item.label}
-                                        </NavLink>
-                                    ) : (
-                                        item.label
-                                    )}
-                                </li>
-                            ))}
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-
             <AuthPanelModal />
+
         </>
     );
 };

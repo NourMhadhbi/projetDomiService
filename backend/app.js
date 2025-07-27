@@ -15,6 +15,12 @@ const avisRouter = require("./routes/avis.route")
 app.use('/api/avis', avisRouter);
 const HistoriquePrestataire = require("./routes/historiquePrestataire.route")
 app.use('/api/historique', HistoriquePrestataire);
+const Notification = require("./routes/notification.route")
+app.use('/api/notification', Notification);
+const StatistiqueAdmin = require("./routes/statistiquesAdmin.route")
+app.use('/api/statistiquesAdmin', StatistiqueAdmin);
+const historiqueApp = require("./routes/historiqueApp.route")
+app.use('/api/historiqueApp', historiqueApp);
 const favorisPrestataire = require("./routes/favorisPrestataire.route")
 app.use('/api/favorisPres', favorisPrestataire);
 const PORT = process.env.PORT || 3001

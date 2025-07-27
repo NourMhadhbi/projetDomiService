@@ -49,7 +49,7 @@ model Utilisateur {
   prestataire   Prestataire?
   client        Client?
   admin          Admin? 
- 
+ HistoriqueApp        HistoriqueApp[]
   messagesEnvoyes     Message[]       @relation("MessagesEnvoyes")
   messagesRecus       Message[]       @relation("MessagesRecus")
   notifications       Notification[]
@@ -65,6 +65,8 @@ model Client {
   numTel         String?     @db.VarChar(255)
   
   isActive       Boolean        @default(false)
+   latitude         Float?    
+  longitude        Float?     
   rendezVous     RendezVous[]
   avis           Avis[]
   favorisPrestataires FavorisPrestataire[]
@@ -87,12 +89,14 @@ model Prestataire {
   tarifDeplacement Float?
   experience       String?   @db.MediumText 
   competence       String?  @db.MediumText 
-  Spécialite       String?  @db.MediumText 
+  Spécialite       String  @db.MediumText 
   descriptionCourte String? @db.MediumText 
   isActive         Boolean    @default(false)
   serviceId        Int
   service          Service    @relation(fields: [serviceId], references: [id])
   entreprise     Entreprise?
+   latitude         Float?    
+  longitude        Float?    
   rendezVous       RendezVous[]
   avis             Avis[]
   signalementsRecus Signalement[]
@@ -114,7 +118,7 @@ model Service {
   id          Int         @id @default(autoincrement())
   nom         String
   description String?
- // tarifMoyen  Float?
+ image         String? 
  etatArchive   Boolean    @default(false)
 
    prestataires   Prestataire[]
@@ -136,7 +140,7 @@ model RendezVous {
   prestataire     Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
   //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
 
-  notifications   Notification[]
+
   messages        Message[]
     createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
@@ -191,17 +195,14 @@ model Message {
 }
 
 model Notification {
-  id              Int          @id @default(autoincrement())
-  contenu         String
-  dateEnvoi       DateTime     @default(now())
-  estLue          Boolean      @default(false)
-  utilisateurId   Int @db.UnsignedInt
-  rendezVousId    Int?
-  utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id])
-  rendezVous      RendezVous?  @relation(fields: [rendezVousId], references: [id])
-    createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @default(now())
-
+  id            Int         @id @default(autoincrement())
+  contenu       String
+  dateEnvoi     DateTime    @default(now())
+  estLue        Boolean     @default(false)
+  utilisateurId Int         @db.UnsignedInt
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now())
 }
 
 model HistoriquePrestataire {
@@ -228,4 +229,22 @@ model FavorisPrestataire {
   @@unique([clientId, prestataireId])
     createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
+}
+model ContactMessage {
+  id         Int      @id @default(autoincrement())
+  nom        String
+  email      String
+  telephone  String?
+  sujet      String?
+  message    String
+  createdAt  DateTime @default(now())
+}
+model HistoriqueApp {
+  id           Int          @id @default(autoincrement())
+  utilisateurId Int         @db.UnsignedInt
+  utilisateur  Utilisateur  @relation(fields: [utilisateurId], references: [id])
+  dateVisite   DateTime     @default(now())
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt()
 }

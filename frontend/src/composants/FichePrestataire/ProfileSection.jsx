@@ -64,16 +64,20 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
 
                     <div className="contact-details">
                         {[
-                            { icon: 'phone', text: `+216  ${intervenant?.prestataire?.numTel}` },
+                            {
+                                icon: 'phone',
+                                text: intervenant?.prestataire?.numTel
+                                    ? `+216 ${intervenant.prestataire.numTel}`
+                                    : 'Numéro non renseigné'
+                            },
                             { icon: 'envelope', text: `${intervenant?.email}` },
-
                             ...(intervenant?.prestataire?.entreprise?.siteWeb
                                 ? [{ icon: 'globe', text: intervenant.prestataire.entreprise.siteWeb }]
                                 : []),
                             {
                                 icon: 'map-marker-alt',
-                                text: `${intervenant?.prestataire?.adresse}`,
-                                link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Avenue Habib Bourguiba, Tunis, Tunisie")}`
+                                text: intervenant?.prestataire?.adresse || 'Adresse inconnue',
+                                link: `/MapAdresse?adresseP=${encodeURIComponent(intervenant?.prestataire?.adresse)}`
                             },
                             {
                                 icon: 'money-bill-wave',
@@ -89,6 +93,7 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
                                         href={item.link}
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="contact-link"
                                     >
                                         {item.text}
                                     </a>
@@ -98,8 +103,41 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
                             </div>
                         ))}
                     </div>
+
                 </div>
             </div>
+            <style>{`.contact-details {
+    margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: #333;
+}
+
+.contact-item i {
+    margin-right: 12px;
+    font-size: 1.2rem;
+    color: #ff6b00; /* Orange vif */
+    min-width: 20px;
+}
+
+.contact-link {
+    text-decoration: none;
+    color: #333;
+    transition: color 0.3s ease;
+}
+
+.contact-link:hover {
+    color: #ff6b00;
+    text-decoration: underline;
+}
+`}</style>
         </div>
     );
 };

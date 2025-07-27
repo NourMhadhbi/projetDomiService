@@ -4,12 +4,13 @@ const prisma = new PrismaClient()
 const router = express.Router();
 //Ajout Service
 router.post("/ajoutS", async (req, res) => {
-    const { nom, description } = req.body;
+    const { nom, description, image } = req.body;
     try {
         const service = await prisma.service.create({
             data: {
                 nom: nom,
                 description: description ?? null,
+                image: image ?? null,
 
             },
         });
@@ -22,13 +23,14 @@ router.post("/ajoutS", async (req, res) => {
 });
 //Modifier Service
 router.put("/modifierS/:id", async (req, res) => {
-    const { nom, description } = req.body;
+    const { nom, description, image } = req.body;
     const id = req.params.id;
     try {
         const service = await prisma.service.update({
             data: {
                 nom: nom,
                 description: description ?? null,
+                image: image ?? null,
             },
             where: { id: Number(id) },
         });
@@ -116,16 +118,18 @@ router.get("/top", async (req, res) => {
             select: {
                 id: true,
                 nom: true,
+                description: true,
+                image: true,
                 _count: {
                     select: {
-                        prestataires: true, // nombre de prestataires (optionnel)
+                        prestataires: true,
                     }
                 },
                 prestataires: {
                     select: {
                         _count: {
                             select: {
-                                rendezVous: true // nombre de rdv par prestataire
+                                rendezVous: true
                             }
                         }
                     }
@@ -143,6 +147,8 @@ router.get("/top", async (req, res) => {
             return {
                 id: service.id,
                 nom: service.nom,
+                description: service.description,
+                image: service.image,
                 totalRDV
             };
         });
@@ -199,7 +205,25 @@ router.put("/nomService", async (req, res) => {
     }
 });
 
+//afficher les prestataires de service id
 
-
+router.get("/service/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const prestataires = await prisma.prestataire.findMany({
+            where: {
+                serviceId: Number(id),
+            },
+            include: {
+                utilisateur: true,
+                entreprise: true
+            }
+        });
+        res.json(prestataires);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des prestataires par service :", error);
+        res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;

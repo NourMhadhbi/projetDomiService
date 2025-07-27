@@ -7,7 +7,7 @@ import {
     getAvisParPrestataire,
 
     getAvisParId,
-    getAvisParClient
+    getAvisParClient,getStatistiquesApp
 } from '../services/Avissevice';
 
 
@@ -16,6 +16,11 @@ import {
 export const getStatistiquesThunk = createAsyncThunk(
     'avis/getStatistiques',
     async (id) => await getStatistiques(id)
+);
+//  Récupérer les statistiques
+export const getStatistiquesAppThunk = createAsyncThunk(
+    'avis/getStatistiquesApp',
+    async () => await getStatistiquesApp()
 );
 
 // Ajouter un avis
@@ -68,7 +73,7 @@ const avisSlice = createSlice({
     initialState: {
         statistiques: {},
         listeAvis: [],
-        listeAvisP: [],
+
         avisActuel: null,
         loadingStatistiques: false,
         loadingAvis: false,
@@ -88,6 +93,18 @@ const avisSlice = createSlice({
                 state.statistiques = action.payload;
             })
             .addCase(getStatistiquesThunk.rejected, (state, action) => {
+                state.loadingStatistiques = false;
+                state.errorStatistiques = action.error.message;
+            })
+            .addCase(getStatistiquesAppThunk.pending, (state) => {
+                state.loadingStatistiques = true;
+                state.errorStatistiques = null;
+            })
+            .addCase(getStatistiquesAppThunk.fulfilled, (state, action) => {
+                state.loadingStatistiques = false;
+                state.statistiques = action.payload;
+            })
+            .addCase(getStatistiquesAppThunk.rejected, (state, action) => {
                 state.loadingStatistiques = false;
                 state.errorStatistiques = action.error.message;
             })

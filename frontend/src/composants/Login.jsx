@@ -43,13 +43,12 @@ const Login = () => {
         }
     };
     React.useEffect(() => {
-
-        if (isLoggedIn && user?.admin && user?.user?.role === "ADMIN") {
-            navigate("/admin");
+        if (isLoggedIn && user?.utilisateur?.role === "ADMIN") {
+            navigate("/admin/dashboard");
         } else if (isLoggedIn) {
-            navigate("/");
+            navigate("/accueil");
         }
-    }, [navigate, isLoggedIn])
+    }, [navigate, isLoggedIn, user]);
 
 
 

@@ -23,7 +23,7 @@ export const login = createAsyncThunk(
         }
     });
 export const logout = createAsyncThunk("auth/logout", () => {
-    localStorage.removeItem("CC_Token");
+    localStorage.clear();
 });
 
 // export const fetchUserFromToken = createAsyncThunk(
@@ -45,7 +45,7 @@ export const logout = createAsyncThunk("auth/logout", () => {
 export const authSlice = createSlice({
     name: "auth",
     initialState: {
-        user: JSON.parse(localStorage.getItem("CC_User")) || null,
+        user: JSON.parse(localStorage.getItem("CC_User") || "null"),
         isLoading: false,
         isSuccess: false,
         isError: false,
@@ -91,9 +91,23 @@ export const authSlice = createSlice({
                 state.isLoading = false;
                 state.isSuccess = true;
                 state.isLoggedIn = true;
-                state.user = action.payload.user;
-                localStorage.setItem("CC_User", JSON.stringify(action.payload.user));
-                localStorage.setItem("CC_Token", action.payload.accessToken);
+
+                let user = null;
+
+                if (action.payload.user) {
+                    user = action.payload.user;
+                } else if (action.payload.utilisateur?.utilisateur) {
+                    user = action.payload.utilisateur.utilisateur;
+                }
+
+                if (user) {
+                    state.user = user;
+                    localStorage.setItem("CC_User", JSON.stringify(user));
+                } else {
+                    state.user = null;
+                }
+
+                localStorage.setItem("CC_Token", action.payload.token);
             })
             .addCase(login.rejected, (state, action) => {
                 state.isLoggedIn = false;
@@ -103,7 +117,7 @@ export const authSlice = createSlice({
             .addCase(logout.fulfilled, (state, action) => {
                 state.isLoggedIn = false;
                 state.user = null;
-            })
+            });
         // .addCase(fetchUserFromToken.pending, (state) => {
         //     state.isLoading = true;
         //     state.isError = false;

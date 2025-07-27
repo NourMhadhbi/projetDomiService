@@ -11,9 +11,19 @@ import {
 } from '@mui/material';
 import { BsList } from 'react-icons/bs';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+
 const SideMenu = ({ color = '#1a3a6c' }) => {
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
+
+    const user = useSelector((state) => state.auth.user);
+
+    // Récupération du rôle
+    const role =
+        user?.utilisateur?.role === 'ADMIN'
+            ? 'ADMIN'
+            : user?.role || null;
 
     const toggleDrawer = (state) => () => {
         setOpen(state);
@@ -25,7 +35,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                 width: 280,
                 height: '100%',
                 paddingTop: 2,
-                color: 'white', // texte blanc
+                color: 'white',
                 background: `linear-gradient(rgba(2, 29, 72, 0.9)), url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=2075') center / cover no-repeat`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
@@ -40,37 +50,59 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
             </Typography>
             <Divider sx={{ borderColor: 'rgba(243, 234, 234, 0.93)' }} />
             <List>
-                <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
-                    <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.9rem' }} />
-                </ListItem>
+                {role === 'ADMIN' ? (
+                    <>
+                        <ListItem button component={NavLink} to="/admin/utilisateurs" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Gérer les utilisateurs" sx={{ color: 'white' }} />
+                        </ListItem>
+                        <ListItem button component={NavLink} to="/admin/services" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Gérer les services" sx={{ color: 'white' }} />
+                        </ListItem>
+                        <ListItem button component={NavLink} to="/admin/rendez-vous" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Voir les rendez-vous" sx={{ color: 'white' }} />
+                        </ListItem>
 
-                <ListItem
-                    button
-                    onClick={() => {
-                        window.open('/historique', '_blank');
-                        toggleDrawer(false)(); // appelle la fonction ici
-                    }}
-                >
-                    <ListItemText primary="Historique" sx={{ color: 'white', cursor: 'pointer' }} />
-                </ListItem>
+                        <ListItem button component={NavLink} to="/admin/avis" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Voir les avis" sx={{ color: 'white' }} />
+                        </ListItem>
+                        <ListItem button component={NavLink} to="/admin/signalements" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Voir les signalements" sx={{ color: 'white' }} />
+                        </ListItem>
+                    </>
+                ) : (
+                    <>
+                        <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />
+                        </ListItem>
 
-                <ListItem button component={NavLink} to="/carnet-de-contacts" onClick={toggleDrawer(false)}>
-                    <ListItemText primary="Carnet de contacts (Intervenants favoris)" sx={{ color: 'white' }} />
-                </ListItem>
+                        <ListItem
+                            button
+                            onClick={() => {
+                                window.open('/historique', '_blank');
+                                toggleDrawer(false)();
+                            }}
+                        >
+                            <ListItemText primary="Historique" sx={{ color: 'white', cursor: 'pointer' }} />
+                        </ListItem>
 
-                <ListItem button component={NavLink} to="/intervenants-bloques" onClick={toggleDrawer(false)}>
-                    <ListItemText primary="Intervenants bloqués(non favoris)" sx={{ color: 'white' }} />
-                </ListItem>
+                        <ListItem button component={NavLink} to="/carnet-de-contacts" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Carnet de contacts (Favoris)" sx={{ color: 'white' }} />
+                        </ListItem>
 
-                <ListItem button component={NavLink} to="/intervenants-signales" onClick={toggleDrawer(false)}>
-                    <ListItemText primary="Intervenants signalés" sx={{ color: 'white' }} />
-                </ListItem>
+                        <ListItem button component={NavLink} to="/intervenants-bloques" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Intervenants bloqués" sx={{ color: 'white' }} />
+                        </ListItem>
 
-                <ListItem button component={NavLink} to="/mes-avis" onClick={toggleDrawer(false)}>
-                    <ListItemText primary="Mes avis" sx={{ color: 'white' }} />
-                </ListItem>
+                        <ListItem button component={NavLink} to="/intervenants-signales" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Intervenants signalés" sx={{ color: 'white' }} />
+                        </ListItem>
+
+                        <ListItem button component={NavLink} to="/mes-avis" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Mes avis" sx={{ color: 'white' }} />
+                        </ListItem>
+                    </>
+                )}
             </List>
-
         </Box>
     );
 
@@ -94,11 +126,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                 <BsList size={28} />
                 Menu
             </IconButton>
-            <Drawer
-                anchor="right"
-                open={open}
-                onClose={toggleDrawer(false)}
-            >
+            <Drawer anchor="right" open={open} onClose={toggleDrawer(false)}>
                 {list()}
             </Drawer>
         </>

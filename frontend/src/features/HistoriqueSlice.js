@@ -3,6 +3,7 @@ import {
     ajoutHistorique,
     supprimeHistorique,
     getHistorique,
+    getPopulaireP,
 } from '../services/HistoriqueService';
 
 // Création
@@ -22,11 +23,24 @@ export const deleteHistorique = createAsyncThunk(
         return await supprimeHistorique({ clientId, prestataireId, dateVisite });
     }
 );
+// export const deleteHistorique = createAsyncThunk(
+//   'historique/deleteHistorique',
+//   async (id) => {
+//     await supprimeHistorique({ id });
+//     return id; // renvoie juste l'id pour mise à jour
+//   }
+// );
 // Récupération (dernière visite)
 export const fetchDernierHistorique = createAsyncThunk(
     'historique/fetchDernierHistorique',
     async ({ clientId }) => {
         return await getHistorique(clientId);
+    }
+);
+export const fetchPopulaireP = createAsyncThunk(
+    'historique/fetchPopulaireP',
+    async () => {
+        return await getPopulaireP();
     }
 );
 const historiqueSlice = createSlice({
@@ -70,6 +84,17 @@ const historiqueSlice = createSlice({
                 state.data = action.payload;
             })
             .addCase(fetchDernierHistorique.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            })
+            .addCase(fetchPopulaireP.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(fetchPopulaireP.fulfilled, (state, action) => {
+                state.loading = false;
+                state.data = action.payload;
+            })
+            .addCase(fetchPopulaireP.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
             });

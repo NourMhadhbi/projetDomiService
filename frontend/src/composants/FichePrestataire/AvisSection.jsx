@@ -63,7 +63,7 @@ const AvisSection = ({ avisP, userC, intervenant }) => {
     Affiche 1 slide visible, 1 slide défilé, flèches actives.*/
     const settings = {
         dots: true,
-        infinite: true,
+         infinite: avisP.length > 2,
         speed: 500,
         slidesToShow: 2,
         slidesToScroll: 1,

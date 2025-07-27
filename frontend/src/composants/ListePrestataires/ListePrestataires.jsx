@@ -1,0 +1,400 @@
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPrestatairesRecherche, fetchPrestatairesService } from '../../features/PrestatairesSlice';
+import { fetchPopulaireP } from '../../features/HistoriqueSlice';
+import { FaShareAlt } from 'react-icons/fa';
+import Header from '../Header/Header';
+import Footer from '../Footer/Footer';
+import Pagination from '@mui/material/Pagination';
+import Stack from '@mui/material/Stack';
+import { fetchPrestatairesProches } from '../../features/UtilisateurSlice';
+import {
+    Box,
+    MenuItem,
+    Select,
+    InputLabel,
+    FormControl,
+    Typography,
+    Chip
+} from '@mui/material';
+const PrestataireCard = ({ prestataire, search, service, proche, consultes }) => {
+    let utilisateur = null;
+    let nomAffiche = '';
+    let contact = '';
+    let adresse = '';
+    let specialite = '';
+    let tarifDeplacement = 'Tarif inconnue';
+    let image = "";
+    let email = "";
+    let distance = ""
+    if (search) {
+        utilisateur = prestataire;
+
+        nomAffiche = utilisateur.prestataire.entreprise
+            ? utilisateur.prestataire.entreprise.nomEntreprise
+            : `${utilisateur?.prenom || ''} ${utilisateur?.nom || ''}`;
+
+        // contact = utilisateur?.email || utilisateur.prestataire?.numTel || 'Contact non disponible';
+
+        email = utilisateur?.email?.trim().toLowerCase();
+        if (email && email !== "null") {
+            contact = email;
+
+        } else { contact = prestataire?.numTel || "Contact non disponible"; }
+        adresse = utilisateur.prestataire?.ville && utilisateur.prestataire?.adresse
+            ? `${utilisateur.prestataire.ville}, ${utilisateur.prestataire.adresse}`
+            : utilisateur.prestataire?.ville || 'Adresse inconnue';
+
+        specialite = utilisateur.prestataire?.Spécialite || 'Spécialité inconnue';
+        tarifDeplacement = utilisateur.prestataire?.tarifDeplacement || 'T';
+        image = utilisateur?.image;
+    }
+    else if (service || proche || consultes) {
+
+
+        nomAffiche = prestataire.entreprise
+            ? prestataire.entreprise.nomEntreprise
+            : `${prestataire.utilisateur?.prenom || ''} ${prestataire.utilisateur?.nom || ''}`;
+        email = prestataire?.utilisateur?.email?.trim().toLowerCase();
+        if (email && email !== "null") {
+            contact = email;
+        } else { contact = prestataire?.numTel || "Contact non disponible"; }
+
+        console.log("numtel", prestataire.utilisateur?.email)
+        adresse = prestataire?.ville && prestataire?.adresse
+            ? `${prestataire.ville}, ${prestataire.adresse}`
+            : prestataire?.ville || 'Adresse inconnue';
+
+        specialite = prestataire?.Spécialite || 'Spécialité inconnue';
+        tarifDeplacement = prestataire?.tarifDeplacement || '';
+        image = prestataire.utilisateur.image;
+
+    }
+
+
+    return (
+
+        <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden" >
+            <img
+                src={image || "/default-user.png"}
+                className="card-img-top"
+                alt="Photo"
+                style={{
+                    height: "240px",
+                    objectFit: "cover"
+                }}
+            />
+            <div className="d-flex" style={{ backgroundColor: "#fff" }}>
+                <div
+                    style={{
+                        width: "6px",
+                        backgroundColor: "#f15a24",
+                        borderTopRightRadius: '4px'
+                    }}
+                ></div>
+                <div className="p-3">
+                    <div className="fw-semibold text-dark mb-2" style={{ fontSize: '16px', textTransform: 'capitalize' }}>
+                        {nomAffiche}
+                    </div>
+
+                    <div className="mb-1" style={{ fontSize: '13px', color: '#f15a24', fontWeight: '500' }}>
+                        {prestataire.specialite || 'Spécialité inconnue'}
+                    </div>
+
+                    <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+                        <i className="fas fa-envelope me-2" style={{ color: '#888' }}></i>
+                        {contact}
+                    </div>
+
+                    <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+                        <i className="fas fa-map-marker-alt me-2" style={{ color: '#888' }}></i>
+                        {adresse}
+                    </div>
+
+                    <div className="d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+                        <i className="fas fa-euro-sign me-2" style={{ color: '#888' }}></i>
+                        <span>Tarif de déplacement : <strong>{tarifDeplacement}DT</strong></span>
+                    </div>
+                    {typeof prestataire.distance === "number" && (
+                        <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+                            <i className="fas fa-route me-2" style={{ color: '#888' }}></i>
+                            <span>Distance : <strong>{prestataire.distance.toFixed(1)} km</strong></span>
+                        </div>
+                    )}
+                </div>
+
+            </div>
+        </div>
+
+    );
+};
+
+
+const ListePrestataires = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const [currentPage, setCurrentPage] = useState(1);
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
+    const itemsPerPage = 8;
+    const [selectedType, setSelectedType] = useState("");
+    const [sortBy, setSortBy] = useState("");
+    const [selectedVille, setSelectedVille] = useState("");
+    const [villesDisponibles, setVillesDisponibles] = useState([]);
+    const search = searchParams.get('search');
+    const service = searchParams.get('service');
+    const proche = searchParams.get('proche');
+    const consultes = searchParams.get('consultes');
+
+    const prestatairesProches = useSelector((state) => state.utilisateur.intervenants);
+    const { data } = useSelector(state => state.historique || {});
+
+    const {
+
+        prestataires: prestatairesFiltres,
+        loading: loading,
+        erreurRecherche: error
+    } = useSelector((state) => state.prestataire);
+    let prestataires = [];
+    if (search || service) {
+        prestataires = Array.isArray(prestatairesFiltres) ? prestatairesFiltres : [];
+    } else if (proche) {
+        prestataires = Array.isArray(prestatairesProches) ? prestatairesProches : [];
+    } else if (consultes) {
+        prestataires = Array.isArray(data) ? data : [];
+    }
+    useEffect(() => {
+        if (search) {
+            dispatch(fetchPrestatairesRecherche(search));
+        } else if (service) {
+            dispatch(fetchPrestatairesService(service));
+        } else if (proche) {
+            dispatch(fetchPrestatairesProches(user?.utilisateurIdCl));
+        } else if (consultes) {
+            dispatch(fetchPopulaireP());
+        }
+    }, [dispatch, search, service, proche, consultes, user?.utilisateurIdCl]);
+    useEffect(() => {
+        const uniqueVilles = Array.from(
+            new Set(prestataires.map(p =>
+                (p.prestataire?.ville ?? p.ville ?? "").trim()
+            ).filter(Boolean))
+        );
+        setVillesDisponibles(uniqueVilles);
+    }, [prestataires]);
+    function getLatLonFromPrestataire(p, isSearch) {
+        if (isSearch) {
+            return {
+                lat: p.prestataire?.latitude ?? null,
+                lon: p.prestataire?.longitude ?? null
+            };
+        } else {
+            return {
+                lat: p.latitude ?? null,
+                lon: p.longitude ?? null
+            };
+        }
+    }
+    function toRadians(degrees) {
+        return degrees * Math.PI / 180;
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+
+        const R = 6371; // Rayon de la Terre en km
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+
+    // Appliquer filtre par type
+    let filtres = [...prestataires];
+
+    if (selectedType) {
+        filtres = filtres.filter(p =>
+            (search ? p.prestataire?.utilisateur?.role : p.utilisateur?.role) === selectedType
+        );
+    }
+
+    if (selectedVille) {
+        filtres = filtres.filter(p => {
+            const ville = (p.prestataire?.ville ?? p.ville ?? "").toLowerCase();
+            return ville === selectedVille.toLowerCase();
+        });
+    }
+
+    //  tri
+    if (sortBy === "tarifAsc") {
+        filtres.sort((a, b) =>
+            (a.prestataire?.tarifDeplacement ?? a.tarifDeplacement ?? Infinity) -
+            (b.prestataire?.tarifDeplacement ?? b.tarifDeplacement ?? Infinity)
+        );
+    } else if (sortBy === "tarifDesc") {
+        filtres.sort((a, b) =>
+            (b.prestataire?.tarifDeplacement ?? b.tarifDeplacement ?? 0) -
+            (a.prestataire?.tarifDeplacement ?? a.tarifDeplacement ?? 0)
+        );
+    } else if (sortBy === "ville") {
+        filtres.sort((a, b) => {
+            const villeA = (a.prestataire?.ville ?? a.ville ?? "").toLowerCase();
+            const villeB = (b.prestataire?.ville ?? b.ville ?? "").toLowerCase();
+            return villeA.localeCompare(villeB);
+        });
+    } else if (sortBy === "proximite" && user) {
+        const lat1 = user.latitude;
+        const lon1 = user.longitude;
+
+        const isSearch = !!search;
+
+        filtres = filtres.map(p => {
+            const { lat, lon } = getLatLonFromPrestataire(p, isSearch);
+            const distance = calculateDistance(lat1, lon1, lat, lon);
+            return { ...p, distance };
+        });
+
+        filtres.sort((a, b) => a.distance - b.distance);
+    }
+    console.log("clientt", user)
+    //pagination
+    const totalPages = Math.ceil(filtres.length / itemsPerPage);
+    const indexOfLast = currentPage * itemsPerPage;
+    const indexOfFirst = indexOfLast - itemsPerPage;
+    const currentFiltres = filtres.slice(indexOfFirst, indexOfLast);
+
+    const handlePageClick = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    return (
+        <>
+            <Header isClientConnected={isLoggedIn} />
+            <div className="container mt-5" >
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <span className="pres-label">
+                        <i className="fas fa-tools" style={{ color: "#ff6b00" }}></i> Nos Prestataires & Entreprises
+                    </span>
+                </div>
+
+                {loading && <p className="text-center">Chargement...</p>}
+                {error && <p className="text-danger text-center">{error}</p>}
+                <Box
+                    className="mb-4"
+                    display="flex"
+                    flexWrap="wrap"
+                    alignItems="center"
+                    gap={2}
+                >
+                    {/* Type */}
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel id="type-select-label">Type</InputLabel>
+                        <Select
+                            labelId="type-select-label"
+                            value={selectedType}
+                            label="Type"
+                            onChange={(e) => setSelectedType(e.target.value)}
+                        >
+                            <MenuItem value="">Tous</MenuItem>
+                            <MenuItem value="ENTREPRISE">Entreprises</MenuItem>
+                            <MenuItem value="PRESTATAIRE">Particuliers</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    {/* Trier */}
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <InputLabel id="sort-select-label">Trier par</InputLabel>
+                        <Select
+                            labelId="sort-select-label"
+                            value={sortBy}
+                            label="Trier par"
+                            onChange={(e) => setSortBy(e.target.value)}
+                        >
+                            <MenuItem value="">Aucun</MenuItem>
+                            <MenuItem value="tarifAsc">Tarif croissant</MenuItem>
+                            <MenuItem value="tarifDesc">Tarif décroissant</MenuItem>
+                            {user?.utilisateur?.role === 'CLIENT' && (
+                                <MenuItem value="proximite">Plus proche</MenuItem>
+                            )}
+                            <MenuItem value="ville">Ville</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    {/* Ville (visible seulement si "Trier par" = ville) */}
+                    {sortBy === "ville" && (
+                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                            <InputLabel id="ville-select-label">Ville</InputLabel>
+                            <Select
+                                labelId="ville-select-label"
+                                value={selectedVille}
+                                label="Ville"
+                                onChange={(e) => setSelectedVille(e.target.value)}
+                            >
+                                <MenuItem value="">Toutes</MenuItem>
+                                {villesDisponibles.map((ville) => (
+                                    <MenuItem key={ville} value={ville}>
+                                        {ville}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+                </Box>
+
+
+                <div className="row g-4" >
+                    {currentFiltres.length > 0 ? (
+                        currentFiltres.map((p) => (
+                            <div className="col-md-6 col-lg-3 mb-4" key={p.utilisateurIdPre}   onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
+                                <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} />
+                            </div>
+                        ))
+                    ) : (
+                        !loading && <p className="text-center">Aucun prestataire trouvé.</p>
+                    )}
+                </div>
+
+                {totalPages > 1 && (
+                    <div className="d-flex justify-content-center mt-4">
+                        <Stack spacing={2}>
+                            <Pagination
+                                count={totalPages}
+                                page={currentPage}
+                                onChange={(_, value) => handlePageClick(value)}
+                                variant="outlined"
+                                shape="rounded"
+                                color="primary"
+                                siblingCount={1}
+                                boundaryCount={1}
+                            />
+                        </Stack>
+                    </div>
+                )}
+            </div>
+            <style>{` 
+               body {
+        background-color: #fff !important;
+    }
+             .pres-label {
+          font-size: 35px;
+          font-weight: 700;
+          color: #1a3a6c;
+          font-style: italic;
+          text-align: center;
+
+        }`}</style>
+            <Footer />
+        </>
+    );
+};
+
+export default ListePrestataires;

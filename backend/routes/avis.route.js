@@ -127,7 +127,7 @@ router.put("/Modifieravis/:id", async (req, res) => {
             },
             include: {
                 client: { include: { utilisateur: true } },
-                prestataire: { include: { utilisateur: true, entreprise: { include: { utilisateur: true } } } },
+                prestataire: { include: { utilisateur: true, entreprise: true } },
             },
         });
 
@@ -226,12 +226,11 @@ router.get("/client/:clientId", async (req, res) => {
         const avisClient = await prisma.avis.findMany({
             where: {
                 clientId,
-                commentaire: { not: null },
+                // commentaire: { not: null },
                 etatArchive: false,
             },
             include: {
-                prestataire: { include: { utilisateur: true } },
-                entreprise: { include: { utilisateur: true } },
+                prestataire: { include: { utilisateur: true, entreprise: true } },
             },
         });
 
@@ -320,5 +319,86 @@ router.get("/statistiques/:id", async (req, res) => {
     }
 });
 
+//statistique application
+
+
+
+router.get("/", async (req, res) => {
+    try {
+        //  Récupérer les données nécessaires
+        const [rendezVous, avis, favoris, prestataires] = await Promise.all([
+            prisma.rendezVous.findMany(),
+            prisma.avis.findMany(),
+            prisma.favorisPrestataire.findMany(),
+            prisma.prestataire.findMany(),
+        ]);
+
+        // Successful Projects (terminé + aime ou favoris)
+        const successfulProjects = rendezVous.filter(rdv => {
+            if (rdv.statut !== "TERMINE") return false;
+
+            const avisMatch = avis.find(a =>
+                a.clientId === rdv.clientId &&
+                a.prestataireId === rdv.prestataireId &&
+                a.aime === true
+            );
+
+            const favoriMatch = favoris.find(f =>
+                f.clientId === rdv.clientId &&
+                f.prestataireId === rdv.prestataireId &&
+                f.statut === "FAVORI"
+            );
+
+            return avisMatch || favoriMatch;
+        }).length;
+
+
+        // 3Satisfied Customers
+        const satisfiedClientIds = avis.filter(a => {
+            const favori = favoris.find(f =>
+                f.prestataireId === a.prestataireId &&
+                f.clientId === a.clientId &&
+                f.statut === "FAVORI"
+            );
+            return a.aime === true || favori;
+        }).map(a => a.clientId);
+        const satisfiedCustomerCount = [...new Set(satisfiedClientIds)].length;
+
+        //  Expert Plumbers (moyenne >= 8)
+        const expertPrestataires = prestataires.filter(p => {
+            const avisForP = avis.filter(a => a.prestataireId === p.utilisateurIdPre);
+            if (avisForP.length === 0) return false;
+
+            const avg = avisForP.reduce((acc, a) => acc + (a.note || 0), 0) / avisForP.length;
+            return avg >= 8;
+        }).length;
+
+        //  Quality Products (% prestataires avec moyenne >= 7)
+        const wellRated = prestataires.filter(p => {
+            const avisForP = avis.filter(a => a.prestataireId === p.utilisateurIdPre);
+            if (avisForP.length === 0) return false;
+
+            const avg = avisForP.reduce((acc, a) => acc + (a.note || 0), 0) / avisForP.length;
+            return avg >= 7;
+        });
+        const qualityPercent = prestataires.length > 0
+            ? Math.round((wellRated.length / prestataires.length) * 100)
+            : 0;
+
+        //  Réponse JSON
+        return res.json({
+            successfulProjects,
+            satisfiedCustomerCount,
+            expertPrestataires,
+            qualityPercent,
+        });
+
+    } catch (error) {
+        console.error("Erreur statistiques:", error);
+        return res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+module.exports = router;
 
 module.exports = router;

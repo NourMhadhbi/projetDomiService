@@ -147,8 +147,9 @@ action.meta.arg contient l’argument passé à ce thunk ({ id: 5 }).*/
             })
             .addCase(confirmRendezVous.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.listeRendezVous.findIndex(r => r.id === action.payload.id);
-                if (index !== -1) state.listeRendezVous[index] = action.payload;
+                state.listeRendezVous = state.listeRendezVous.map(rdv =>
+                    rdv.id === action.payload.id ? action.payload : rdv
+                );
             })
             .addCase(confirmRendezVous.rejected, (state, action) => {
                 state.loading = false;
@@ -162,8 +163,9 @@ action.meta.arg contient l’argument passé à ce thunk ({ id: 5 }).*/
             })
             .addCase(cancelRendezVous.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.listeRendezVous.findIndex(r => r.id === action.payload.id);
-                if (index !== -1) state.listeRendezVous[index] = action.payload;
+                state.listeRendezVous = state.listeRendezVous.map(rdv =>
+                    rdv.id === action.payload.id ? action.payload : rdv
+                );
             })
             .addCase(cancelRendezVous.rejected, (state, action) => {
                 state.loading = false;
@@ -177,8 +179,9 @@ action.meta.arg contient l’argument passé à ce thunk ({ id: 5 }).*/
             })
             .addCase(finishRendezVous.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.listeRendezVous.findIndex(r => r.id === action.payload.id);
-                if (index !== -1) state.listeRendezVous[index] = action.payload;
+                state.listeRendezVous = state.listeRendezVous.map(rdv =>
+                    rdv.id === action.payload.id ? action.payload : rdv
+                );
             })
             .addCase(finishRendezVous.rejected, (state, action) => {
                 state.loading = false;

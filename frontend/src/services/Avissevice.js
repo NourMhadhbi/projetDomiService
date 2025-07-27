@@ -7,6 +7,11 @@ export const getStatistiques = async (id) => {
     const response = await Api.get(`${AVIS_API}/statistiques/${id}`);
     return response.data;
 };
+//statistiques app
+export const getStatistiquesApp = async (id) => {
+    const response = await Api.get(`${AVIS_API}`);
+    return response.data;
+};
 
 // Ajouter un avis pour un prestataire ou entreprise
 export const ajoutAvis = async (avis) => {

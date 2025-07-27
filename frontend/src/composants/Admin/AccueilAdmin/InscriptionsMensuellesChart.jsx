@@ -1,0 +1,67 @@
+import React from "react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
+
+const data = [
+  { month: "Jan", clients: 120, prestataires: 80 },
+  { month: "Feb", clients: 150, prestataires: 100 },
+  { month: "Mar", clients: 130, prestataires: 90 },
+  { month: "Apr", clients: 170, prestataires: 110 },
+  { month: "May", clients: 200, prestataires: 140 },
+  { month: "Jun", clients: 220, prestataires: 160 },
+  { month: "Jul", clients: 190, prestataires: 120 },
+];
+
+const InscriptionsMensuellesChart = () => {
+  return (
+   <div style={{ width: "100%", height: 400, margin: "0 auto" }}>
+      <ResponsiveContainer>
+        <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorClients" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#7e57c2" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#7e57c2" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorPrestataires" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ff9800" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#ff9800" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+
+          <XAxis dataKey="month" />
+          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" />
+          <Tooltip />
+          <Legend />
+
+          <Area
+            type="monotone"
+            dataKey="clients"
+            stackId="1"
+            stroke="#7e57c2"
+            fill="url(#colorClients)"
+            name="Clients"
+          />
+          <Area
+            type="monotone"
+            dataKey="prestataires"
+            stackId="1"
+            stroke="#ff9800"
+            fill="url(#colorPrestataires)"
+            name="Prestataires"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+export default InscriptionsMensuellesChart;

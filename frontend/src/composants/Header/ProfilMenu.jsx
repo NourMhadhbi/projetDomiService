@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout, reset } from '../../features/AuthSlice';
+import { useEffect } from 'react';
 import {
     Avatar,
     IconButton,
@@ -43,7 +45,7 @@ const ProfilMenu = ({ user }) => {
                 <IconButton onClick={handleClick} sx={{ p: 0 }}>
                     <Avatar
                         alt={'Utilisateur'}
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=774&q=80"
+                        src={user.utilisateur.image}
                         sx={{ width: 40, height: 40 }}
                     />
                 </IconButton>
@@ -65,11 +67,22 @@ const ProfilMenu = ({ user }) => {
                         <ListItemText primary="Profil" sx={{ py: 0.25, minHeight: '1px' }} />
                     </ListItem>
                     <Divider component="li" />
-                    <ListItem button onClick={() => {
-                        // dispatch(logout()); // à activer si logout est dispo
-                        navigate('/');
-                    }}>
-                        <ListItemText primary="Déconnexion" sx={{ py: 0.25, minHeight: '1px' }} />
+                    <ListItem
+                        button
+                        onClick={() => {
+                            dispatch(logout());
+                            dispatch(clearNotifications());
+                            dispatch(reset());
+                            navigate('/login');
+                        }}
+                        sx={{
+                            '&:hover': { backgroundColor: '#f0f0f0' }
+                        }}
+                    >
+                        <ListItemText
+                            primary="Déconnexion"
+                            sx={{ py: 0.25, minHeight: '1px', cursor: "pointer" }}
+                        />
                     </ListItem>
                 </List>
             </Menu>
