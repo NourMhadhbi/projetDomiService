@@ -7,6 +7,8 @@ const utilisateurRouter = require("./routes/utilisateur.route")
 app.use('/api/utilisateur', utilisateurRouter);
 const prestataireRouter = require("./routes/prestataire.route")
 app.use('/api/utilisateur/prestataire', prestataireRouter);
+const clientRouter = require("./routes/client.route")
+app.use('/api/utilisateur/client', clientRouter);
 const serviceRouter = require("./routes/service.route")
 app.use('/api/service', serviceRouter);
 const rendezVousRouter = require("./routes/rendezVous.route")
@@ -23,5 +25,7 @@ const historiqueApp = require("./routes/historiqueApp.route")
 app.use('/api/historiqueApp', historiqueApp);
 const favorisPrestataire = require("./routes/favorisPrestataire.route")
 app.use('/api/favorisPres', favorisPrestataire);
+const signalePrestataire = require("./routes/signalement.route")
+app.use('/api/signalement', signalePrestataire);
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`))

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getIntervenant, getIntervenantbyId, getPrestatairesProches } from '../services/Utilisateurservice';
+import { getIntervenant, getIntervenantbyId, getPrestatairesProches, getUtilisateurs, activerCompte, desactiverCompte } from '../services/Utilisateurservice';
 export const fetchIntervenant = createAsyncThunk(
     'utilisateur/fetchIntervenant',
     async () => await getIntervenant()
@@ -22,19 +22,60 @@ export const fetchPrestatairesProches = createAsyncThunk(
         }
     }
 );
+export const fetchUtilisateursParRole = createAsyncThunk(
+    'utilisateur/fetchUtilisateursParRole',
+    async (role = 'TOUS', { rejectWithValue }) => {
+        try {
+            const data = await getUtilisateurs(role);
+            return { role, data };
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Erreur API');
+        }
+    }
+);
+export const activerCompteThunk = createAsyncThunk(
+    'utilisateur/activerCompte',
+    async (id, thunkAPI) => {
+        try {
+            return await activerCompte(id);
+        } catch (err) {
+            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message);
+        }
+    }
+);
 
+export const desactiverCompteThunk = createAsyncThunk(
+    'utilisateur/desactiverCompte',
+    async ({ id, raison }, thunkAPI) => {
+        try {
+            return await desactiverCompte(id, raison);
+        } catch (err) {
+            return thunkAPI.rejectWithValue(err.response?.data?.message || err.message);
+        }
+    }
+);
 const intervenantSlice = createSlice({
     name: 'utilisateur',
     initialState: {
         intervenants: [],
         intervenantP: [],
         intervenantsFetched: false,
+        utilisateursParRole: [],
+        roleActif: 'TOUS',
         intervenant: null,
         loading: false,
+        success: null,
+        utilisateur: null,
         error: null
     },
-  
-    reducers: {},
+
+    reducers: {
+        clearUtilisateurState: (state) => {
+            state.success = null;
+            state.error = null;
+            state.utilisateur = null;
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchIntervenant.pending, (state) => {
@@ -77,11 +118,56 @@ const intervenantSlice = createSlice({
             .addCase(fetchPrestatairesProches.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
+            })
+            .addCase(fetchUtilisateursParRole.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchUtilisateursParRole.fulfilled, (state, action) => {
+                state.loading = false;
+                state.utilisateursParRole = action.payload.data;
+                state.roleActif = action.payload.role;
+            })
+            .addCase(fetchUtilisateursParRole.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || action.error.message;
+            })
+            .addCase(activerCompteThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.success = null;
+            })
+            .addCase(activerCompteThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.utilisateur = action.payload;
+                state.success = "Compte activé avec succès.";
+            })
+            .addCase(activerCompteThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // Désactivation
+            .addCase(desactiverCompteThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.success = null;
+            })
+            .addCase(desactiverCompteThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.utilisateur = action.payload;
+                state.success = "Compte désactivé avec succès.";
+            })
+            .addCase(desactiverCompteThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
+
+
 
 
     },
 
 });
-
+export const { clearUtilisateurState } = intervenantSlice.actions;
 export default intervenantSlice.reducer;

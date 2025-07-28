@@ -33,7 +33,11 @@ const PrestatairesProche = () => {
   useEffect(() => {
     if (!intervenantsFetched) {
 
+      if (!user || user.role !== 'CLIENT' || !user.utilisateurIdCl) return;
+
       dispatch(fetchPrestatairesProches(userId));
+
+
     }
   }, [dispatch, userId, intervenantsFetched]);
 

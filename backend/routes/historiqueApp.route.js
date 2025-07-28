@@ -4,24 +4,32 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-
 router.post('/consulter', async (req, res) => {
   const { utilisateurId } = req.body;
 
   try {
+  
     const maintenant = new Date();
-    const debutMinute = new Date(maintenant);
-    debutMinute.setSeconds(0, 0);
 
-    const finMinute = new Date(debutMinute);
-    finMinute.setSeconds(59, 999);
+    const debutMinuteUTC = new Date(Date.UTC(
+      maintenant.getUTCFullYear(),
+      maintenant.getUTCMonth(),
+      maintenant.getUTCDate(),
+      maintenant.getUTCHours(),
+      maintenant.getUTCMinutes(),
+      0,
+      0
+    ));
+
+    const finMinuteUTC = new Date(debutMinuteUTC);
+    finMinuteUTC.setSeconds(59, 999);
 
     const dejaVu = await prisma.historiqueApp.findFirst({
       where: {
         utilisateurId: parseInt(utilisateurId),
         dateVisite: {
-          gte: debutMinute,
-          lte: finMinute
+          gte: debutMinuteUTC,
+          lte: finMinuteUTC
         }
       }
     });
@@ -40,5 +48,6 @@ router.post('/consulter', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 module.exports = router;

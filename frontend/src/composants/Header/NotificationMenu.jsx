@@ -43,7 +43,7 @@ const NotificationMenu = () => {
     };
 
     const handleNotificationClick = (notifId) => {
-        dispatch(markNotificationAsRead(notifId)); // API pour maj estLue
+        dispatch(markNotificationAsRead(notifId)); //  maj estLue
         handleClose();
     };
 

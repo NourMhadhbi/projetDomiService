@@ -10,17 +10,9 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-const data = [
-  { month: "Jan", clients: 120, prestataires: 80 },
-  { month: "Feb", clients: 150, prestataires: 100 },
-  { month: "Mar", clients: 130, prestataires: 90 },
-  { month: "Apr", clients: 170, prestataires: 110 },
-  { month: "May", clients: 200, prestataires: 140 },
-  { month: "Jun", clients: 220, prestataires: 160 },
-  { month: "Jul", clients: 190, prestataires: 120 },
-];
 
-const InscriptionsMensuellesChart = () => {
+
+const InscriptionsMensuellesChart = ({data}) => {
   return (
    <div style={{ width: "100%", height: 400, margin: "0 auto" }}>
       <ResponsiveContainer>

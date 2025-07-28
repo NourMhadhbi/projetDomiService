@@ -77,13 +77,35 @@ router.post('/register', async (req, res) => {
             const emailCleaned = email && email.trim() !== "" ? email.trim() : undefined;
 
             if (emailCleaned) {
-                const existingUser = await prisma.utilisateur.findUnique({ where: { email: emailCleaned } });
-                if (existingUser) {
+                const existingClient = await prisma.utilisateur.findFirst({
+                    where: {
+                        email: emailCleaned,
+                        client: {
+                            isActive: true
+                        }
+                    },
+                    include: {
+                        client: true
+                    }
+                });
+                const existingPrestataire = await prisma.utilisateur.findFirst({
+                    where: {
+                        email: emailCleaned,
+                        prestataire: {
+                            isActive: true
+                        }
+                    },
+                    include: {
+                        prestataire: true
+                    }
+                });
+
+                if (existingClient || existingPrestataire) {
                     return res.status(400).send({ success: false, message: "Cet email est déjà utilisé." });
                 }
             } else if (numTel) {
-                const existingClient = await prisma.client.findFirst({ where: { numTel } });
-                const existingPrestataire = await prisma.prestataire.findFirst({ where: { numTel } });
+                const existingClient = await prisma.client.findFirst({ where: { numTel, isActive: true } });
+                const existingPrestataire = await prisma.prestataire.findFirst({ where: { numTel, isActive: true } });
                 if (existingClient || existingPrestataire) {
                     return res.status(400).send({ success: false, message: "Numéro de téléphone déjà utilisé." });
                 }
@@ -347,98 +369,98 @@ router.get('/activeClient/utilisateur', async (req, res) => {
         return res.status(404).send({ success: false, message: err.message })
     }
 })
-
-//desactiver le compte
-router.put('/desactive/utilisateur', async (req, res) => {
+//activer compte Prestataire et entrprise 
+router.put('/activePrestataire', async (req, res) => {
     try {
-        const { email, numTel } = req.query;
-        const raison = req.body.raison
-        if (!email && !numTel) {
-            return res.status(400).send({ success: false, message: "Email ou numTel requis" });
-        }
-
-        let user;
-
-        if (email) {
-            user = await prisma.utilisateur.findFirst({ where: { email } });
-        } else if (numTel) {
-            let client = await prisma.client.findFirst({ where: { numTel } });
-            if (client) {
-                user = await prisma.utilisateur.findUnique({ where: { id: client.utilisateurIdCl } });
-            } else {
-
-                const prestataire = await prisma.prestataire.findFirst({ where: { numTel } });
-                if (prestataire) {
-                    user = await prisma.utilisateur.findUnique({ where: { id: prestataire.utilisateurIdPre } });
-                }
-            }
-        }
+        const { id } = req.query;
+        const user = await prisma.utilisateur.findUnique({
+            where: { id: Number(id) }
+        });
 
         if (!user) {
-            return res.status(404).send({ success: false, message: "Utilisateur non trouvé" });
+            return res.status(404).send("Utilisateur non trouvé.");
         }
+
+        const utilisateur = await prisma.prestataire.update({
+            data: { isActive: true },
+            where: { utilisateurIdPre: user.id },
+            include: { utilisateur: true, entreprise: true }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Compte prestataire activé avec succès",
+            data: utilisateur
+        });
+
+    } catch (err) {
+        return res.status(500).send({ success: false, message: err.message });
+    }
+});
+//desactiver le compte
+router.put('/desactive', async (req, res) => {
+    try {
+        const { id } = req.query;
+        const { raison } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: "ID requis." });
+        }
+
+        const user = await prisma.utilisateur.findUnique({
+            where: { id: Number(id) },
+            include: { client: true, prestataire: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Utilisateur non trouvé." });
+        }
+
+        let result;
 
         if (user.role === "CLIENT") {
-            const utilisateur = await prisma.client.update({
-                data: { isActive: false },
+            if (!user.client) {
+                return res.status(404).json({ success: false, message: "Client introuvable." });
+            }
+
+            result = await prisma.client.update({
                 where: { utilisateurIdCl: user.id },
+                data: { isActive: false },
                 include: { utilisateur: true }
             });
-
-            const userCl = await prisma.utilisateur.findUnique({
-                where: { id: utilisateur.utilisateurIdCl },
-                include: { client: true }
-            });
-            res.status(200).send(userCl)
-        } else if (user.role === "PRESTATAIRE" || user.role === "ENTREPRISE") {
-
-            const prestataire = await prisma.prestataire.findUnique({
-                where: { utilisateurIdPre: user.id }
-            });
-            if (!prestataire) {
-                return res.status(404).send({ success: false, message: "Prestataire non trouvé" });
-            }
-
-            const updatedPrestataire = await prisma.prestataire.update({
-                where: { id: prestataire.id },
+        } else if ((user.role === "PRESTATAIRE" || user.role === "ENTREPRISE") && user.prestataire) {
+            result = await prisma.prestataire.update({
+                where: { utilisateurIdPre: user.id },
                 data: { isActive: false },
-                include: {
-                    utilisateur: true,
-                    entreprise: true
-                }
+                include: { utilisateur: true, entreprise: true }
             });
-            return res.status(200).send(updatedPrestataire);
+        } else {
+            return res.status(400).json({ success: false, message: "Impossible de désactiver ce compte." });
         }
 
-        var mailOption = {
-            from: ' "DomiService" <domiservicesm@gmail.com>',
+        const mailOption = {
+            from: '"DomiService" <domiservicesm@gmail.com>',
             to: user.email,
-            subject: 'Desactivation du compte',
-            html: `  
-                    <h2>Bienvenue,${user.nom}!</h2>
-                    <h4>Cher(e) ${user.nom},
-                   <p> Nous espérons que vous vous portez bien. Nous tenons à vous informer que votre compte sur DomiService a été désactivé.
-                   <p><strong>Raison :${"  "}</strong> ${raison}</p>
-                  <p> Si vous estimez que cette désactivation est une erreur ou si vous avez des questions concernant cette décision, n'hésitez pas à nous contacter à DomiService@gmail.com. Nous serons heureux de vous fournir toute clarification nécessaire et d'examiner votre situation.</p>                   
-                   Nous vous remercions de votre compréhension et de votre coopération.   
-                   <p>Cordialement,</p>
-                    <p>----------</p>
-                    <p>DomiService</p>
-                `
-        }
-        transporter.sendMail(mailOption, function (error, info) {
-            if (error) {
-                console.log(error)
-            }
-            else {
-                console.log('la validation du compte a été envoyé a votre compte')
-            }
-        })
-        console.log(raison)
+            subject: 'Désactivation du compte',
+            html: `
+        <h2>Bonjour ${user.nom},</h2>
+        <p>Votre compte a été désactivé.</p>
+        <p><strong>Raison :</strong> ${raison}</p>
+        <p>Si ce n’est pas vous ou si vous avez des questions, contactez-nous à domiservicesm@gmail.com.</p>
+        <p>Cordialement,<br>DomiService</p>
+      `
+        };
+
+        transporter.sendMail(mailOption, (error) => {
+            if (error) console.log("Erreur envoi email:", error);
+        });
+
+        return res.status(200).json(result);
+
     } catch (err) {
-        return res.status(404).send({ success: false, message: err.message })
+        return res.status(500).json({ success: false, message: err.message });
     }
-})
+});
 
 //se connecter
 router.post('/login', async (req, res) => {
@@ -540,7 +562,7 @@ router.post('/login', async (req, res) => {
                             utilisateurIdPre: utilisateur.id
                         },
                         include: {
-                            utilisateur: true,entreprise:true
+                            utilisateur: true, entreprise: true
                         }
                     })
                     return res.status(200).send({
@@ -631,50 +653,71 @@ router.put('/:id', async (req, res) => {
         await prisma.$transaction(async (prisma) => {
             const user = await prisma.utilisateur.findUnique({
                 where: { id },
+                include: { prestataire: true, clien: true }
             });
 
             if (!user) {
                 return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
             }
 
-            const emailChanged = email && email !== user.email;
-            let dataU = { nom, prenom, email, motDePasse, image, genre }
-            if (motDePasse) {
-                const salt = await bcrypt.genSalt(10);
-                dataU.motDePasse = await bcrypt.hash(motDePasse, salt);
-            }
-            await prisma.utilisateur.update({
-                data: dataU,
-                where: { id },
+        const emailCleaned = email?.trim().toLowerCase();
+           const  emailChanged = email && email !== user.email;
+            if (emailChanged) {
+                const utilisateurActifAvecEmail = await prisma.utilisateur.findFirst({
+                    where: {
+                        email: emailCleaned,
+                        id: { not: id }, 
+                        OR: [
+                            { client: { isActive: true } },
+                            { prestataire: { isActive: true } }
+                        ]
+        }
+    });
+
+        if (utilisateurActifAvecEmail) {
+            return res.status(400).json({
+                success: false,
+                message: "Cet email est déjà utilisé par un autre compte actif."
             });
+        }
+    }
+            let dataU = { nom, prenom, email, motDePasse, image, genre }
+    if (motDePasse) {
+        const salt = await bcrypt.genSalt(10);
+        dataU.motDePasse = await bcrypt.hash(motDePasse, salt);
+    }
+    await prisma.utilisateur.update({
+        data: dataU,
+        where: { id },
+    });
 
-            if (user.role === 'CLIENT') {
-                const { numTel, ville, adresse } = req.body;
-                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+    if (user.role === 'CLIENT') {
+        const { numTel, ville, adresse } = req.body;
+        const coords = await geocodeAdresse(`${adresse}, ${ville}`);
 
-                const updateData = {
-                    numTel, ville, adresse, latitude: coords?.latitude ?? null,
-                    longitude: coords?.longitude ?? null,
-                };
+        const updateData = {
+            numTel, ville, adresse, latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
+        };
 
-                if (emailChanged) {
-                    updateData.isActive = false;
-                }
+        if (emailChanged) {
+            updateData.isActive = false;
+        }
 
-                const client = await prisma.client.update({
-                    data: updateData,
-                    where: { utilisateurIdCl: id },
-                    include: { utilisateur: true }
-                });
+        const client = await prisma.client.update({
+            data: updateData,
+            where: { utilisateurIdCl: id },
+            include: { utilisateur: true }
+        });
 
 
-                if (emailChanged) {
-                    const mailOption = {
+        if (emailChanged) {
+            const mailOption = {
 
-                        from: '"DomiService" <domiservicesm@gmail.com>',
-                        to: email,
-                        subject: 'Validation du compte',
-                        html: `  
+                from: '"DomiService" <domiservicesm@gmail.com>',
+                to: email,
+                subject: 'Validation du compte',
+                html: `  
                         <h2>Bienvenue, ${nom}!</h2>
                         <h4>Cher(e) ${nom},
                         Nous vous remercions pour votre inscription sur Domi Service ! Pour activer votre compte, veuillez cliquer sur le lien ci-dessous :
@@ -684,97 +727,97 @@ router.put('/:id', async (req, res) => {
                         <p>----------</p>
                         <p>DomiServicer</p>
                     `
-                    };
-                    transporter.sendMail(mailOption, function (error, info) {
-                        if (error) {
-                            console.error("Erreur d'envoi mail validation:", error);
-                        } else {
-                            console.log("Mail de validation envoyé:", info.response);
-                        }
-                    });
+            };
+            transporter.sendMail(mailOption, function (error, info) {
+                if (error) {
+                    console.error("Erreur d'envoi mail validation:", error);
+                } else {
+                    console.log("Mail de validation envoyé:", info.response);
                 }
+            });
+        }
 
-                return res.status(200).json({
-                    success: true,
-                    message: "Compte client mis à jour avec succès",
-                    user: client
-                });
-            } else if (user.role === 'PRESTATAIRE' || user.role === 'ENTREPRISE') {
-                const {
-                    adresse, ville, numTel, tarifDeplacement,
-                    experience, competence,
-                    nomEntreprise, siteWeb, identifiant, Spécialite, descriptionCourte
-                } = req.body;
-                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
-                // 1. Mise à jour du prestataire
-                const prestataireData = {
-                    adresse, ville, numTel, tarifDeplacement,
-                    experience, competence, Spécialite, descriptionCourte, latitude: coords?.latitude ?? null,
-                    longitude: coords?.longitude ?? null,
-
-                };
-
-                if (emailChanged) prestataireData.isActive = false;
-
-                const prestataireUpdated = await prisma.prestataire.update({
-                    where: { utilisateurIdPre: id },
-                    data: prestataireData,
-                    include: { utilisateur: true }
-                });
-
-
-                if (user.role === 'ENTREPRISE') {
-                    const entrepriseCurrent = await prisma.entreprise.findUnique({
-                        where: { prestataireId: id },
-                    });
-
-                    const identifiantChanged = identifiant && identifiant !== entrepriseCurrent?.identifiant;
-
-                    const entrepriseData = {
-                        nomEntreprise,
-                        siteWeb,
-                    };
-                    if (identifiant) entrepriseData.identifiant = identifiant;
-                    if (emailChanged || identifiantChanged) entrepriseData.isActive = false;
-
-                    const entrepriseUpdated = await prisma.entreprise.update({
-                        where: { prestataireId: id },
-                        data: entrepriseData,
-                        include: { prestataire: { include: { utilisateur: true } } }
-                    });
-
-                    return res.status(200).json({
-                        success: true,
-                        message: "Compte entreprise mis à jour",
-                        user: entrepriseUpdated
-                    });
-
-                }
-                return res.status(200).json({
-                    success: true,
-                    message: "Compte prestataire mis à jour",
-                    user: prestataireUpdated
-                });
-
-            } else {
-                let { email, nom, prenom, motDePasse, image, genre } = req.body
-                const admin = await prisma.admin.findUnique({
-                    where: {
-                        utilisateurIdAd: Number(id),
-                    },
-                    include: {
-                        utilisateur: true
-                    }
-                })
-                return res.status(201).send({
-                    success: true, message: "Compte update successfully", user: admin
-                })
-            }
+        return res.status(200).json({
+            success: true,
+            message: "Compte client mis à jour avec succès",
+            user: client
         });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Erreur serveur", error: error.message });
+    } else if (user.role === 'PRESTATAIRE' || user.role === 'ENTREPRISE') {
+        const {
+            adresse, ville, numTel, tarifDeplacement,
+            experience, competence,
+            nomEntreprise, siteWeb, identifiant, Spécialite, descriptionCourte
+        } = req.body;
+        const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+        // 1. Mise à jour du prestataire
+        const prestataireData = {
+            adresse, ville, numTel, tarifDeplacement,
+            experience, competence, Spécialite, descriptionCourte, latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
+
+        };
+
+        if (emailChanged) prestataireData.isActive = false;
+
+        const prestataireUpdated = await prisma.prestataire.update({
+            where: { utilisateurIdPre: id },
+            data: prestataireData,
+            include: { utilisateur: true }
+        });
+
+
+        if (user.role === 'ENTREPRISE') {
+            const entrepriseCurrent = await prisma.entreprise.findUnique({
+                where: { prestataireId: id },
+            });
+
+            const identifiantChanged = identifiant && identifiant !== entrepriseCurrent?.identifiant;
+
+            const entrepriseData = {
+                nomEntreprise,
+                siteWeb,
+            };
+            if (identifiant) entrepriseData.identifiant = identifiant;
+            if (emailChanged || identifiantChanged) entrepriseData.isActive = false;
+
+            const entrepriseUpdated = await prisma.entreprise.update({
+                where: { prestataireId: id },
+                data: entrepriseData,
+                include: { prestataire: { include: { utilisateur: true } } }
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Compte entreprise mis à jour",
+                user: entrepriseUpdated
+            });
+
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Compte prestataire mis à jour",
+            user: prestataireUpdated
+        });
+
+    } else {
+        let { email, nom, prenom, motDePasse, image, genre } = req.body
+        const admin = await prisma.admin.findUnique({
+            where: {
+                utilisateurIdAd: Number(id),
+            },
+            include: {
+                utilisateur: true
+            }
+        })
+        return res.status(201).send({
+            success: true, message: "Compte update successfully", user: admin
+        })
     }
+});
+    } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Erreur serveur", error: error.message });
+}
 });
 
 // Stockage temporaire des codes (email ou numéro)
@@ -1016,7 +1059,7 @@ router.get('/prestataires', async (req, res) => {
             limit = 8,
             type,
             ville,
-            sort 
+            sort
         } = req.query;
 
         const take = parseInt(limit);
@@ -1073,6 +1116,81 @@ router.get('/prestataires', async (req, res) => {
         res.status(500).json({ message: "Erreur serveur" });
     }
 });
+router.get('/utilisateursA', async (req, res) => {
+    try {
+        const { role } = req.query;
+
+        const where = {
+            role: {
+                not: 'ADMIN'
+            }
+        };
+
+        if (role && role !== 'TOUS') {
+            where.role = role;
+        }
+
+        const utilisateurs = await prisma.utilisateur.findMany({
+            where,
+            include: {
+                client: true,
+                prestataire: {
+                    include: {
+                        entreprise: true,
+                        service: true
+                    }
+                }
+            }
+        });
+
+        const utilisateursFormates = utilisateurs.map(u => {
+            const base = {
+                id: u.id,
+                nom: u.nom,
+                prenom: u.prenom,
+                email: u.email,
+                role: u.role,
+                isActive: u.client?.isActive ?? u.prestataire?.isActive ?? false
+            };
+
+            if (u.role === 'CLIENT' && u.client) {
+                return {
+                    ...base,
+                    ville: u.client.ville,
+                    adresse: u.client.adresse,
+                    numTel: u.client.numTel
+                };
+            }
+
+            if ((u.role === 'PRESTATAIRE' || u.role === 'ENTREPRISE') && u.prestataire) {
+                const data = {
+                    ...base,
+                    ville: u.prestataire.ville,
+                    adresse: u.prestataire.adresse,
+                    numTel: u.prestataire.numTel,
+                    specialite: u.prestataire.Spécialite,
+                    service: u.prestataire.service?.nom || null
+                };
+
+                if (u.role === 'ENTREPRISE' && u.prestataire.entreprise) {
+                    data.nomEntreprise = u.prestataire.entreprise.nomEntreprise;
+                    data.siteWeb = u.prestataire.entreprise.siteWeb;
+                    data.identifiant = u.prestataire.entreprise.identifiant;
+                }
+
+                return data;
+            }
+
+            return base;
+        });
+
+        res.status(200).json(utilisateursFormates);
+    } catch (error) {
+        console.error("Erreur récupération utilisateurs :", error);
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
+});
+
 
 
 module.exports = router;

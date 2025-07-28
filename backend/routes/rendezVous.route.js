@@ -63,7 +63,7 @@ router.post("/ajoutRendezvous", async (req, res) => {
             lieuDintervention,
             statut: "EN_ATTENTE",
             client: { connect: { utilisateurIdCl: clientId } },
-            prestataire: { connect: { utilisateurIdPre: prestataireId } }, // ici on connecte sur id du prestataire
+            prestataire: { connect: { utilisateurIdPre: prestataireId } }, 
         };
 
         const rendezVous = await prisma.rendezVous.create({ data });

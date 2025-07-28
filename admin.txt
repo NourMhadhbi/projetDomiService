@@ -1,0 +1,6 @@
+{
+
+  "identifiant": "admin@example.com",
+  "motDePasse": "MotDePasseFort123"
+
+}

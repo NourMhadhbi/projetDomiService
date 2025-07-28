@@ -50,7 +50,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
             </Typography>
             <Divider sx={{ borderColor: 'rgba(243, 234, 234, 0.93)' }} />
             <List>
-                {role === 'ADMIN' ? (
+                {role === 'ADMIN' && (
                     <>
                         <ListItem button component={NavLink} to="/admin/utilisateurs" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Gérer les utilisateurs" sx={{ color: 'white' }} />
@@ -58,18 +58,13 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                         <ListItem button component={NavLink} to="/admin/services" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Gérer les services" sx={{ color: 'white' }} />
                         </ListItem>
-                        <ListItem button component={NavLink} to="/admin/rendez-vous" onClick={toggleDrawer(false)}>
-                            <ListItemText primary="Voir les rendez-vous" sx={{ color: 'white' }} />
-                        </ListItem>
-
-                        <ListItem button component={NavLink} to="/admin/avis" onClick={toggleDrawer(false)}>
-                            <ListItemText primary="Voir les avis" sx={{ color: 'white' }} />
-                        </ListItem>
-                        <ListItem button component={NavLink} to="/admin/signalements" onClick={toggleDrawer(false)}>
+                        <ListItem button component={NavLink} to="/admin/signales" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Voir les signalements" sx={{ color: 'white' }} />
                         </ListItem>
                     </>
-                ) : (
+                )}
+
+                {user.utilisateur.role === 'CLIENT' && (
                     <>
                         <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />
@@ -102,6 +97,21 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                         </ListItem>
                     </>
                 )}
+
+                {user.utilisateur.role === 'PRESTATAIRE' && (
+                    <>
+                        <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />
+                        </ListItem>
+                        <ListItem button component={NavLink} to="/mes-avis" onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Mes avis" sx={{ color: 'white' }} />
+                        </ListItem>
+                        <ListItem button component={NavLink} to={`/prestataires/contact/${user.utilisateur.id}`} onClick={toggleDrawer(false)}>
+                            <ListItemText primary="Clients contactés" sx={{ color: 'white' }} />
+                        </ListItem>
+                    </>
+                )}
+
             </List>
         </Box>
     );

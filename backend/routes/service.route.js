@@ -5,35 +5,37 @@ const router = express.Router();
 //Ajout Service
 router.post("/ajoutS", async (req, res) => {
     const { nom, description, image } = req.body;
+
     try {
         const service = await prisma.service.create({
             data: {
-                nom: nom,
+                nom,
                 description: description ?? null,
-                image: image ?? null,
-
+                image: image && image.trim() !== "" ? image : "https://cdn-icons-png.flaticon.com/512/3595/3595455.png",
             },
         });
+
         res.json(service);
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 });
+
 //Modifier Service
 router.put("/modifierS/:id", async (req, res) => {
     const { nom, description, image } = req.body;
     const id = req.params.id;
+
     try {
         const service = await prisma.service.update({
-            data: {
-                nom: nom,
-                description: description ?? null,
-                image: image ?? null,
-            },
             where: { id: Number(id) },
+            data: {
+                nom,
+                description: description ?? null,
+                image: image && image.trim() !== "" ? image : "https://cdn-icons-png.flaticon.com/512/3595/3595455.png",
+            },
         });
+
         res.json(service);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -46,10 +48,10 @@ router.put("/archive/:id", async (req, res) => {
         where: { id: Number(id) },
         include: {
             prestataires: true,
-            entreprises: true,
+          
         },
     });
-    if (service.prestataires.length > 0 || service.entreprises.length > 0) {
+    if (service.prestataires.length > 0 ) {
         return res.status(400).json({
             message: "Impossible d'archiver ce service car il est utilisé par un ou plusieurs prestataires ou entreprises.",
         });

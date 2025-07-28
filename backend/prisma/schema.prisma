@@ -166,14 +166,14 @@ model Avis {
 
 model Signalement {
   id             Int         @id @default(autoincrement())
-  motif          String
+  raison          String
   date           DateTime    @default(now())
   clientId       Int @db.UnsignedInt
   prestataireId  Int @db.UnsignedInt
-  //entrepriseId  Int @db.UnsignedInt
+
   client         Client      @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire    Prestataire @relation(fields: [prestataireId], references: [utilisateurIdPre])
- // entreprise    Entreprise @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+
    createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
 }

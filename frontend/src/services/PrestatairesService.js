@@ -12,3 +12,12 @@ export const getPrestatairesService = async (id) => {
     });
     return response.data;
 };
+export const getClientContactPres = async (prestataireId) => {
+    try {
+        const response = await Api.get(`${AVIS_API}/carteContactPrestataire/${prestataireId}`);
+        return response.data;
+    } catch (error) {
+
+        throw error;
+    }
+};

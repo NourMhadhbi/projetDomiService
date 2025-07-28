@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getPrestatairesRecherche ,getPrestatairesService} from '../services/PrestatairesService';
+import { getPrestatairesRecherche, getPrestatairesService, getClientContactPres } from '../services/PrestatairesService';
 export const fetchPrestatairesRecherche = createAsyncThunk(
     'prestataires/fetchRecherche',
     async (q, thunkAPI) => {
@@ -20,15 +20,28 @@ export const fetchPrestatairesService = createAsyncThunk(
         }
     }
 );
+export const fetchClientsContact = createAsyncThunk(
+    'contactPrestataire/fetchClientsContact',
+    async (prestataireId, { rejectWithValue }) => {
+        try {
+            const data = await getClientContactPres(prestataireId);
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
 const prestataireSlice = createSlice({
-    name: 'prestataires',
+    name: 'prestataire',
     initialState: {
-   
-        prestataires:[],
+        clients: [],
+        prestataires: [],
         loadingRecherche: false,
         erreurRecherche: null,
     },
-    reducers: {},
+    reducers: {
+
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchPrestatairesRecherche.pending, (state) => {
@@ -54,6 +67,19 @@ const prestataireSlice = createSlice({
             .addCase(fetchPrestatairesService.rejected, (state, action) => {
                 state.loadingRecherche = false;
                 state.erreurRecherche = action.payload;
+            }).addCase(fetchClientsContact.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchClientsContact.fulfilled, (state, action) => {
+                state.clients = action.payload;
+                console.log("client succes", state.clients)
+                state.loading = false;
+            })
+            .addCase(fetchClientsContact.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || 'Erreur de chargement';
+                   console.log("client succes",   state.error)
             })
             ;
     },

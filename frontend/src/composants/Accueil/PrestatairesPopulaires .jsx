@@ -9,7 +9,7 @@ import { fetchPopulaireP } from '../../features/HistoriqueSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-const PrestatairesPopulaires = () => {
+const PrestatairesPopulaires = ({ isClientConnected }) => {
   const navigate = useNavigate();
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const dispatch = useDispatch();
@@ -89,13 +89,17 @@ const PrestatairesPopulaires = () => {
             </div>
           </SwiperSlide>
         ))}
-        <button className="prestataire-btn" onClick={() => navigate("/prestataires?consultes=true")}>
+        <button className="prestataire-btn" disabled={!isClientConnected} onClick={() => navigate("/prestataires?consultes=true")}>
           Voir Tous Nos Prestataires & Entreprises
         </button>
       </Swiper>
 
       <style>{`
-    
+    .prestataire-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
         .overlay {
           position: absolute;
           top: 0; left: 0;

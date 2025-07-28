@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getTop5, getServicesNonArchive, getService } from '../services/ServiceDservice';
+import { getTop5, getServicesNonArchive, getService, getServices, ajouterService,
+    modifierService,
+    archiverService, } from '../services/ServiceDservice';
 //  Récupérer les statistiques
 export const getTop5Thunk = createAsyncThunk(
     'service/getTop5',
@@ -25,7 +27,37 @@ export const fetchService = createAsyncThunk(
         return data;
     }
 );
+export const fetchServices = createAsyncThunk(
+    'service/getServices',
+    async () => {
+        const data = await getServices();
+        console.log("Données récupérées dans thunk :", data);
+        return data;
+    }
+);
+export const ajouterServiceThunk = createAsyncThunk(
+    'service/ajouter',
+    async (data) => {
+        const res = await ajouterService(data);
+        return res;
+    }
+);
 
+export const modifierServiceThunk = createAsyncThunk(
+    'service/modifier',
+    async ({ id, data }) => {
+        const res = await modifierService({ id, data });
+        return res;
+    }
+);
+
+export const archiverServiceThunk = createAsyncThunk(
+    'service/archiver',
+    async (id) => {
+        const res = await archiverService(id);
+        return res;
+    }
+);
 // SLICE
 
 const serviceSlice = createSlice({
@@ -64,6 +96,17 @@ const serviceSlice = createSlice({
                 state.loading = false;
                 state.error = action.error.message;
             })
+            .addCase(fetchServices.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(fetchServices.fulfilled, (state, action) => {
+                state.loading = false;
+                state.services = action.payload;
+            })
+            .addCase(fetchServices.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            })
             .addCase(fetchService.pending, (state) => {
                 state.loading = true;
             })
@@ -74,6 +117,17 @@ const serviceSlice = createSlice({
             .addCase(fetchService.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
+            })
+            .addCase(ajouterServiceThunk.fulfilled, (state, action) => {
+                state.services.unshift(action.payload); // ajout en haut de la liste
+            })
+            .addCase(modifierServiceThunk.fulfilled, (state, action) => {
+                const index = state.services.findIndex(s => s.id === action.payload.id);
+                if (index !== -1) state.services[index] = action.payload;
+            })
+            .addCase(archiverServiceThunk.fulfilled, (state, action) => {
+                const index = state.services.findIndex(s => s.id === action.payload.id);
+                if (index !== -1) state.services[index] = action.payload;
             })
             ;
     }

@@ -22,6 +22,11 @@ import MapPres from './composants/MapPres';
 import ListePrestataires from './composants/ListePrestataires/ListePrestataires';
 import RequireAdminRoute from './composants/auth/RequireAdminRoute';
 import AdminDashboard from './composants/Admin/AccueilAdmin/DashboardAdmin';
+import ListeUtilisateursAdmin from './composants/Admin/ListeUtilisateursAdmin';
+import ListeServicesAdmin from './composants/Admin/ListeServices';
+import ListeSignalesAdmin from './composants/Admin/ListSignalementsAdmin';
+import ResultatRecherchClient from './composants/Admin/ResultatRecherchClient';
+import ClientsContactPrestataire from './composants/ContactPrestataire/ClientsContactPrestataire';
 // import { fetchUserFromToken } from './features/AuthSlice'; // chemin vers ton thunk
 function App() {
 
@@ -45,11 +50,44 @@ function App() {
         <Route path="/historique" element={<PrivateRoute><Historique /> </PrivateRoute>} />
         <Route path="/MapAdresse" element={<PrivateRoute><MapPres /></PrivateRoute>} />
         <Route path="/prestataires" element={<PrivateRoute><ListePrestataires /></PrivateRoute>} />
+        <Route path="/prestataires/contact/:prestataireId" element={<PrivateRoute><ClientsContactPrestataire /></PrivateRoute>} />
         <Route
           path="/admin/dashboard"
           element={
             <RequireAdminRoute>
               <AdminDashboard />
+            </RequireAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/utilisateurs"
+          element={
+            <RequireAdminRoute>
+              <ListeUtilisateursAdmin />
+            </RequireAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/services"
+          element={
+            <RequireAdminRoute>
+              <ListeServicesAdmin />
+            </RequireAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/signales"
+          element={
+            <RequireAdminRoute>
+              <ListeSignalesAdmin />
+            </RequireAdminRoute>
+          }
+        />
+        <Route
+          path="/admin/searchC"
+          element={
+            <RequireAdminRoute>
+              <ResultatRecherchClient />
             </RequireAdminRoute>
           }
         />

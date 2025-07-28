@@ -81,6 +81,8 @@ const Header = ({ isClientConnected, intervenant }) => {
         if (searchQuery.trim()) {
             if (ongletActif === 'prestataires') {
                 navigate(`/prestataires?search=${encodeURIComponent(searchQuery.trim())}`);
+            } else if (ongletActif === 'clients') {
+                navigate(`/admin/searchC?search=${encodeURIComponent(searchQuery.trim())}`);
             }
             setIsSearchOpen(false);
             setSearchQuery('');
@@ -337,38 +339,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                                 Tous les articles
                                             </NavLink>
                                         </li>
-                                        <li>
-                                            <NavLink
-                                                to="/blog/conseils-plomberie"
-                                                className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
-                                            >
-                                                Conseils de plomberie
-                                            </NavLink>
-                                        </li>
-                                        <li>
-                                            <NavLink
-                                                to="/blog/actualites"
-                                                className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
-                                            >
-                                                Actualités
-                                            </NavLink>
-                                        </li>
-                                        <li>
-                                            <NavLink
-                                                to="/blog/etudes-de-cas"
-                                                className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
-                                            >
-                                                Études de cas
-                                            </NavLink>
-                                        </li>
-                                        <li>
-                                            <NavLink
-                                                to="/blog/archives"
-                                                className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
-                                            >
-                                                Archives
-                                            </NavLink>
-                                        </li>
+
                                     </ul>
                                 </li>
                                 <li className="nav-item">
@@ -380,14 +351,28 @@ const Header = ({ isClientConnected, intervenant }) => {
                                     </NavLink>
                                 </li>
                             </ul>
-
                             <button
                                 className="search-icon btn btn-link ms-lg-3 me-2"
-                                onClick={toggleSearch}
+                                onClick={isClientConnected ? toggleSearch : undefined}
+                                style={{
+                                    opacity: isClientConnected ? 1 : 0.3,
+                                    pointerEvents: isClientConnected ? 'auto' : 'none',
+                                }}
                             >
                                 <FontAwesomeIcon icon={faSearch} />
                             </button>
-                            <NotificationMenu isClientConnected={isLoggedIn} user={user} />
+
+                            <div
+                                style={{
+                                    opacity: isClientConnected ? 1 : 0.3,
+                                    pointerEvents: isClientConnected ? 'auto' : 'none',
+                                }}
+                            >
+                                <NotificationMenu isClientConnected={isLoggedIn} user={user} />
+                            </div>
+
+
+
 
                             {isClientConnected ? (
                                 <>
@@ -434,6 +419,15 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 >
                                     Services
                                 </button>
+                                {user?.utilisateur?.role === "ADMIN" && (
+                                    <button
+                                        type="button"
+                                        className={`btn ${ongletActif === 'clients' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
+                                        onClick={() => setOngletActif('clients')}
+                                    >
+                                        Clients
+                                    </button>
+                                )}
                             </div>
 
                             <input

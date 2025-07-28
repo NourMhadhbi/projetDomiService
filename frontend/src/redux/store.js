@@ -8,8 +8,10 @@ import utilisateurReducer from "../features/UtilisateurSlice.js";
 import HistoriqueReducer from "../features/HistoriqueSlice.js";
 import NotificationReducer from "../features/NotificationSlice.js";
 import PrestataireReducer from "../features/PrestatairesSlice.js";
+import ClientReducer from "../features/ClientSlice.js";
 import statistiquesAdminReducer from "../features/statistiquesAdminSlice.js";
 import historiqueAppReducer from '../features/historiqueAppSlice';
+import signalementAppReducer from '../features/SignalementSlice.js';
 const store = configureStore({
     reducer: {
         auth: authReducer,
@@ -22,6 +24,8 @@ const store = configureStore({
         notification: NotificationReducer,
         statistiquesAdmin: statistiquesAdminReducer,
         historiqueApp: historiqueAppReducer,
+        signalement: signalementAppReducer,
+        client: ClientReducer,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
 });

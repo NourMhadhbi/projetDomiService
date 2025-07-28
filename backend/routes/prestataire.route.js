@@ -2,7 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const router = express.Router();
-// chercher un prestataire par email.
+// chercher un prestataire email.
 router.get('/emailPrestataire', async (req, res,) => {
     const { email } = req.body
     try {
@@ -100,6 +100,67 @@ router.get("/servicePres", async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+});
+//carte contact prestataire
+
+router.get('/carteContactPrestataire/:prestataireId', async (req, res) => {
+  const { prestataireId } = req.params;
+
+  try {
+  
+    const rendezVous = await prisma.rendezVous.findMany({
+      where: {
+        prestataireId: Number(prestataireId),
+        statut: { in: ['CONFIRME', 'TERMINE'] }
+      },
+      include: {
+        client: {
+          include: {
+            utilisateur: true
+          }
+        }
+      }
+    });
+
+    //client n’a pas signalé ce prestataire
+    const signales = await prisma.signalement.findMany({
+      where: {
+        prestataireId: Number(prestataireId)
+      },
+      select: { clientId: true }
+    });
+
+    const clientIdsSignales = new Set(signales.map(s => s.clientId));
+
+    const clientsUniques = [];
+    const dejaAjoutes = new Set();
+
+    for (const rdv of rendezVous) {
+      const clientId = rdv.clientId;
+      if (!clientIdsSignales.has(clientId) && !dejaAjoutes.has(clientId)) {
+        const client = rdv.client;
+
+        clientsUniques.push({
+          id: client.id,
+          utilisateurId: client.utilisateur.id,
+          prenom: client.utilisateur.prenom,
+          nom: client.utilisateur.nom,
+          email: client.utilisateur.email,
+          image: client.utilisateur.image,
+          numTel: client.numTel,
+          adresse: client.adresse,
+          ville: client.ville
+        });
+
+        dejaAjoutes.add(clientId);
+      }
+    }
+
+    res.json(clientsUniques);
+  } catch (error) {
+    console.error("Erreur lors du chargement des clients :", error);
+    res.status(500).json({ message: "Erreur serveur", error });
+  }
 });
 
 module.exports = router;
