@@ -112,6 +112,7 @@ const Header = ({ isClientConnected, intervenant }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isSearchOpen]);
+
     let title = "Service";
     let titre1 = "";
     let breadcrumbItems = [
@@ -180,6 +181,9 @@ const Header = ({ isClientConnected, intervenant }) => {
         }
 
         breadcrumbItems.push({ label: "Prestataires & Entreprises", to: null });
+    } else if (location.pathname.startsWith("/Contact")) {
+        title = "Contactez-nous";
+        breadcrumbItems.push({ label: "Contactez-nous", to: null });
     }
     if (servicesLoading) return <p>Chargement...</p>;
     if (servicesError) return <p>Erreur Services: {servicesError}</p>;

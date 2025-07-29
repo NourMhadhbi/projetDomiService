@@ -27,6 +27,8 @@ import ListeServicesAdmin from './composants/Admin/ListeServices';
 import ListeSignalesAdmin from './composants/Admin/ListSignalementsAdmin';
 import ResultatRecherchClient from './composants/Admin/ResultatRecherchClient';
 import ClientsContactPrestataire from './composants/ContactPrestataire/ClientsContactPrestataire';
+import PageContact from './composants/PageContact';
+import Profil from './composants/ProfilUtilisateur/Profil';
 // import { fetchUserFromToken } from './features/AuthSlice'; // chemin vers ton thunk
 function App() {
 
@@ -51,6 +53,8 @@ function App() {
         <Route path="/MapAdresse" element={<PrivateRoute><MapPres /></PrivateRoute>} />
         <Route path="/prestataires" element={<PrivateRoute><ListePrestataires /></PrivateRoute>} />
         <Route path="/prestataires/contact/:prestataireId" element={<PrivateRoute><ClientsContactPrestataire /></PrivateRoute>} />
+        <Route path="/Contact" element={<PrivateRoute><PageContact /></PrivateRoute>} />
+        <Route path="/Profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
         <Route
           path="/admin/dashboard"
           element={
