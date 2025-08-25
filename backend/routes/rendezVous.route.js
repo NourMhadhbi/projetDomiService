@@ -758,7 +758,7 @@ router.get('/rendezVousByintervenant/:idIntervenant', async (req, res) => {
                 prestataire: {
                     include: {
                         utilisateur: true,
-                        entreprise: true,   // inclure entreprise si le prestataire est une entreprise
+                        entreprise: true,   
                         service: true
                     }
                 },
@@ -771,7 +771,7 @@ router.get('/rendezVousByintervenant/:idIntervenant', async (req, res) => {
         });
 
         if (rendezVous.length > 0) {
-            // Déterminer le rôle dynamiquement
+           
             const role = rendezVous[0].prestataire.entreprise ? 'ENTREPRISE' : 'PRESTATAIRE';
 
             return res.json({ role, rendezVous });

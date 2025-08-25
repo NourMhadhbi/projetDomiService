@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import FavorisSection from './FavorisSection';
 
 
 
@@ -49,12 +50,12 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
                         margin: 'auto',
                         padding: '0 10px',
                         textAlign: 'justify',
-                        fontStyle: intervenant?.description ? 'normal' : 'italic',
-                        color: intervenant?.description ? '#444' : '#999',
+                        fontStyle: intervenant?.prestataire.descriptionCourte ? 'normal' : 'italic',
+                        color: intervenant?.prestataire.descriptionCourte ? '#444' : '#999',
                     }}>
                         {
-                            intervenant?.description
-                                ? intervenant.description
+                            intervenant?.prestataire.descriptionCourte
+                                ? intervenant.prestataire.descriptionCourte
                                 : `Ce ${intervenant?.prestataire?.entreprise
                                     ? intervenant.prestataire.entreprise.nomEntreprise
                                     : intervenant?.nom
@@ -102,6 +103,7 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
                                 )}
                             </div>
                         ))}
+                        <FavorisSection prestataireId={intervenant?.id} />
                     </div>
 
                 </div>

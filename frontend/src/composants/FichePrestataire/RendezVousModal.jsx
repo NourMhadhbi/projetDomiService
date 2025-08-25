@@ -22,15 +22,20 @@ export default function RendezVousModal({
     intervenant,
     setEventData,
     dateReadonly,
-    mode // 'ajout' ou 'modification'
+    mode, // 'ajout' ou 'modification'
+    setHeureError, heureError,
 }) {
     const isModification = mode === 'modification';
 
     const handleChange = (key, value) => {
-        // setEventData(prev => ({ ...prev, [key]: value }));
+
         setEventData?.(prev => ({ ...prev, [key]: value }));
     };
-
+    const handleHeureChange = (value) => {
+        setEventData?.(prev => ({ ...prev, heure: value }));
+        setHeureError('');
+    };
+    const today = new Date().toISOString().split('T')[0];
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
 
@@ -76,6 +81,7 @@ export default function RendezVousModal({
 
                 <Grid container spacing={2}>
                     <Grid item xs={6}>
+
                         <TextField
                             label="Date"
                             type="date"
@@ -85,6 +91,7 @@ export default function RendezVousModal({
                             margin="normal"
                             InputProps={{ readOnly: dateReadonly }}
                             InputLabelProps={{ shrink: true }}
+                            inputProps={{ min: today }}
                         />
                     </Grid>
                     <Grid item xs={6}>
@@ -93,11 +100,13 @@ export default function RendezVousModal({
                             type="time"
                             fullWidth
                             value={eventData?.heure || ''}
-                            onChange={e => handleChange('heure', e.target.value)}
+                            onChange={e => handleHeureChange(e.target.value)}
                             margin="normal"
-
                             InputLabelProps={{ shrink: true }}
+                            error={!!heureError}
+                            helperText={heureError}
                         />
+                
                     </Grid>
                 </Grid>
 

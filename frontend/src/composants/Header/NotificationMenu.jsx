@@ -13,9 +13,11 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchNotifications, markNotificationAsRead } from '../../features/NotificationSlice';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationMenu = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
@@ -42,9 +44,26 @@ const NotificationMenu = () => {
         setAnchorEl(null);
     };
 
-    const handleNotificationClick = (notifId) => {
-        dispatch(markNotificationAsRead(notifId)); //  maj estLue
+    const handleNotificationClick = (notif) => {
+        dispatch(markNotificationAsRead(notif.id));
         handleClose();
+        const contenu = notif.contenu.toLowerCase();
+
+        if (user?.utilisateur?.role === "PRESTATAIRE" && (contenu.includes("rendezvous") || contenu.includes("rendez-vous"))) {
+            navigate('/calendrier');
+            return;
+        }
+
+        if (user?.utilisateur?.role === "CLIENT" && (contenu.includes("rendezvous") || contenu.includes("rendez-vous"))) {
+            navigate('/mes-rendez-vous');
+            return;
+        }
+
+        if (contenu.includes("avis")) {
+            navigate('/mes-avis');
+            return;
+        }
+
     };
 
     return (
@@ -82,7 +101,7 @@ const NotificationMenu = () => {
                     notifications.map((notif) => (
                         <MenuItem
                             key={notif.id}
-                            onClick={() => handleNotificationClick(notif.id)}
+                            onClick={() => handleNotificationClick(notif)}
                             sx={{
                                 alignItems: 'flex-start',
                                 whiteSpace: 'normal',

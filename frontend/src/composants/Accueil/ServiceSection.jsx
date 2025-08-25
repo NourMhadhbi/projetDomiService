@@ -43,7 +43,7 @@ const ServicesSection = () => {
           </span>
           <h2 className="services-title">Les Services les Plus Demandés</h2>
         </div>
-        <button className="services-btn" onClick={() => navigate("/service")}>EXPLOREZ TOUS LES SERVICES</button>
+        {/* <button className="services-btn" onClick={() => navigate("/service")}>EXPLOREZ TOUS LES SERVICES</button> */}
       </div>
 
       <Slider {...settings} className="services-slider" >

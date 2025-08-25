@@ -72,6 +72,7 @@ model Client {
   favorisPrestataires FavorisPrestataire[]
   historiquePrestataire HistoriquePrestataire []
   signalements   Signalement[]
+    messages        ContactMessage[] @relation("ClientMessages")
 }
 model Admin {
   utilisateurIdAd Int @db.UnsignedInt     @id @unique
@@ -102,7 +103,7 @@ model Prestataire {
   signalementsRecus Signalement[]
   favorisPrestataires FavorisPrestataire[]
   historiquePrestataire HistoriquePrestataire[]
-
+  messages        ContactMessage[] @relation("PrestataireMessages")
 
 }
 
@@ -122,7 +123,7 @@ model Service {
  etatArchive   Boolean    @default(false)
 
    prestataires   Prestataire[]
-   // entreprises   Entreprise[]
+
      createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
 }
@@ -134,13 +135,10 @@ model RendezVous {
   statut          StatutRDV   @default(EN_ATTENTE)
   clientId        Int @db.UnsignedInt
   prestataireId   Int @db.UnsignedInt
- // entrepriseId  Int? @db.UnsignedInt
+
  
   client          Client      @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire     Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
-  //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
-
-
   messages        Message[]
     createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
@@ -149,17 +147,15 @@ model RendezVous {
 model Avis {
   id             Int         @id @default(autoincrement())
   commentaire    String?
-  note     Int?
+  note     Float?
   aime           Boolean   @default(false)
   date           DateTime    @default(now())
    etatArchive   Boolean    @default(false)
   clientId       Int @db.UnsignedInt
   prestataireId  Int @db.UnsignedInt
-  //entrepriseId  Int? @db.UnsignedInt
-
-  client         Client     @relation(fields: [clientId], references: [utilisateurIdCl])
+client         Client     @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire    Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
-  //entreprise    Entreprise? @relation(fields: [entrepriseId], references: [utilisateurIdEnt])
+
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
 }
@@ -231,13 +227,16 @@ model FavorisPrestataire {
   updatedAt     DateTime        @default(now())
 }
 model ContactMessage {
-  id         Int      @id @default(autoincrement())
-  nom        String
-  email      String
-  telephone  String?
-  sujet      String?
-  message    String
-  createdAt  DateTime @default(now())
+  id            Int        @id @default(autoincrement())
+  sujet         String?
+  message       String
+  createdAt     DateTime   @default(now())
+
+  clientId      Int? @db.UnsignedInt
+  client        Client?      @relation(fields: [clientId], references: [utilisateurIdCl], name: "ClientMessages")
+
+  prestataireId Int? @db.UnsignedInt
+  prestataire   Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre], name: "PrestataireMessages")
 }
 model HistoriqueApp {
   id           Int          @id @default(autoincrement())

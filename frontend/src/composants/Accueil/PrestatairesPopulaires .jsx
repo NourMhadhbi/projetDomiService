@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -7,7 +8,7 @@ import 'swiper/css/autoplay';
 import domiServe from '../../assets/img/domiserivice.jpg';
 import { fetchPopulaireP } from '../../features/HistoriqueSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const PrestatairesPopulaires = ({ isClientConnected }) => {
   const navigate = useNavigate();
@@ -54,8 +55,13 @@ const PrestatairesPopulaires = ({ isClientConnected }) => {
       >
         {Array.isArray(prestataires) && prestataires.map((p, i) => (
           <SwiperSlide key={i}>
-            <div className="custom-card" onClick={() => navigate(`/ficheintervenant/${p.utilisateurIdPre}`)}
-              style={{ cursor: 'pointer' }}>
+            <Link
+              to={`/ficheintervenant/${p.utilisateurIdPre}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="custom-card"
+              style={{ cursor: "pointer", textDecoration: "none", color: "inherit" }}
+            >
               <div className="image-box">
                 <img src={p.utilisateur.image} alt={p.utilisateur.nom} />
               </div>
@@ -76,20 +82,20 @@ const PrestatairesPopulaires = ({ isClientConnected }) => {
                     </div>
                   )}
                 </div>
+
                 <div className="text-zone">
                   <h3>
                     {p.entreprise
                       ? p.entreprise.nomEntreprise
-                      : `${p.utilisateur?.prenom ?? ''} ${p.utilisateur?.nom ?? ''}`}
+                      : `${p.utilisateur?.prenom ?? ""} ${p.utilisateur?.nom ?? ""}`}
                   </h3>
                   <p>{p.utilisateur.specialite}</p>
                 </div>
               </div>
-
-            </div>
+            </Link>
           </SwiperSlide>
         ))}
-        <button className="prestataire-btn" disabled={!isClientConnected} onClick={() => navigate("/prestataires?consultes=true")}>
+        <button className="prestataire-btn" onClick={() => navigate("/prestataires?consultes=true")}>
           Voir Tous Nos Prestataires & Entreprises
         </button>
       </Swiper>

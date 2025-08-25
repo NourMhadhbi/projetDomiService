@@ -122,8 +122,8 @@ router.put("/Modifieravis/:id", async (req, res) => {
             where: { id },
             data: {
                 commentaire: commentaire ?? undefined,
-                note: note ?? undefined,
-                aime: aime !== undefined ? aime : undefined,
+                note: note !== undefined && note !== null && note !== '' ? Number(note) : null,
+                aime: aime === 'like' ? true : aime === 'dislike' ? false : false,
             },
             include: {
                 client: { include: { utilisateur: true } },

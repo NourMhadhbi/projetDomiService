@@ -1,44 +1,63 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { Box, Typography, Paper, Chip, CircularProgress, useTheme } from "@mui/material";
+import { Box, Typography, Paper, CircularProgress, useTheme, Chip } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faList, faUser, faBuilding, faCalendar, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import {
+    faList,
+    faBuilding,
+    faCalendar,
+    faUser,
+    faExclamationTriangle
+} from "@fortawesome/free-solid-svg-icons";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchSignales } from "../../features/SignalementSlice";
+import { fetchMesSignales } from "../../features/SignalementSlice";
 import { MaterialReactTable } from 'material-react-table';
 
-const ListeSignaleAdmin = () => {
+const ListSignalsPrestataires = () => {
     const dispatch = useDispatch();
-    const { isLoggedIn } = useSelector((state) => state.auth);
-    const { signales, loading } = useSelector((state) => state.signalement);
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
+    const { mesSignales, loading } = useSelector((state) => state.signalement);
     const theme = useTheme();
 
     useEffect(() => {
-        dispatch(fetchSignales());
-    }, [dispatch]);
+        if (user?.utilisateur?.id) {
+            dispatch(fetchMesSignales(user.utilisateur.id))
+                .unwrap()
+                .then((data) => console.log("Signales reçus:", data))
+                .catch((err) => console.error("Erreur fetchMesSignales:", err));
+        }
+    }, [dispatch, user]);
 
     // Transformer les données pour MRT
     const rows = useMemo(
         () =>
-            signales.map((s) => ({
-                id: s.id,
-                raison: s.raison || "—",
-                date: s.date
-                    ? new Date(s.date).toLocaleDateString("fr-FR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                    })
-                    : "—",
-                clientName: s.client?.utilisateur
-                    ? `${s.client.utilisateur.nom} ${s.client.utilisateur.prenom}`
-                    : s.clientId ?? "—",
-                prestataireName: s.prestataire?.utilisateur
-                    ? `${s.prestataire.utilisateur.nom} ${s.prestataire.utilisateur.prenom}`
-                    : s.prestataireId ?? "—",
-            })),
-        [signales]
+            mesSignales.map((s) => {
+                const entreprise = s.prestataire.entreprise || {};
+
+                const prestataire = s.prestataire || {};
+                const utilisateurPrestataire = prestataire.utilisateur || {};
+
+                return {
+                    id: s.id,
+                    type: entreprise.nomEntreprise ? "Entreprise" : "Prestataire",
+                    raison: s.raison || "—",
+                    date: s.date
+                        ? new Date(s.date).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                        })
+                        : "—",
+                    entrepriseNom: entreprise.nomEntreprise || "—",
+                    responsable: entreprise.nomEntreprise
+                        ? `${utilisateurPrestataire.nom || ""} ${utilisateurPrestataire.prenom || ""}`.trim()
+                        : `${utilisateurPrestataire.nom || ""} ${utilisateurPrestataire.prenom || ""}`.trim(),
+
+
+                };
+            }),
+        [mesSignales]
     );
 
     // Colonnes MRT avec des largeurs proportionnelles
@@ -54,9 +73,10 @@ const ListeSignaleAdmin = () => {
                     </Box>
                 ),
             },
+
             {
-                accessorKey: 'clientName',
-                header: 'Client',
+                accessorKey: 'responsable',
+                header: 'Nom/Responsable',
                 size: 180,
                 Cell: ({ cell }) => (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -66,9 +86,22 @@ const ListeSignaleAdmin = () => {
                 ),
             },
             {
-                accessorKey: 'prestataireName',
-                header: 'Prestataire / Entreprise',
-                size: 220,
+                accessorKey: 'type',
+                header: 'Type',
+                size: 200,
+                Cell: ({ cell }) => (
+                    <Chip
+                        label={cell.getValue()}
+                        color={cell.getValue() === "Entreprise" ? "primary" : "secondary"}
+                        variant="outlined"
+                        size="small"
+                    />
+                ),
+            },
+            {
+                accessorKey: 'entrepriseNom',
+                header: 'Entreprise',
+                size: 180,
                 Cell: ({ cell }) => (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FontAwesomeIcon icon={faBuilding} style={{ marginRight: 8, color: '#6c757d' }} />
@@ -76,6 +109,7 @@ const ListeSignaleAdmin = () => {
                     </Box>
                 ),
             },
+
             {
                 accessorKey: 'raison',
                 header: 'Raison du signalement',
@@ -157,7 +191,7 @@ const ListeSignaleAdmin = () => {
                             Liste des signalements
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Gestion des signalements des clients envers les prestataires
+                            Gestion des signalements des entreprises envers les prestataires
                         </Typography>
                     </Box>
                 </Box>
@@ -180,7 +214,7 @@ const ListeSignaleAdmin = () => {
                                 Chargement des données...
                             </Typography>
                         </Box>
-                    ) : signales.length === 0 ? (
+                    ) : mesSignales.length === 0 ? (
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -292,4 +326,4 @@ const ListeSignaleAdmin = () => {
     );
 };
 
-export default ListeSignaleAdmin;
+export default ListSignalsPrestataires;

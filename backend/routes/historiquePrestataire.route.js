@@ -177,7 +177,6 @@ router.get('/populaires-semaine', async (req, res) => {
     const start = startOfWeek(now, { weekStartsOn: 1 }); // lundi
     const end = endOfWeek(now, { weekStartsOn: 1 });     // dimanche
 
-    // 1. Récupère toutes les visites cette semaine
     const historiques = await prisma.historiquePrestataire.findMany({
       where: {
         dateVisite: {
@@ -192,7 +191,7 @@ router.get('/populaires-semaine', async (req, res) => {
       },
     });
 
-    // 2. On construit un Set de clés uniques par minute
+  
     const vuesUniques = new Set();
 
     historiques.forEach(({ clientId, prestataireId, dateVisite }) => {

@@ -18,6 +18,121 @@ import {
     Typography,
     Chip
 } from '@mui/material';
+// const PrestataireCard = ({ prestataire, search, service, proche, consultes }) => {
+//     let utilisateur = null;
+//     let nomAffiche = '';
+//     let contact = '';
+//     let adresse = '';
+//     let specialite = '';
+//     let tarifDeplacement = 'Tarif inconnue';
+//     let image = "";
+//     let email = "";
+//     let distance = ""
+//     if (search) {
+//         utilisateur = prestataire;
+
+//         nomAffiche = utilisateur.prestataire.entreprise
+//             ? utilisateur.prestataire.entreprise.nomEntreprise
+//             : `${utilisateur?.prenom || ''} ${utilisateur?.nom || ''}`;
+
+//         // contact = utilisateur?.email || utilisateur.prestataire?.numTel || 'Contact non disponible';
+
+//         email = utilisateur?.email?.trim().toLowerCase();
+//         if (email && email !== "null") {
+//             contact = email;
+
+//         } else { contact = prestataire?.numTel || "Contact non disponible"; }
+//         adresse = utilisateur.prestataire?.ville && utilisateur.prestataire?.adresse
+//             ? `${utilisateur.prestataire.ville}, ${utilisateur.prestataire.adresse}`
+//             : utilisateur.prestataire?.ville || 'Adresse inconnue';
+
+//         specialite = utilisateur.prestataire?.Spécialite || 'Spécialité inconnue';
+//         tarifDeplacement = utilisateur.prestataire?.tarifDeplacement || 'T';
+//         image = utilisateur?.image;
+//     }
+//     else if (service || proche || consultes) {
+
+
+//         nomAffiche = prestataire.entreprise
+//             ? prestataire.entreprise.nomEntreprise
+//             : `${prestataire.utilisateur?.prenom || ''} ${prestataire.utilisateur?.nom || ''}`;
+//         email = prestataire?.utilisateur?.email?.trim().toLowerCase();
+//         if (email && email !== "null") {
+//             contact = email;
+//         } else { contact = prestataire?.numTel || "Contact non disponible"; }
+
+//         console.log("numtel", prestataire.utilisateur?.email)
+//         adresse = prestataire?.ville && prestataire?.adresse
+//             ? `${prestataire.ville}, ${prestataire.adresse}`
+//             : prestataire?.ville || 'Adresse inconnue';
+
+//         specialite = prestataire?.Spécialite || 'Spécialité inconnue';
+//         tarifDeplacement = prestataire?.tarifDeplacement || '';
+//         image = prestataire.utilisateur?.image;
+
+//     }
+
+
+//     return (
+
+//         <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden" >
+//<div className="card-header">
+//             <img
+//                 src={image || "/default-user.png"}
+//                 className="card-img-top"
+//                 alt="Photo"
+//                 style={{
+//                     height: "240px",
+//                     objectFit: "cover"
+//                 }}
+//             />
+//  <span className="specialite-badge">{specialite}</span>
+//</div>
+//             <div className="d-flex" style={{ backgroundColor: "#fff" }}>
+//                 <div
+//                     style={{
+//                         width: "6px",
+//                         backgroundColor: "#f15a24",
+//                         borderTopRightRadius: '4px'
+//                     }}
+//                 ></div>
+//                 <div className="p-3">
+//                     <div className="fw-semibold text-dark mb-2" style={{ fontSize: '16px', textTransform: 'capitalize' }}>
+//                         {nomAffiche}
+//                     </div>
+
+//                     <div className="mb-1" style={{ fontSize: '13px', color: '#f15a24', fontWeight: '500' }}>
+//                         {prestataire.specialite || 'Spécialité inconnue'}
+//                     </div>
+
+//                     <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+//                         <i className="fas fa-envelope me-2" style={{ color: '#888' }}></i>
+//                         {contact}
+//                     </div>
+
+//                     <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+//                         <i className="fas fa-map-marker-alt me-2" style={{ color: '#888' }}></i>
+//                         {adresse}
+//                     </div>
+
+//                     <div className="d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+//                         <i className="fas fa-euro-sign me-2" style={{ color: '#888' }}></i>
+//                         <span>Tarif de déplacement : <strong>{tarifDeplacement}DT</strong></span>
+//                     </div>
+//                     {typeof prestataire.distance === "number" && (
+//                         <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
+//                             <i className="fas fa-route me-2" style={{ color: '#888' }}></i>
+//                             <span>Distance : <strong>{prestataire.distance.toFixed(1)} km</strong></span>
+//                         </div>
+//                     )}
+//                 </div>
+
+//             </div>
+//         </div>
+
+//     );
+// };
+
 const PrestataireCard = ({ prestataire, search, service, proche, consultes }) => {
     let utilisateur = null;
     let nomAffiche = '';
@@ -27,7 +142,9 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
     let tarifDeplacement = 'Tarif inconnue';
     let image = "";
     let email = "";
-    let distance = ""
+    let distance = "";
+    let prestataireId = null;
+
     if (search) {
         utilisateur = prestataire;
 
@@ -35,13 +152,11 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
             ? utilisateur.prestataire.entreprise.nomEntreprise
             : `${utilisateur?.prenom || ''} ${utilisateur?.nom || ''}`;
 
-        // contact = utilisateur?.email || utilisateur.prestataire?.numTel || 'Contact non disponible';
-
         email = utilisateur?.email?.trim().toLowerCase();
         if (email && email !== "null") {
             contact = email;
-
         } else { contact = prestataire?.numTel || "Contact non disponible"; }
+
         adresse = utilisateur.prestataire?.ville && utilisateur.prestataire?.adresse
             ? `${utilisateur.prestataire.ville}, ${utilisateur.prestataire.adresse}`
             : utilisateur.prestataire?.ville || 'Adresse inconnue';
@@ -49,42 +164,64 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
         specialite = utilisateur.prestataire?.Spécialite || 'Spécialité inconnue';
         tarifDeplacement = utilisateur.prestataire?.tarifDeplacement || 'T';
         image = utilisateur?.image;
+        prestataireId = utilisateur.id;
     }
     else if (service || proche || consultes) {
-
-
         nomAffiche = prestataire.entreprise
             ? prestataire.entreprise.nomEntreprise
             : `${prestataire.utilisateur?.prenom || ''} ${prestataire.utilisateur?.nom || ''}`;
+
         email = prestataire?.utilisateur?.email?.trim().toLowerCase();
         if (email && email !== "null") {
             contact = email;
         } else { contact = prestataire?.numTel || "Contact non disponible"; }
 
-        console.log("numtel", prestataire.utilisateur?.email)
         adresse = prestataire?.ville && prestataire?.adresse
             ? `${prestataire.ville}, ${prestataire.adresse}`
             : prestataire?.ville || 'Adresse inconnue';
 
         specialite = prestataire?.Spécialite || 'Spécialité inconnue';
         tarifDeplacement = prestataire?.tarifDeplacement || '';
-        image = prestataire.utilisateur.image;
-
+        image = prestataire.utilisateur?.image;
+        prestataireId = prestataire?.utilisateur?.id;
     }
 
+    const handleRendezVousClick = () => {
+        window.location.href = `/calendrier/${prestataireId}`;
+    };
 
     return (
+        <div className="card h-100 border-0 shadow-lg rounded-4 overflow-hidden"
+            style={{
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                maxWidth: '380px',
+                margin: '0 auto'
+            }}>
+            <div className="position-relative">
+                <img
+                    src={image || "/default-user.png"}
+                    className="card-img-top"
+                    alt="Photo"
+                    style={{
+                        height: "220px",
+                        objectFit: "cover",
+                        width: "100%"
+                    }}
+                />
+                <div className="position-absolute top-0 end-0 m-3">
+                    <span style={{
+                        backgroundColor: '#f15a24',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                    }}>
+                        {specialite}
+                    </span>
+                </div>
+            </div>
 
-        <div className="card h-100 border-0 shadow-sm rounded-3 overflow-hidden" >
-            <img
-                src={image || "/default-user.png"}
-                className="card-img-top"
-                alt="Photo"
-                style={{
-                    height: "240px",
-                    objectFit: "cover"
-                }}
-            />
             <div className="d-flex" style={{ backgroundColor: "#fff" }}>
                 <div
                     style={{
@@ -93,44 +230,121 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
                         borderTopRightRadius: '4px'
                     }}
                 ></div>
-                <div className="p-3">
-                    <div className="fw-semibold text-dark mb-2" style={{ fontSize: '16px', textTransform: 'capitalize' }}>
+                <div className="p-4 w-100">
+                    <div className="fw-bold text-dark mb-2" style={{ fontSize: '20px', textTransform: 'capitalize' }}>
                         {nomAffiche}
                     </div>
 
-                    <div className="mb-1" style={{ fontSize: '13px', color: '#f15a24', fontWeight: '500' }}>
-                        {prestataire.specialite || 'Spécialité inconnue'}
+                    <div className="mb-3 d-flex align-items-center">
+                        <div style={{
+                            width: '36px',
+                            height: '36px',
+                            backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px',
+                            flexShrink: '0'
+                        }}>
+                            <i className="fas fa-envelope" style={{ color: '#f15a24', fontSize: '16px' }}></i>
+                        </div>
+                        <div>
+                            <div style={{ color: '#95a5a6', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase' }}>Contact</div>
+                            <div style={{ color: '#34495e', fontSize: '14px', fontWeight: '500' }}>{contact}</div>
+                        </div>
                     </div>
 
-                    <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
-                        <i className="fas fa-envelope me-2" style={{ color: '#888' }}></i>
-                        {contact}
+                    <div className="mb-3 d-flex align-items-center">
+                        <div style={{
+                            width: '36px',
+                            height: '36px',
+                            backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px',
+                            flexShrink: '0'
+                        }}>
+                            <i className="fas fa-map-marker-alt" style={{ color: '#f15a24', fontSize: '16px' }}></i>
+                        </div>
+                        <div>
+                            <div style={{ color: '#95a5a6', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase' }}>Adresse</div>
+                            <div style={{ color: '#34495e', fontSize: '14px', fontWeight: '500' }}>{adresse}</div>
+                        </div>
                     </div>
 
-                    <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
-                        <i className="fas fa-map-marker-alt me-2" style={{ color: '#888' }}></i>
-                        {adresse}
+                    <div className="mb-3 d-flex align-items-center">
+                        <div style={{
+                            width: '36px',
+                            height: '36px',
+                            backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: '12px',
+                            flexShrink: '0'
+                        }}>
+                            <i className="fas fa-euro-sign" style={{ color: '#f15a24', fontSize: '16px' }}></i>
+                        </div>
+                        <div>
+                            <div style={{ color: '#95a5a6', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase' }}>Tarif de déplacement</div>
+                            <div style={{ color: '#34495e', fontSize: '14px', fontWeight: '500' }}>{tarifDeplacement} DT</div>
+                        </div>
                     </div>
 
-                    <div className="d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
-                        <i className="fas fa-euro-sign me-2" style={{ color: '#888' }}></i>
-                        <span>Tarif de déplacement : <strong>{tarifDeplacement}DT</strong></span>
-                    </div>
                     {typeof prestataire.distance === "number" && (
-                        <div className="mb-1 d-flex align-items-center" style={{ fontSize: '13px', color: '#555' }}>
-                            <i className="fas fa-route me-2" style={{ color: '#888' }}></i>
-                            <span>Distance : <strong>{prestataire.distance.toFixed(1)} km</strong></span>
+                        <div className="mb-4 d-flex align-items-center">
+                            <div style={{
+                                width: '36px',
+                                height: '36px',
+                                backgroundColor: 'rgba(241, 90, 36, 0.1)',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '12px',
+                                flexShrink: '0'
+                            }}>
+                                <i className="fas fa-route" style={{ color: '#f15a24', fontSize: '16px' }}></i>
+                            </div>
+                            <div>
+                                <div style={{ color: '#95a5a6', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase' }}>Distance</div>
+                                <div style={{ color: '#34495e', fontSize: '14px', fontWeight: '500' }}>{prestataire.distance.toFixed(1)} km</div>
+                            </div>
                         </div>
                     )}
-                </div>
 
+                    {/* Bouton Prendre Rendez-vous */}
+                    <div className="mt-3 pt-2 border-top">
+                        <button
+                            style={{
+                                backgroundColor: '#f15a24',
+                                color: 'white',
+                                fontWeight: '600',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                width: '100%',
+                                border: 'none',
+                                fontSize: '16px',
+                                transition: 'background 0.3s ease'
+                            }}
+                            onMouseOver={(e) => e.target.style.backgroundColor = '#e14a1c'}
+                            onMouseOut={(e) => e.target.style.backgroundColor = '#f15a24'}
+                            onClick={handleRendezVousClick}
+
+                        >
+                            <i className="fas fa-calendar-check me-2"></i>
+                            Prendre Rendez-vous
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-
     );
 };
-
-
 const ListePrestataires = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -354,7 +568,7 @@ const ListePrestataires = () => {
                 <div className="row g-4" >
                     {currentFiltres.length > 0 ? (
                         currentFiltres.map((p) => (
-                            <div className="col-md-6 col-lg-3 mb-4" key={p.utilisateurIdPre}   onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
+                            <div className="col-md-6 col-lg-3 mb-4" key={p.utilisateurIdPre} onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
                                 <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} />
                             </div>
                         ))

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchIntervenant } from '../../features/UtilisateurSlice'; // ou rendezVousSlice selon ton setup
+import { fetchIntervenant } from '../../features/UtilisateurSlice'; 
 import { useNavigate } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';

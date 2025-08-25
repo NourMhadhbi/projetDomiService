@@ -9,6 +9,10 @@ export const signin = async (user) => {
 }
 export const forgot = async (identifier) => {
     return await Api.post(USER_API + "/forgot-password", { identifier });
+
+}
+export const modifierCompte = (user) => {
+    return Api.put(USER_API + '/' + (user.id), user);
 }
 export const resetPass = async (identifier, code, newPassword) => {
     return await Api.post(USER_API + "/reset-password", { identifier, code, newPassword });

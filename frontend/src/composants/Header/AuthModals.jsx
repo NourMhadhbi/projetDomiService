@@ -1,62 +1,128 @@
-// components/AuthPanelModal.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { FaSignInAlt, FaUserPlus } from "react-icons/fa";
 
-const AuthPanelModal = () => {
+const AuthPanelModal = ({ isOpen, setIsOpen }) => {
     const navigate = useNavigate();
+    if (!isOpen) return null;
 
-    const handleGoogleLogin = () => {
-        // ⚙️ Ici tu mets la logique Google OAuth (Firebase ou autre)
-        alert("Connexion avec Google déclenchée (remplace ça par Firebase)");
+    const closeModal = () => setIsOpen(false);
+    const handleNavigate = (path) => {
+        closeModal();
+        navigate(path);
     };
+
+    const buttonStyle = (color) => ({
+        border: `2px solid ${color}`,
+        color: color,
+        background: "#fff",
+        fontWeight: "400",
+        fontSize: "0.9rem",
+        transition: "all 0.3s ease",
+        padding: "0.5rem 1rem",
+    });
 
     return (
         <div
-            className="modal fade"
-            id="authPanelModal"
-            tabIndex="-1"
-            aria-labelledby="authPanelModalLabel"
-            aria-hidden="true"
+            style={{
+                position: "fixed",
+                inset: 0,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1050,
+                backgroundColor: "rgba(0,0,0,0.3)",
+            }}
         >
-            <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content shadow">
-                    <div className="modal-header bg-primary text-white">
-                        <h5 className="modal-title">Bienvenue sur DomiService</h5>
+            <div
+                className="modal-dialog modal-dialog-centered"
+                style={{ zIndex: 1060 }}
+            >
+                <div
+                    className="modal-content shadow-lg rounded-4"
+                    style={{
+                        backgroundColor: "#fff",
+                        width: "500px",
+                        maxWidth: "90vw",
+                        padding: "1.5rem 1rem"
+                    }}
+                >
+
+                    <div className="modal-header border-0 bg-light d-flex flex-column align-items-center position-relative">
+                        <h5
+                            className="modal-title fw-light mb-2"
+                            style={{
+                                fontSize: "1.3rem",
+                                letterSpacing: "0.5px",
+                                color: "#1a3a6c",
+                            }}
+                        >
+                            Connexion à DomiService
+                        </h5>
+
+
+                        <div
+                            style={{
+                                width: "60px",
+                                height: "2px",
+                                backgroundColor: "#ff6b00",
+                                marginBottom: "0.5rem",
+                            }}
+                        ></div>
+
+
                         <button
                             type="button"
-                            className="btn-close"
-                            data-bs-dismiss="modal"
-                            aria-label="Close"
+                            className="btn-close position-absolute top-0 end-0 m-3"
+                            onClick={closeModal}
                         ></button>
                     </div>
-                    <div className="modal-body text-center p-4">
-                        <button
-                            className="btn btn-danger w-100 mb-4"
-                            onClick={handleGoogleLogin}
+
+                    <div className="modal-body text-center px-4 pb-4">
+                        <p
+                            className="fw-light mb-4"
+                            style={{
+                                fontSize: "0.95rem",
+                                lineHeight: "1.5",
+                                color: "#1a3a6c",
+                            }}
                         >
-                            <i className="fab fa-google me-2"></i> Se connecter avec Google
-                        </button>
-                        <hr className="my-4" />
+                            Connectez-vous ou créez un compte pour accéder à tous les services
+                        </p>
+
                         <div className="d-grid gap-2">
                             <button
-                                className="btn btn-outline-primary"
-                                onClick={() => {
-                                    document.getElementById('authPanelModal')?.classList.remove('show');
-                                    document.body.classList.remove('modal-open');
-                                    navigate('/login');
+                                className="btn rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 py-2"
+                                style={buttonStyle("#1a3a6c")}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "#1a3a6c";
+                                    e.currentTarget.style.color = "#fff";
                                 }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "#fff";
+                                    e.currentTarget.style.color = "#1a3a6c";
+                                }}
+                                onClick={() => handleNavigate("/login")}
                             >
-                                Login
+                                <FaSignInAlt size={18} />
+                                <span className="fw-light">Se connecter</span>
                             </button>
+
                             <button
-                                className="btn btn-outline-success"
-                                onClick={() => {
-                                    document.getElementById('authPanelModal')?.classList.remove('show');
-                                    document.body.classList.remove('modal-open');
-                                    navigate('/register');
+                                className="btn rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 py-2"
+                                style={buttonStyle("#ff6b00")}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "#ff6b00";
+                                    e.currentTarget.style.color = "#fff";
                                 }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "#fff";
+                                    e.currentTarget.style.color = "#ff6b00";
+                                }}
+                                onClick={() => handleNavigate("/registre")}
                             >
-                                Registre
+                                <FaUserPlus size={18} />
+                                <span className="fw-light">Créer un compte</span>
                             </button>
                         </div>
                     </div>

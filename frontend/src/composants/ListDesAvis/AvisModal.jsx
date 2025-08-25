@@ -76,8 +76,9 @@ const AvisModal = ({ show, onClose, onSubmit, formData, setFormData, reaction, s
                             </div>
                         </div>
                         <div className="modal-footer border-0 pt-0">
-                            <button type="button" className="btn btn-outline-secondary" onClick={onClose}>Annuler</button>
                             <button type="submit" className="btn btn-success fw-semibold">Modifier</button>
+                            <button type="button" className="btn btn-outline-secondary" onClick={onClose}>Annuler</button>
+
                         </div>
                     </form>
                 </div>

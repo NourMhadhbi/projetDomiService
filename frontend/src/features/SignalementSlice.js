@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getSignales, ajouterSignale,checkSignale } from '../services/SignalementService';
+import { getSignales, ajouterSignale, checkSignale, getMesSignales } from '../services/SignalementService';
 
 
 export const fetchSignales = createAsyncThunk(
@@ -16,7 +16,13 @@ export const checkSignales = createAsyncThunk(
     return res;
   }
 );
-
+export const fetchMesSignales = createAsyncThunk(
+  'signalement/fetchMesSignales',
+  async (clientId) => {
+    const res = await getMesSignales(clientId);
+    return res;
+  }
+);
 export const ajouterSignaleThunk = createAsyncThunk(
   'signalement/ajouterSignale',
   async (data) => {
@@ -30,7 +36,8 @@ const signalementSlice = createSlice({
   name: 'signalement',
   initialState: {
     signales: [],
-    signalementsParUtilisateur:[],
+    signalementsParUtilisateur: [],
+    mesSignales: [],
     loading: false,
     error: null,
   },
@@ -48,38 +55,41 @@ const signalementSlice = createSlice({
         state.loading = false;
 
         state.signales = action.payload;
-
+        console.log("signalesss", state.signales)
       })
       .addCase(fetchSignales.rejected, (state, action) => {
         state.loading = false;
 
         state.error = action.error.message;
       })
+      .addCase(fetchMesSignales.pending, (state) => { state.loading = true; })
+      .addCase(fetchMesSignales.fulfilled, (state, action) => { state.loading = false; state.mesSignales = action.payload; })
+      .addCase(fetchMesSignales.rejected, (state, action) => { state.loading = false; state.error = action.error.message; })
       .addCase(ajouterSignaleThunk.pending, (state) => {
         state.loading = true;
       })
       .addCase(ajouterSignaleThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.signales.push(action.payload); // Ajout dans la liste locale
+        state.signales.push(action.payload);
       })
       .addCase(ajouterSignaleThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
-       .addCase(checkSignales.pending, (state) => {
+      .addCase(checkSignales.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(checkSignales.fulfilled, (state, action) => {
         state.loading = false;
-          state.signalementsParUtilisateur = action.payload;
+        state.signalementsParUtilisateur = action.payload;
       })
       .addCase(checkSignales.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       });
-      
-      ;
+
+    ;
   },
 });
 export const { resetSignales } = signalementSlice.actions;

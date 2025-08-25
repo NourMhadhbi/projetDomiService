@@ -27,5 +27,7 @@ const favorisPrestataire = require("./routes/favorisPrestataire.route")
 app.use('/api/favorisPres', favorisPrestataire);
 const signalePrestataire = require("./routes/signalement.route")
 app.use('/api/signalement', signalePrestataire);
+const ContactMessage = require("./routes/ContactMessage.route")
+app.use('/api/Contact', ContactMessage);
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`))

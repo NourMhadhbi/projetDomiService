@@ -1,4 +1,615 @@
-import React, { useEffect, useState } from "react";
+// import React, { useEffect, useState } from "react";
+// import Header from "../Header/Header";
+// import Footer from "../Footer/Footer";
+// import {
+//     Box,
+//     Typography,
+//     Select,
+//     MenuItem,
+//     InputLabel,
+//     FormControl,
+//     Paper,
+//     Button,
+//     Dialog,
+//     DialogTitle,
+//     DialogContent,
+//     DialogActions,
+//     TextField,
+//     IconButton,
+//     CircularProgress
+// } from "@mui/material";
+// import AddIcon from "@mui/icons-material/Add";
+// import EditIcon from "@mui/icons-material/Edit";
+// import ArchiveIcon from "@mui/icons-material/Archive";
+// import { DataGrid } from "@mui/x-data-grid";
+// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import { faList } from "@fortawesome/free-solid-svg-icons";
+// import { useSelector, useDispatch } from "react-redux";
+// import { FilePond, registerPlugin } from 'react-filepond';
+// import 'filepond/dist/filepond.min.css';
+// import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
+// import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+// import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
+// import {
+//     fetchServices,
+//     ajouterServiceThunk,
+//     modifierServiceThunk,
+//     archiverServiceThunk
+// } from "../../features/ServiceSlice";
+// import Swal from "sweetalert2";
+// import ImageService from "./ImageService";
+// // Register FilePond plugins
+// registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
+
+// const ListeServicesAdmin = () => {
+//     const [filtreEtat, setFiltreEtat] = useState("TOUS");
+//     const [openAddDialog, setOpenAddDialog] = useState(false);
+//     const [newService, setNewService] = useState({ nom: "", description: "", image: null });
+//     const [editDialogOpen, setEditDialogOpen] = useState(false);
+//     const [serviceToEdit, setServiceToEdit] = useState(null);
+//     const [filesAdd, setFilesAdd] = useState([]);
+//     const [filesEdit, setFilesEdit] = useState([]);
+//     const [isUploading, setIsUploading] = useState(false);
+
+//     const dispatch = useDispatch();
+//     const { isLoggedIn } = useSelector((state) => state.auth);
+//     const { services, loading } = useSelector((state) => state.service);
+//     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
+
+//     // Configuration Cloudinary pour FilePond
+//     const serverOptions = {
+//         process: {
+//             url: 'https://api.cloudinary.com/v1_1/dkhjej8yx/image/upload',
+//             method: 'POST',
+//             withCredentials: false,
+//             headers: {},
+//             timeout: 7000,
+//             onload: (response) => {
+//                 const data = JSON.parse(response);
+//                 setIsUploading(false);
+//                 return data.secure_url;
+//             },
+//             onerror: (error) => {
+//                 console.error('Erreur de téléchargement:', error);
+//                 setIsUploading(false);
+//                 Swal.fire("Erreur", "Erreur lors du téléchargement de l'image", "error");
+//                 return error;
+//             },
+//             ondata: (formData) => {
+//                 // Ici le fichier est automatiquement ajouté par FilePond sous 'file'
+//                 formData.append('upload_preset', 'DomiService');
+//                 return formData;
+//             }
+//         }
+//     };
+
+
+//     useEffect(() => {
+//         dispatch(fetchServices());
+//     }, [dispatch]);
+
+//     const handleEdit = (row) => {
+//         setServiceToEdit({ ...row });
+
+//         if (row.image) {
+//             setFilesEdit([
+//                 {
+//                     source: row.image,
+//                     options: {
+//                         type: 'remote',
+//                         file: {
+//                             name: 'image-service.jpg',
+//                             size: 12345,
+//                             type: 'image/jpeg'
+//                         },
+//                         metadata: {
+//                             poster: row.image
+//                         }
+//                     }
+//                 }
+//             ]);
+//         } else {
+//             setFilesEdit([]);
+//         }
+
+//         setEditDialogOpen(true);
+//     };
+
+//     const handleArchiver = async (row) => {
+//         const confirm = await Swal.fire({
+//             title: "Archiver ?",
+//             text: `Archiver le service "${row.nom}" ?`,
+//             icon: "warning",
+//             showCancelButton: true,
+//             confirmButtonColor: "#d33",
+//             confirmButtonText: "Oui, archiver"
+//         });
+
+//         if (confirm.isConfirmed) {
+//             await dispatch(archiverServiceThunk(row.id));
+//             Swal.fire("Archivé", "Le service a été archivé.", "success");
+//         }
+//     };
+
+//     const handleAddService = async () => {
+//         if (!newService.nom) {
+//             Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+//             return;
+//         }
+
+//         const data = {
+//             nom: newService.nom,
+//             description: newService.description,
+//             image: newService.image
+//         };
+
+//         await dispatch(ajouterServiceThunk(data));
+//         Swal.fire("Ajouté", "Le service a été ajouté.", "success");
+//         setOpenAddDialog(false);
+//         setNewService({ nom: "", description: "", image: null });
+//         setFilesAdd([]);
+//     };
+
+//     const handleUpdateService = async () => {
+//         if (!serviceToEdit.nom) {
+//             Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+//             return;
+//         }
+
+//         const { id, nom, description, image } = serviceToEdit;
+//         const data = { nom, description, image };
+
+//         await dispatch(modifierServiceThunk({ id, data }));
+//         setEditDialogOpen(false);
+//         setServiceToEdit(null);
+//         setFilesEdit([]);
+//         Swal.fire("Modifié", "Le service a été mis à jour.", "success");
+//     };
+
+//     const getColonnes = () => {
+//         const base = [
+//             { field: "id", headerName: "ID", width: 80 },
+//             {
+//                 field: "image",
+//                 headerName: "Image",
+//                 flex: 1,
+//                 renderCell: ({ row }) => (
+//                     <Box
+//                         display="flex"
+//                         alignItems="center"
+//                         justifyContent="center"
+//                         height="100%"
+//                         sx={{ p: 1 }}
+//                     >
+//                         {row.image ? (
+//                             <img
+//                                 src={row.image}
+//                                 alt={row.nom}
+//                                 style={{
+//                                     width: 70,
+//                                     height: 70,
+//                                     objectFit: "cover",
+//                                     borderRadius: 8,
+//                                     boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+//                                 }}
+//                             />
+//                         ) : (
+//                             <Box
+//                                 sx={{
+//                                     width: 70,
+//                                     height: 70,
+//                                     bgcolor: "grey.100",
+//                                     borderRadius: 2,
+//                                     display: "flex",
+//                                     alignItems: "center",
+//                                     justifyContent: "center"
+//                                 }}
+//                             >
+//                                 <Typography variant="caption" color="textSecondary">
+//                                     Aucune image
+//                                 </Typography>
+//                             </Box>
+//                         )}
+//                     </Box>
+//                 )
+//             },
+//             { field: "nom", headerName: "Nom Service", flex: 1 },
+//             { field: "description", headerName: "Description", flex: 2 },
+//             {
+//                 field: "etatArchive",
+//                 headerName: "État",
+//                 flex: 1,
+//                 renderCell: ({ row }) => (
+//                     <Typography color={row.etatArchive ? "error" : "success.main"}>
+//                         {row.etatArchive ? "Archivé" : "Actif"}
+//                     </Typography>
+//                 )
+//             }
+//         ];
+
+//         const actionColumn = {
+//             field: "action",
+//             headerName: "Actions",
+//             flex: 1,
+//             renderCell: ({ row }) => (
+//                 <Box display="flex" gap={1}>
+//                     <IconButton color="primary" onClick={() => handleEdit(row)}>
+//                         <EditIcon />
+//                     </IconButton>
+//                     <IconButton color="warning" onClick={() => handleArchiver(row)}>
+//                         <ArchiveIcon />
+//                     </IconButton>
+//                 </Box>
+//             )
+//         };
+
+//         return [...base, actionColumn];
+//     };
+
+//     const rowsFiltres = services.filter((s) =>
+//         filtreEtat === "TOUS" ? true : filtreEtat === "Archive" ? s.etatArchive : !s.etatArchive
+//     );
+
+//     return (
+//         <>
+//             <Header isClientConnected={isLoggedIn} />
+//             <Box className="container mt-4" sx={{ minHeight: 500, width: "95%", maxWidth: "100vw" }}>
+//                 <Box mb={3} display="flex" alignItems="center" justifyContent="space-between">
+//                     <Box display="flex" alignItems="center">
+//                         <FontAwesomeIcon icon={faList} style={{ fontSize: 35, color: "#ff6b00", marginRight: 10 }} />
+//                         <Box>
+//                             <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a3a6c" }}>
+//                                 Liste des services
+//                             </Typography>
+//                             <Box sx={{ height: 4, width: "80px", backgroundColor: "#ff6b00", borderRadius: 2, mt: 1 }} />
+//                         </Box>
+//                     </Box>
+//                     <Button
+//                         variant="contained"
+//                         startIcon={<AddIcon />}
+//                         onClick={() => setOpenAddDialog(true)}
+//                         sx={{
+//                             backgroundColor: '#1976d2',
+//                             color: 'white',
+//                             paddingX: 2.5,
+//                             paddingY: 1,
+//                             textTransform: 'none',
+//                             fontWeight: 'bold',
+//                             borderRadius: 2,
+//                             fontSize: '0.95rem',
+//                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+//                             '&:hover': {
+//                                 backgroundColor: '#115293'
+//                             }
+//                         }}
+//                     >
+//                         Ajouter un service
+//                     </Button>
+//                 </Box>
+
+//                 <FormControl fullWidth sx={{ mb: 2 }}>
+//                     <InputLabel id="filtre-etat-label">Filtrer par État</InputLabel>
+//                     <Select
+//                         labelId="filtre-etat-label"
+//                         value={filtreEtat}
+//                         label="Filtrer par État"
+//                         onChange={(e) => setFiltreEtat(e.target.value)}
+//                     >
+//                         <MenuItem value="TOUS">Tous</MenuItem>
+//                         <MenuItem value="Archive">Archivé</MenuItem>
+//                         <MenuItem value="NonArchive">Actif</MenuItem>
+//                     </Select>
+//                 </FormControl>
+
+//                 <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+//                     <div style={{ width: "100%", overflow: "auto" }}>
+//                         <div style={{ minWidth: "1200px", height: "600px" }}>
+//                             <DataGrid
+//                                 rows={rowsFiltres}
+//                                 columns={getColonnes()}
+//                                 paginationModel={paginationModel}
+//                                 onPaginationModelChange={setPaginationModel}
+//                                 rowsPerPageOptions={[10, 20, 50]}
+//                                 pagination
+//                                 disableRowSelectionOnClick
+//                             />
+//                         </div>
+//                     </div>
+//                 </Paper>
+//             </Box>
+
+//             {/** Modal Modification service */}
+//             <Dialog
+//                 open={editDialogOpen}
+//                 onClose={() => setEditDialogOpen(false)}
+//                 maxWidth="sm"
+//                 fullWidth
+//                 PaperProps={{
+//                     sx: {
+//                         borderRadius: 3,
+//                         overflow: 'hidden'
+//                     }
+//                 }}
+//             >
+//                 <DialogTitle sx={{
+//                     background: 'linear-gradient(45deg, #1976d2 30%, #1565c0 90%)',
+//                     color: 'white',
+//                     py: 2,
+//                     px: 3,
+//                     display: 'flex',
+//                     alignItems: 'center',
+//                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+//                 }}>
+//                     <EditIcon sx={{
+//                         mr: 1.5,
+//                         fontSize: '1.8rem',
+//                         background: 'rgba(255,255,255,0.2)',
+//                         borderRadius: '50%',
+//                         p: 0.5
+//                     }} />
+//                     <Typography variant="h6" fontWeight="500" sx={{ letterSpacing: '0.5px' }}>
+//                         Modifier le service
+//                     </Typography>
+//                 </DialogTitle>
+
+//                 <DialogContent
+//                     dividers
+//                     sx={{
+//                         p: 3,
+//                         display: "flex",
+//                         flexDirection: "column",
+//                         gap: 3,
+//                         maxHeight: '70vh',
+//                         overflow: 'auto'
+//                     }}
+//                 >
+//                     {serviceToEdit && (
+//                         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+//                             <ImageService
+//                                 service={serviceToEdit}
+//                                 setService={setServiceToEdit}
+//                             />
+//                         </Box>
+//                     )}
+
+//                     <TextField
+//                         label="Nom du service"
+//                         value={serviceToEdit?.nom || ""}
+//                         onChange={(e) => setServiceToEdit({ ...serviceToEdit, nom: e.target.value })}
+//                         fullWidth
+//                         required
+//                         variant="outlined"
+//                         size="small"
+//                         sx={{
+//                             '& .MuiOutlinedInput-root': {
+//                                 borderRadius: 2
+//                             }
+//                         }}
+//                     />
+
+//                     <TextField
+//                         label="Description"
+//                         multiline
+//                         rows={4}
+//                         value={serviceToEdit?.description || ""}
+//                         onChange={(e) => setServiceToEdit({ ...serviceToEdit, description: e.target.value })}
+//                         fullWidth
+//                         variant="outlined"
+//                         size="small"
+//                         sx={{
+//                             '& .MuiOutlinedInput-root': {
+//                                 borderRadius: 2
+//                             }
+//                         }}
+//                     />
+//                 </DialogContent>
+
+//                 <DialogActions sx={{
+//                     px: 3,
+//                     py: 2,
+//                     borderTop: 1,
+//                     borderColor: 'divider',
+//                     background: 'rgba(0,0,0,0.02)'
+//                 }}>
+//                     <Button
+//                         onClick={() => {
+//                             setEditDialogOpen(false);
+//                         }}
+//                         variant="outlined"
+//                         color="inherit"
+//                         sx={{
+//                             borderRadius: '8px',
+//                             textTransform: 'none',
+//                             px: 3,
+//                             py: 1,
+//                             fontWeight: '500'
+//                         }}
+//                     >
+//                         Annuler
+//                     </Button>
+
+//                     <Button
+//                         onClick={handleUpdateService}
+//                         variant="contained"
+//                         color="primary"
+//                         disabled={isUploading}
+//                         sx={{
+//                             borderRadius: '8px',
+//                             textTransform: 'none',
+//                             px: 3,
+//                             py: 1,
+//                             boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+//                             fontWeight: '500',
+//                             '&:hover': {
+//                                 boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
+//                             }
+//                         }}
+//                     >
+//                         {isUploading ? (
+//                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
+//                                 <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
+//                                 Enregistrement...
+//                             </Box>
+//                         ) : "Enregistrer"}
+//                     </Button>
+//                 </DialogActions>
+//             </Dialog>
+
+//             {/* Modal Ajout Service */}
+//             <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth
+//                 PaperProps={{
+//                     sx: {
+//                         borderRadius: 3,
+//                         overflow: 'hidden'
+//                     }
+//                 }}
+//             >
+//                 <DialogTitle sx={{
+//                     background: 'linear-gradient(45deg, #1976d2 30%, #1565c0 90%)',
+//                     color: 'white',
+//                     py: 2,
+//                     px: 3,
+//                     display: 'flex',
+//                     alignItems: 'center',
+//                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+//                 }}>
+//                     <AddIcon sx={{
+//                         mr: 1.5,
+//                         fontSize: '1.8rem',
+//                         background: 'rgba(255,255,255,0.2)',
+//                         borderRadius: '50%',
+//                         p: 0.5
+//                     }} />
+//                     <Typography variant="h6" fontWeight="500" sx={{ letterSpacing: '0.5px' }}>
+//                         Ajouter un service
+//                     </Typography>
+//                 </DialogTitle>
+
+//                 <DialogContent
+//                     dividers
+//                     sx={{
+//                         p: 3,
+//                         display: "flex",
+//                         flexDirection: "column",
+//                         gap: 3,
+//                         maxHeight: '70vh',
+//                         overflow: 'auto'
+//                     }}
+//                 >
+//                     <Box>
+//                         <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+//                             Ajouter une image
+//                         </Typography>
+//                         <FilePond
+//                             files={filesAdd}
+//                             onupdatefiles={setFilesAdd}
+//                             allowMultiple={false}
+//                             maxFiles={1}
+//                             name="file"
+//                             labelIdle='Glissez-déposez votre image ou <span class="filepond--label-action">Parcourir</span>'
+//                             server={serverOptions}
+//                             onprocessfile={(error, file) => {
+//                                 if (!error) {
+//                                     setNewService({ ...newService, image: file.serverId });
+//                                 }
+//                             }}
+//                             onremovefile={() => {
+//                                 setNewService({ ...newService, image: null });
+//                             }}
+//                         />
+//                         {isUploading && <CircularProgress size={24} sx={{ alignSelf: 'center', mt: 1 }} />}
+//                     </Box>
+
+//                     <TextField
+//                         label="Nom du service"
+//                         value={newService.nom}
+//                         onChange={(e) => setNewService({ ...newService, nom: e.target.value })}
+//                         fullWidth
+//                         required
+//                         variant="outlined"
+//                         size="small"
+//                         sx={{
+//                             '& .MuiOutlinedInput-root': {
+//                                 borderRadius: 2
+//                             }
+//                         }}
+//                     />
+
+//                     <TextField
+//                         label="Description"
+//                         multiline
+//                         rows={4}
+//                         value={newService.description}
+//                         onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+//                         fullWidth
+//                         variant="outlined"
+//                         size="small"
+//                         sx={{
+//                             '& .MuiOutlinedInput-root': {
+//                                 borderRadius: 2
+//                             }
+//                         }}
+//                     />
+//                 </DialogContent>
+
+//                 <DialogActions sx={{
+//                     px: 3,
+//                     py: 2,
+//                     borderTop: 1,
+//                     borderColor: 'divider',
+//                     background: 'rgba(0,0,0,0.02)'
+//                 }}>
+//                     <Button
+//                         onClick={() => {
+//                             setOpenAddDialog(false);
+//                             setFilesAdd([]);
+//                         }}
+//                         variant="outlined"
+//                         color="inherit"
+//                         sx={{
+//                             borderRadius: '8px',
+//                             textTransform: 'none',
+//                             px: 3,
+//                             py: 1,
+//                             fontWeight: '500'
+//                         }}
+//                     >
+//                         Annuler
+//                     </Button>
+
+//                     <Button
+//                         onClick={handleAddService}
+//                         variant="contained"
+//                         color="primary"
+//                         disabled={isUploading}
+//                         sx={{
+//                             borderRadius: '8px',
+//                             textTransform: 'none',
+//                             px: 3,
+//                             py: 1,
+//                             boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+//                             fontWeight: '500',
+//                             '&:hover': {
+//                                 boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
+//                             }
+//                         }}
+//                     >
+//                         {isUploading ? (
+//                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
+//                                 <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
+//                                 Enregistrement...
+//                             </Box>
+//                         ) : "Enregistrer"}
+//                     </Button>
+//                 </DialogActions>
+//             </Dialog>
+
+//             <Footer />
+//         </>
+//     );
+// };
+
+import React, { useEffect, useState, useMemo } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import {
@@ -15,15 +626,23 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    IconButton
+    IconButton,
+    CircularProgress,
+    Chip,
+    Avatar,
+    useTheme
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import ArchiveIcon from "@mui/icons-material/Archive";
-import { DataGrid } from "@mui/x-data-grid";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faList } from "@fortawesome/free-solid-svg-icons";
+import { faList, faTags } from "@fortawesome/free-solid-svg-icons";
 import { useSelector, useDispatch } from "react-redux";
+import { FilePond, registerPlugin } from 'react-filepond';
+import 'filepond/dist/filepond.min.css';
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
 import {
     fetchServices,
     ajouterServiceThunk,
@@ -31,6 +650,11 @@ import {
     archiverServiceThunk
 } from "../../features/ServiceSlice";
 import Swal from "sweetalert2";
+import ImageService from "./ImageService";
+import { MaterialReactTable } from 'material-react-table';
+
+// Register FilePond plugins
+registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
 
 const ListeServicesAdmin = () => {
     const [filtreEtat, setFiltreEtat] = useState("TOUS");
@@ -38,24 +662,76 @@ const ListeServicesAdmin = () => {
     const [newService, setNewService] = useState({ nom: "", description: "", image: null });
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [serviceToEdit, setServiceToEdit] = useState(null);
+    const [filesAdd, setFilesAdd] = useState([]);
+    const [filesEdit, setFilesEdit] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
     const { services, loading } = useSelector((state) => state.service);
-    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
+    const theme = useTheme();
+
+    // Configuration Cloudinary pour FilePond
+    const serverOptions = {
+        process: {
+            url: 'https://api.cloudinary.com/v1_1/dkhjej8yx/image/upload',
+            method: 'POST',
+            withCredentials: false,
+            headers: {},
+            timeout: 7000,
+            onload: (response) => {
+                const data = JSON.parse(response);
+                setIsUploading(false);
+                return data.secure_url;
+            },
+            onerror: (error) => {
+                console.error('Erreur de téléchargement:', error);
+                setIsUploading(false);
+                Swal.fire("Erreur", "Erreur lors du téléchargement de l'image", "error");
+                return error;
+            },
+            ondata: (formData) => {
+                formData.append('upload_preset', 'DomiService');
+                return formData;
+            }
+        }
+    };
 
     useEffect(() => {
         dispatch(fetchServices());
     }, [dispatch]);
 
     const handleEdit = (row) => {
-        setServiceToEdit({ ...row });
+        setServiceToEdit({ ...row.original });
+
+        if (row.original.image) {
+            setFilesEdit([
+                {
+                    source: row.original.image,
+                    options: {
+                        type: 'remote',
+                        file: {
+                            name: 'image-service.jpg',
+                            size: 12345,
+                            type: 'image/jpeg'
+                        },
+                        metadata: {
+                            poster: row.original.image
+                        }
+                    }
+                }
+            ]);
+        } else {
+            setFilesEdit([]);
+        }
+
         setEditDialogOpen(true);
     };
 
     const handleArchiver = async (row) => {
         const confirm = await Swal.fire({
             title: "Archiver ?",
-            text: `Archiver le service "${row.nom}" ?`,
+            text: `Archiver le service "${row.original.nom}" ?`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
@@ -63,92 +739,216 @@ const ListeServicesAdmin = () => {
         });
 
         if (confirm.isConfirmed) {
-            await dispatch(archiverServiceThunk(row.id));
+            await dispatch(archiverServiceThunk(row.original.id));
             Swal.fire("Archivé", "Le service a été archivé.", "success");
         }
     };
 
     const handleAddService = async () => {
+        if (!newService.nom) {
+            Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+            return;
+        }
+
         const data = {
             nom: newService.nom,
-            description: newService.description
+            description: newService.description,
+            image: newService.image
         };
-
-        if (newService.image) {
-            data.image = newService.image;
-        }
 
         await dispatch(ajouterServiceThunk(data));
         Swal.fire("Ajouté", "Le service a été ajouté.", "success");
         setOpenAddDialog(false);
         setNewService({ nom: "", description: "", image: null });
+        setFilesAdd([]);
     };
 
-    const getColonnes = () => {
-        const base = [
-            { field: "id", headerName: "ID", width: 80 },
-            {
-                field: "image",
-                headerName: "Image",
-                flex: 1,
-                renderCell: ({ row }) => (
-                    <img
-                        src={row.image}
-                        alt={row.nom}
-                        style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }}
+    const handleUpdateService = async () => {
+        if (!serviceToEdit.nom) {
+            Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+            return;
+        }
 
-                    />
-                )
-            },
-            { field: "nom", headerName: "Nom Service", flex: 1 },
-            { field: "description", headerName: "Description", flex: 2 },
-            {
-                field: "etatArchive",
-                headerName: "État",
-                flex: 1,
-                renderCell: ({ row }) => (
-                    <Typography color={row.etatArchive ? "error" : "success.main"}>
-                        {row.etatArchive ? "Archivé" : "Actif"}
-                    </Typography>
-                )
-            }
-        ];
+        const { id, nom, description, image } = serviceToEdit;
+        const data = { nom, description, image };
 
-        const actionColumn = {
-            field: "action",
-            headerName: "Actions",
-            flex: 1,
-            renderCell: ({ row }) => (
-                <Box display="flex" gap={1}>
-                    <IconButton color="primary" onClick={() => handleEdit(row)}>
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton color="warning" onClick={() => handleArchiver(row)}>
-                        <ArchiveIcon />
-                    </IconButton>
-                </Box>
-            )
-        };
-
-        return [...base, actionColumn];
+        await dispatch(modifierServiceThunk({ id, data }));
+        setEditDialogOpen(false);
+        setServiceToEdit(null);
+        setFilesEdit([]);
+        Swal.fire("Modifié", "Le service a été mis à jour.", "success");
     };
 
     const rowsFiltres = services.filter((s) =>
         filtreEtat === "TOUS" ? true : filtreEtat === "Archive" ? s.etatArchive : !s.etatArchive
     );
 
+    // Configuration des colonnes pour MaterialReactTable
+    const columns = useMemo(
+        () => [
+            {
+                accessorKey: 'id',
+                header: 'ID',
+                size: 70,
+                Cell: ({ cell }) => (
+                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
+                        #{cell.getValue()}
+                    </Box>
+                ),
+            },
+            {
+                accessorKey: 'image',
+                header: 'Image',
+                size: 100,
+                Cell: ({ cell, row }) => (
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        height="100%"
+                        sx={{ p: 1 }}
+                    >
+                        {row.original.image ? (
+                            <Avatar
+                                src={row.original.image}
+                                alt={row.original.nom}
+                                sx={{
+                                    width: 60,
+                                    height: 60,
+                                    borderRadius: 2,
+                                    boxShadow: theme.shadows[2]
+                                }}
+                            />
+                        ) : (
+                            <Box
+                                sx={{
+                                    width: 60,
+                                    height: 60,
+                                    bgcolor: "grey.100",
+                                    borderRadius: 2,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center"
+                                }}
+                            >
+                                <Typography variant="caption" color="textSecondary">
+                                    Aucune image
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
+                )
+            },
+            {
+                accessorKey: 'nom',
+                header: 'Nom Service',
+                size: 200,
+            },
+            {
+                accessorKey: 'description',
+                header: 'Description',
+                size: 400,
+                Cell: ({ cell }) => (
+                    <Typography variant="body2" sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                    }}>
+                        {cell.getValue()}
+                    </Typography>
+                )
+            },
+            {
+                accessorKey: 'etatArchive',
+                header: 'État',
+                size: 100,
+                Cell: ({ cell }) => (
+                    <Chip
+                        label={cell.getValue() ? "Archivé" : "Actif"}
+                        color={cell.getValue() ? "default" : "success"}
+                        variant={cell.getValue() ? "outlined" : "filled"}
+                        size="small"
+                    />
+                )
+            },
+            {
+                id: 'actions',
+                header: 'Actions',
+                size: 120,
+                Cell: ({ row }) => (
+                    <Box display="flex" gap={1}>
+                        <IconButton
+                            color="primary"
+                            onClick={() => handleEdit(row)}
+                            size="small"
+                            sx={{
+                                backgroundColor: theme.palette.primary.light,
+                                '&:hover': { backgroundColor: theme.palette.primary.main }
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            color="warning"
+                            onClick={() => handleArchiver(row)}
+                            size="small"
+                            sx={{
+                                backgroundColor: theme.palette.warning.light,
+                                '&:hover': { backgroundColor: theme.palette.warning.main }
+                            }}
+                        >
+                            <ArchiveIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                ),
+            }
+        ],
+        [services]
+    );
+
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
-            <Box className="container mt-4" sx={{ minHeight: 500, width: "95%", maxWidth: "100vw" }}>
-                <Box mb={3} display="flex" alignItems="center" justifyContent="space-between">
+            <Box sx={{
+                minHeight: '80vh',
+                width: "100%",
+                maxWidth: "100vw",
+                p: 3,
+                backgroundColor: '#f9fafb'
+            }}>
+                <Box mb={4} display="flex" alignItems="center" justifyContent="space-between">
                     <Box display="flex" alignItems="center">
-                        <FontAwesomeIcon icon={faList} style={{ fontSize: 35, color: "#ff6b00", marginRight: 10 }} />
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 50,
+                            height: 50,
+                            borderRadius: 2,
+                            backgroundColor: '#ff6b00',
+                            mr: 2
+                        }}>
+                            <FontAwesomeIcon
+                                icon={faTags}
+                                style={{ fontSize: 24, color: "white" }}
+                            />
+                        </Box>
                         <Box>
-                            <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a3a6c" }}>
-                                Liste des services
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    fontWeight: "bold",
+                                    color: "#1a3a6c",
+                                    mb: 0.5
+                                }}
+                            >
+                                Gestion des Services
                             </Typography>
-                            <Box sx={{ height: 4, width: "80px", backgroundColor: "#ff6b00", borderRadius: 2, mt: 1 }} />
+                            <Typography variant="body2" color="text.secondary">
+                                Ajouter, modifier et archiver les services
+                            </Typography>
                         </Box>
                     </Box>
                     <Button
@@ -158,64 +958,233 @@ const ListeServicesAdmin = () => {
                         sx={{
                             backgroundColor: '#1976d2',
                             color: 'white',
-                            paddingX: 2.5,
-                            paddingY: 1,
+                            px: 3,
+                            py: 1.2,
                             textTransform: 'none',
                             fontWeight: 'bold',
                             borderRadius: 2,
                             fontSize: '0.95rem',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                             '&:hover': {
-                                backgroundColor: '#115293'
+                                backgroundColor: '#115293',
+                                boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
                             }
                         }}
                     >
-                        Ajouter un service
+                        Nouveau Service
                     </Button>
                 </Box>
 
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel id="filtre-etat-label">Filtrer par État</InputLabel>
-                    <Select
-                        labelId="filtre-etat-label"
-                        value={filtreEtat}
-                        label="Filtrer par État"
-                        onChange={(e) => setFiltreEtat(e.target.value)}
-                    >
-                        <MenuItem value="TOUS">Tous</MenuItem>
-                        <MenuItem value="Archive">Archivé</MenuItem>
-                        <MenuItem value="NonArchive">Actif</MenuItem>
-                    </Select>
-                </FormControl>
+                <Box sx={{ mb: 3, width: 500 }}>
+                    <FormControl fullWidth>
+                        <InputLabel id="filtre-etat-label">Filtrer par État</InputLabel>
+                        <Select
+                            labelId="filtre-etat-label"
+                            value={filtreEtat}
+                            label="Filtrer par État"
+                            onChange={(e) => setFiltreEtat(e.target.value)}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            <MenuItem value="TOUS">Tous les services</MenuItem>
+                            <MenuItem value="Archive">Services archivés</MenuItem>
+                            <MenuItem value="NonArchive">Services actifs</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
 
-                <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-                    <div style={{ width: "100%", overflow: "auto" }}>
-                        <div style={{ minWidth: "1200px", height: "600px" }}>
-                            <DataGrid
-                                rows={rowsFiltres}
-                                columns={getColonnes()}
-                                paginationModel={paginationModel}
-                                onPaginationModelChange={setPaginationModel}
-                                rowsPerPageOptions={[10, 20, 50]}
-                                pagination
-                                disableRowSelectionOnClick
-                            />
-                        </div>
-                    </div>
+                <Paper
+                    elevation={0}
+                    sx={{
+                        width: '100%',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        borderRadius: 2,
+                        bgcolor: 'background.paper'
+                    }}
+                >
+                    {loading ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+                            <CircularProgress sx={{ color: 'primary.main' }} />
+                            <Typography variant="body1" sx={{ ml: 2 }}>
+                                Chargement des services...
+                            </Typography>
+                        </Box>
+                    ) : rowsFiltres.length === 0 ? (
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: 300,
+                            color: 'text.secondary'
+                        }}>
+                            <FontAwesomeIcon icon={faTags} style={{ fontSize: 48, marginBottom: 16 }} />
+                            <Typography variant="h6" gutterBottom>
+                                Aucun service trouvé
+                            </Typography>
+                            <Typography variant="body2">
+                                {filtreEtat === "Archive"
+                                    ? "Aucun service archivé"
+                                    : "Commencez par ajouter un service"
+                                }
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <MaterialReactTable
+                            columns={columns}
+                            data={rowsFiltres}
+                            enableColumnResizing
+                            enableColumnFilters={false}
+                            enablePagination
+                            enableSorting
+                            enableStickyHeader
+                            enableFullScreenToggle={false}
+                            enableDensityToggle={false}
+                            enableHiding={false}
+                            layoutMode="grid"
+                            initialState={{
+                                pagination: { pageSize: 10, pageIndex: 0 },
+                                density: 'comfortable',
+                                sorting: [{ id: 'id', desc: true }]
+                            }}
+                            muiTableContainerProps={{
+                                sx: {
+                                    maxHeight: '65vh',
+                                    width: '100%',
+                                    '&::-webkit-scrollbar': {
+                                        width: 8,
+                                        height: 8,
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        backgroundColor: '#c1c1c1',
+                                        borderRadius: 4,
+                                    },
+                                },
+                            }}
+                            muiTablePaperProps={{
+                                sx: {
+                                    width: '100%',
+                                    boxShadow: 'none',
+                                },
+                            }}
+                            muiTableHeadCellProps={{
+                                sx: {
+                                    fontWeight: 'bold',
+                                    backgroundColor: '#f5f5f5',
+                                    color: '#333',
+                                    fontSize: '0.9rem',
+                                    py: 1.5,
+                                    borderRight: '1px solid #e0e0e0',
+                                    '&:last-child': {
+                                        borderRight: 'none'
+                                    }
+                                },
+                            }}
+                            muiTableBodyCellProps={{
+                                sx: {
+                                    py: 1.5,
+                                    borderBottom: '1px solid',
+                                    borderColor: 'grey.100',
+                                    borderRight: '1px solid #f0f0f0',
+                                    '&:last-child': {
+                                        borderRight: 'none'
+                                    }
+                                },
+                            }}
+                            muiTableBodyRowProps={{
+                                sx: {
+                                    '&:hover': {
+                                        backgroundColor: 'grey.50',
+                                    },
+                                },
+                            }}
+                            muiBottomToolbarProps={{
+                                sx: {
+                                    backgroundColor: 'grey.100',
+                                    borderTop: '1px solid',
+                                    borderColor: 'grey.300',
+                                },
+                            }}
+                            localization={{
+                                noRecordsToDisplay: 'Aucun service à afficher',
+                                of: 'sur',
+                                rowsPerPage: 'Lignes par page',
+                            }}
+                        />
+                    )}
                 </Paper>
             </Box>
-            {/** Modal Ajout service */}
 
-            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Modifier le service</DialogTitle>
-                <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+            {/** Modal Modification service */}
+            <Dialog
+                open={editDialogOpen}
+                onClose={() => setEditDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    background: 'linear-gradient(45deg, #1976d2 30%, #1565c0 90%)',
+                    color: 'white',
+                    py: 2,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                    <EditIcon sx={{
+                        mr: 1.5,
+                        fontSize: '1.8rem',
+                        background: 'rgba(255,255,255,0.2)',
+                        borderRadius: '50%',
+                        p: 0.5
+                    }} />
+                    <Typography variant="h6" fontWeight="500" sx={{ letterSpacing: '0.5px' }}>
+                        Modifier le service
+                    </Typography>
+                </DialogTitle>
+
+                <DialogContent
+                    dividers
+                    sx={{
+                        p: 3,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 3,
+                        maxHeight: '70vh',
+                        overflow: 'auto'
+                    }}
+                >
+                    {serviceToEdit && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <ImageService
+                                service={serviceToEdit}
+                                setService={setServiceToEdit}
+                            />
+                        </Box>
+                    )}
+
                     <TextField
                         label="Nom du service"
                         value={serviceToEdit?.nom || ""}
                         onChange={(e) => setServiceToEdit({ ...serviceToEdit, nom: e.target.value })}
                         fullWidth
                         required
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2
+                            }
+                        }}
                     />
+
                     <TextField
                         label="Description"
                         multiline
@@ -223,72 +1192,147 @@ const ListeServicesAdmin = () => {
                         value={serviceToEdit?.description || ""}
                         onChange={(e) => setServiceToEdit({ ...serviceToEdit, description: e.target.value })}
                         fullWidth
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2
+                            }
+                        }}
                     />
-                    <Button variant="outlined" component="label">
-                        Modifier l’image
-                        <input
-                            type="file"
-                            hidden
-                            onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        setServiceToEdit({ ...serviceToEdit, image: reader.result });
-                                    };
-                                    reader.readAsDataURL(file);
-                                }
-                            }}
-                        />
-                    </Button>
-                    {serviceToEdit?.image && (
-                        <Typography variant="body2" color="textSecondary">Image sélectionnée</Typography>
-                    )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEditDialogOpen(false)} variant="outlined"
+
+                <DialogActions sx={{
+                    px: 3,
+                    py: 2,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                    background: 'rgba(0,0,0,0.02)'
+                }}>
+                    <Button
+                        onClick={() => {
+                            setEditDialogOpen(false);
+                        }}
+                        variant="outlined"
                         color="inherit"
                         sx={{
                             borderRadius: '8px',
                             textTransform: 'none',
                             px: 3,
-                            py: 1
-                        }}>Annuler</Button>
-                    <Button
-                        onClick={async () => {
-                            const { id, nom, description, image } = serviceToEdit;
-                            const data = { nom, description, image };
-                            await dispatch(modifierServiceThunk({ id, data }));
-                            setEditDialogOpen(false);
-                            Swal.fire("Modifié", "Le service a été mis à jour.", "success");
+                            py: 1,
+                            fontWeight: '500'
                         }}
+                    >
+                        Annuler
+                    </Button>
+
+                    <Button
+                        onClick={handleUpdateService}
                         variant="contained"
                         color="primary"
+                        disabled={isUploading}
                         sx={{
                             borderRadius: '8px',
                             textTransform: 'none',
                             px: 3,
                             py: 1,
-                            boxShadow: '0px 2px 6px rgba(0,0,0,0.1)'
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                            fontWeight: '500',
+                            '&:hover': {
+                                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
+                            }
                         }}
                     >
-                        Enregistrer
+                        {isUploading ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
+                                Enregistrement...
+                            </Box>
+                        ) : "Enregistrer"}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-
             {/* Modal Ajout Service */}
-            <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Ajouter un nouveau service</DialogTitle>
-                <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+            <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    background: 'linear-gradient(45deg, #1976d2 30%, #1565c0 90%)',
+                    color: 'white',
+                    py: 2,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                    <AddIcon sx={{
+                        mr: 1.5,
+                        fontSize: '1.8rem',
+                        background: 'rgba(255,255,255,0.2)',
+                        borderRadius: '50%',
+                        p: 0.5
+                    }} />
+                    <Typography variant="h6" fontWeight="500" sx={{ letterSpacing: '0.5px' }}>
+                        Ajouter un service
+                    </Typography>
+                </DialogTitle>
+
+                <DialogContent
+                    dividers
+                    sx={{
+                        p: 3,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 3,
+                        maxHeight: '70vh',
+                        overflow: 'auto'
+                    }}
+                >
+                    <Box>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                            Ajouter une image
+                        </Typography>
+                        <FilePond
+                            files={filesAdd}
+                            onupdatefiles={setFilesAdd}
+                            allowMultiple={false}
+                            maxFiles={1}
+                            name="file"
+                            labelIdle='Glissez-déposez votre image ou <span class="filepond--label-action">Parcourir</span>'
+                            server={serverOptions}
+                            onprocessfile={(error, file) => {
+                                if (!error) {
+                                    setNewService({ ...newService, image: file.serverId });
+                                }
+                            }}
+                            onremovefile={() => {
+                                setNewService({ ...newService, image: null });
+                            }}
+                        />
+                        {isUploading && <CircularProgress size={24} sx={{ alignSelf: 'center', mt: 1 }} />}
+                    </Box>
+
                     <TextField
                         label="Nom du service"
                         value={newService.nom}
                         onChange={(e) => setNewService({ ...newService, nom: e.target.value })}
                         fullWidth
                         required
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2
+                            }
+                        }}
                     />
+
                     <TextField
                         label="Description"
                         multiline
@@ -296,38 +1340,36 @@ const ListeServicesAdmin = () => {
                         value={newService.description}
                         onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                         fullWidth
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2
+                            }
+                        }}
                     />
-                    <Button variant="outlined" component="label">
-                        Choisir une image
-                        <input
-                            type="file"
-                            hidden
-                            onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        setNewService({ ...newService, image: reader.result });
-                                    };
-                                    reader.readAsDataURL(file);
-                                }
-                            }}
-                        />
-                    </Button>
-                    {newService.image && (
-                        <Typography variant="body2">Image sélectionnée</Typography>
-                    )}
                 </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
+
+                <DialogActions sx={{
+                    px: 3,
+                    py: 2,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                    background: 'rgba(0,0,0,0.02)'
+                }}>
                     <Button
-                        onClick={() => setOpenAddDialog(false)}
+                        onClick={() => {
+                            setOpenAddDialog(false);
+                            setFilesAdd([]);
+                        }}
                         variant="outlined"
                         color="inherit"
                         sx={{
                             borderRadius: '8px',
                             textTransform: 'none',
                             px: 3,
-                            py: 1
+                            py: 1,
+                            fontWeight: '500'
                         }}
                     >
                         Annuler
@@ -337,15 +1379,25 @@ const ListeServicesAdmin = () => {
                         onClick={handleAddService}
                         variant="contained"
                         color="primary"
+                        disabled={isUploading}
                         sx={{
                             borderRadius: '8px',
                             textTransform: 'none',
                             px: 3,
                             py: 1,
-                            boxShadow: '0px 2px 6px rgba(0,0,0,0.1)'
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                            fontWeight: '500',
+                            '&:hover': {
+                                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.4)'
+                            }
                         }}
                     >
-                        Enregistrer
+                        {isUploading ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
+                                Enregistrement...
+                            </Box>
+                        ) : "Enregistrer"}
                     </Button>
                 </DialogActions>
             </Dialog>

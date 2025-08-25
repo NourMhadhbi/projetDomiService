@@ -98,7 +98,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                     </>
                 )}
 
-                {user.utilisateur.role === 'PRESTATAIRE' && (
+                {(user.utilisateur.role === 'PRESTATAIRE' || user.utilisateur.role === 'ENTREPRISE') && (
                     <>
                         <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />

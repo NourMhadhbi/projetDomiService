@@ -73,7 +73,7 @@ const ProfilMenu = ({ user }) => {
                             dispatch(logout());
                             dispatch(clearNotifications());
                             dispatch(reset());
-                            navigate('/login');
+                            navigate('/accueil');
                         }}
                         sx={{
                             '&:hover': { backgroundColor: '#f0f0f0' }

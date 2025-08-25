@@ -11,7 +11,7 @@ import SideMenu from './SideMenu';
 import AccueilSlider from '../Accueil/AccueilSlider';
 import AccueilSliderAdmin from '../Admin/AccueilAdmin/AccueilSliderAdmin';
 import { useDispatch, useSelector } from 'react-redux';
-
+import { setOnglet } from "../../features/ongletSlice";
 import { fetchServicesNA, fetchService } from '../../features/ServiceSlice';
 import {
     faSearch,
@@ -29,7 +29,7 @@ const Header = ({ isClientConnected, intervenant }) => {
     const { id } = useParams();
     console.log("id", id);
     const dispatch = useDispatch();
-    const [ongletActif, setOngletActif] = useState("services");
+    // const [ongletActif, setOngletActif] = useState("services");
     const [filteredServices, setFilteredServices] = useState([]);
     console.log("client", isClientConnected);
 
@@ -43,6 +43,7 @@ const Header = ({ isClientConnected, intervenant }) => {
         dispatch(fetchServicesNA());
     }, [dispatch]);
 
+    const ongletActif = useSelector((state) => state.onglet.actif);
 
     const location = useLocation();
     const isAccueil = location.pathname === "/accueil";
@@ -88,6 +89,7 @@ const Header = ({ isClientConnected, intervenant }) => {
             setSearchQuery('');
         }
     };
+    const [modalOpen, setModalOpen] = useState(false);
     //pour recherche service 
     useEffect(() => {
         if (ongletActif === 'services') {
@@ -96,6 +98,8 @@ const Header = ({ isClientConnected, intervenant }) => {
                 s.nom.toLowerCase().includes(query)
             );
             setFilteredServices(resultats);
+        } else {
+            setFilteredServices([]); // réinitialiser si on change d'onglet
         }
     }, [searchQuery, services, ongletActif]);
 
@@ -121,7 +125,7 @@ const Header = ({ isClientConnected, intervenant }) => {
 
     if (location.pathname === "/mes-rendez-vous") {
         title = "Mes rendez-vous";
-        breadcrumbItems.push({ label: "Mes rendez-vous", to: null }); // dernier élément sans lien
+        breadcrumbItems.push({ label: "Mes rendez-vous", to: null });
     } else if (location.pathname.startsWith("/ficheintervenant") || location.pathname.startsWith("/calendrier")) {
         title = service?.nom || "Service";
 
@@ -181,10 +185,40 @@ const Header = ({ isClientConnected, intervenant }) => {
         }
 
         breadcrumbItems.push({ label: "Prestataires & Entreprises", to: null });
-    } else if (location.pathname.startsWith("/Contact")) {
+    } else if (location.pathname.startsWith("/contact")) {
         title = "Contactez-nous";
         breadcrumbItems.push({ label: "Contactez-nous", to: null });
+
+    } else if (location.pathname.startsWith("/about")) {
+        title = "À propos de nous";
+        breadcrumbItems.push({ label: "À propos de nous", to: null });
+
+    } else if (location.pathname.startsWith("/profil")) {
+        if (user) {
+            const userName = user?.entreprise?.nomEntreprise
+                || `${user?.utilisateur?.prenom ?? ""} ${user?.utilisateur?.nom ?? ""}`
+                || "-";
+
+            title = "Profil " + userName;
+            breadcrumbItems.push({ label: userName, to: null });
+        } else {
+
+            title = "Mon profil";
+            breadcrumbItems.push({ label: "Mon profil", to: null });
+        }
+    } else if (location.pathname === "/carnet-de-contacts") {
+        title = "carnet-de-contacts";
+        breadcrumbItems.push({ label: "carnet-de-contacts", to: null });
     }
+    else if (location.pathname === "/intervenants-bloques") {
+        title = "intervenants-bloques";
+        breadcrumbItems.push({ label: "intervenants-bloques", to: null });
+    }
+    else if (location.pathname === "/intervenants-signales") {
+        title = "intervenants-signales";
+        breadcrumbItems.push({ label: "intervenants-signales", to: null });
+    }
+
     if (servicesLoading) return <p>Chargement...</p>;
     if (servicesError) return <p>Erreur Services: {servicesError}</p>;
     return (
@@ -249,13 +283,30 @@ const Header = ({ isClientConnected, intervenant }) => {
                                         Accueil
                                     </NavLink>
                                 </li>
+
                                 <li className="nav-item">
-                                    <NavLink
-                                        to="/about"
-                                        className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-                                    >
-                                        À propos De Nous
-                                    </NavLink>
+                                    {isAccueil ? (
+                                        <a
+                                            href="#apropos-section"
+                                            className="nav-link"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                const section = document.getElementById("apropos-section");
+                                                if (section) {
+                                                    section.scrollIntoView({ behavior: "smooth" });
+                                                }
+                                            }}
+                                        >
+                                            À propos De Nous
+                                        </a>
+                                    ) : (
+                                        <NavLink
+                                            to="/about"
+                                            className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+                                        >
+                                            À propos De Nous
+                                        </NavLink>
+                                    )}
                                 </li>
                                 <li className={`nav-item dropdown ${openSubmenu === 'services' ? 'show' : ''}`}>
                                     <NavLink
@@ -304,7 +355,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                     <ul className={`dropdown-menu ${openSubmenu === 'pages' ? 'show' : ''}`}>
                                         <li>
                                             <NavLink
-                                                to="/pages/about"
+                                                to="/about"
                                                 className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
                                             >
                                                 À propos de nous
@@ -312,16 +363,16 @@ const Header = ({ isClientConnected, intervenant }) => {
                                         </li>
                                         <li>
                                             <NavLink
-                                                to="/pages/team"
+                                                to="/contact"
                                                 className={({ isActive }) => isActive ? "dropdown-item active" : "dropdown-item"}
                                             >
-                                                Notre équipe
+                                                Contact
                                             </NavLink>
                                         </li>
 
                                     </ul>
                                 </li>
-                                <li className={`nav-item dropdown ${openSubmenu === 'blog' ? 'show' : ''}`}>
+                                {/* <li className={`nav-item dropdown ${openSubmenu === 'blog' ? 'show' : ''}`}>
                                     <NavLink
                                         to="/blog"
                                         className={({ isActive }) => isActive ? "nav-link active d-flex align-items-center" : "nav-link d-flex align-items-center"}
@@ -345,7 +396,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                         </li>
 
                                     </ul>
-                                </li>
+                                </li> */}
                                 <li className="nav-item">
                                     <NavLink
                                         to="/contact"
@@ -357,7 +408,8 @@ const Header = ({ isClientConnected, intervenant }) => {
                             </ul>
                             <button
                                 className="search-icon btn btn-link ms-lg-3 me-2"
-                                onClick={isClientConnected ? toggleSearch : undefined}
+                                // onClick={isClientConnected ? toggleSearch : undefined}
+                                onClick={toggleSearch}
                                 style={{
                                     opacity: isClientConnected ? 1 : 0.3,
                                     pointerEvents: isClientConnected ? 'auto' : 'none',
@@ -377,27 +429,28 @@ const Header = ({ isClientConnected, intervenant }) => {
 
 
 
-
                             {isClientConnected ? (
                                 <>
-
                                     <div className="ms-3 mt-3 mt-lg-0">
                                         <ProfilMenu user={user} />
                                     </div>
                                     <div className="ms-2 d-flex align-items-center me-0">
                                         <SideMenu color="#1a3a6c" />
-
                                     </div>
                                 </>
                             ) : (
-                                <button
-                                    className="btn btn-warning ms-3 mt-3 mt-lg-0"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#authPanelModal"
-                                >
-                                    <i className="fas fa-user me-2"></i>
-                                    Se connecter
-                                </button>
+                                <>
+                                    <button
+                                        className="btn btn-warning ms-3 mt-3 mt-lg-0"
+                                        onClick={() => setModalOpen(true)}
+                                    >
+                                        <i className="fas fa-user me-2"></i>
+                                        Se connecter
+                                    </button>
+
+
+                                    <AuthPanelModal isOpen={modalOpen} setIsOpen={setModalOpen} />
+                                </>
                             )}
                         </div>
                     </nav>
@@ -411,23 +464,28 @@ const Header = ({ isClientConnected, intervenant }) => {
                             <div className="search-tabs d-flex justify-content-center mb-3">
                                 <button
                                     type="button"
-                                    className={`btn ${ongletActif === 'prestataires' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
-                                    onClick={() => setOngletActif('prestataires')}
+                                    className={`btn ${ongletActif === 'prestataires' ? 'btn-oran' : 'btn-outline-oran'} mx-1`}
+
+
+                                    onClick={() => dispatch(setOnglet("prestataires"))}
                                 >
                                     Prestataires / Entreprises
                                 </button>
+
                                 <button
                                     type="button"
-                                    className={`btn ${ongletActif === 'services' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
-                                    onClick={() => setOngletActif('services')}
+                                    className={`btn ${ongletActif === 'services' ? 'btn-oran' : 'btn-outline-oran'} mx-1`}
+                                    // onClick={() => setOngletActif('services')}
+                                    onClick={() => dispatch(setOnglet("services"))}
                                 >
                                     Services
                                 </button>
                                 {user?.utilisateur?.role === "ADMIN" && (
                                     <button
                                         type="button"
-                                        className={`btn ${ongletActif === 'clients' ? 'btn-orange' : 'btn-outline-orange'} mx-1`}
-                                        onClick={() => setOngletActif('clients')}
+                                        className={`btn ${ongletActif === 'clients' ? 'btn-oran' : 'btn-outline-oran'} mx-1`}
+                                        // onClick={() => setOngletActif('clients')}
+                                        onClick={() => dispatch(setOnglet("clients"))}
                                     >
                                         Clients
                                     </button>
@@ -536,8 +594,28 @@ const Header = ({ isClientConnected, intervenant }) => {
                 </div>
             )}
 
-            <AuthPanelModal />
+            {/* <AuthPanelModal /> */}
+            <style>{`
+.btn-oran {
+    background-color: #ff6b00; /* orange */
+    color: white;
+    border: 1px solid #ff6b00;
+}
 
+/* Styles pour bouton inactif (gris / outline) */
+.btn-outline-oran {
+    background-color: transparent;
+    color: #6c757d; /* gris bootstrap */
+
+}
+
+.btn-oran, .btn-oran:focus {
+    background-color: #ff6b00;
+    color: white;
+    border: 1px solid #ff6b00;
+    outline: none; /* empêche le contour par défaut */
+}} `
+            }</style>
         </>
     );
 };

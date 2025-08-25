@@ -8,6 +8,8 @@ import '../assets/css/Login.css';
 import logo from '../assets/img/logo.png';
 import { login } from '../features/AuthSlice';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
+import { useGoogleLogin } from '@react-oauth/google';
+import * as jwt_decode from "jwt-decode";
 
 const Login = () => {
     const dispatch = useDispatch();
@@ -30,16 +32,20 @@ const Login = () => {
         if (!utilisateur.identifiant || !utilisateur.motDePasse) {
             setErrors({ email: !utilisateur.identifiant ? "L'adresse e-mail est requise" : '', password: !utilisateur.motDePasse ? 'Le mot de passe est requis' : '' });
         } else {
-            dispatch(login(utilisateur)).then(res => {
-                console.log(res)
-                if (res.payload && res.payload.response && res.payload.response.data && res.payload.response.data.message) {
-                    setMessage(res.payload.response.data.message);
-                } else if (res.payload && res.payload.message) {
-                    setMessage(res.payload.message);
-                } else {
-                    setMessage("Une erreur s'est produite lors de la connexion.");
+            dispatch(login(utilisateur)).then((res) => {
+                if (res.type === "auth/login/rejected") {
+
+                    setMessage(res.payload);
+                } else if (res.type === "auth/login/fulfilled") {
+                    setMessage("");
+
+                    if (res.payload.user?.utilisateur?.role === "ADMIN") {
+                        navigate("/admin/dashboard");
+                    } else {
+                        navigate("/accueil");
+                    }
                 }
-            });
+            })
         }
     };
     React.useEffect(() => {
@@ -49,10 +55,31 @@ const Login = () => {
             navigate("/accueil");
         }
     }, [navigate, isLoggedIn, user]);
+    const loginGoogle = useGoogleLogin({
+        onSuccess: (tokenResponse) => {
+
+            if (tokenResponse?.access_token || tokenResponse?.credential) {
+                const credential = tokenResponse.credential || tokenResponse.access_token;
 
 
+                const decoded = jwt_decode(credential);
+                console.log("Infos Google :", decoded);
 
+                const email = decoded.email;
+                const nom = decoded.name;
+                const photo = decoded.picture;
 
+                // Ici tu peux connecter l'utilisateur dans ton app
+                // par exemple dispatcher vers Redux
+                // dispatch(loginGoogle({email, nom, photo}));
+            } else {
+                console.log("Aucun token reçu !");
+            }
+        },
+        onError: () => {
+            console.log("Google Login Failed");
+        },
+    });
 
     return (
         <Container fluid className="vh-100 d-flex align-items-center justify-content-center login-container" >
@@ -67,7 +94,12 @@ const Login = () => {
                         <Button variant="outline-primary" className="rounded-circle d-flex align-items-center justify-content-center p-0" style={{ width: 40, height: 40 }}>
                             <i className="fab fa-facebook-f"></i>
                         </Button>
-                        <Button variant="outline-danger" className="rounded-circle d-flex align-items-center justify-content-center p-0" style={{ width: 40, height: 40 }}>
+                        <Button
+                            variant="outline-danger"
+                            className="rounded-circle d-flex align-items-center justify-content-center p-0"
+                            style={{ width: 40, height: 40 }}
+                            onClick={() => loginGoogle()}
+                        >
                             <i className="fab fa-google"></i>
                         </Button>
                     </div>
@@ -123,7 +155,12 @@ const Login = () => {
                         </Button>
                     </Form>
 
-                    {message && <Typography color="error" className="text-center mt-2">{message}</Typography>}
+                    {message && (
+                        <Typography color="error" className="text-center mt-2">
+                            {message}
+                        </Typography>
+                    )}
+
 
                     <div className="text-center mt-auto" style={{ fontSize: '0.85rem' }}>
                         Vous n'avez pas de compte ?{' '}

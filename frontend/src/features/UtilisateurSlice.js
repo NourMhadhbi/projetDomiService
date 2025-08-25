@@ -33,6 +33,7 @@ export const fetchUtilisateursParRole = createAsyncThunk(
         }
     }
 );
+
 export const activerCompteThunk = createAsyncThunk(
     'utilisateur/activerCompte',
     async (id, thunkAPI) => {
@@ -132,6 +133,7 @@ const intervenantSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload || action.error.message;
             })
+
             .addCase(activerCompteThunk.pending, (state) => {
                 state.loading = true;
                 state.error = null;

@@ -22,48 +22,74 @@ router.get("/", async (req, res) => {
             }
         });
 
-        const cleanedSignales = signales.map((s) => ({
-            id: s.id,
-            raison: s.raison,
-            date: s.date,
-            clientId: s.clientId,
-            prestataireId: s.prestataireId,
-            client: {
-                ...s.client,
-                utilisateur: s.client?.utilisateur
-                    ? {
-                        nom: s.client.utilisateur.nom,
-                        prenom: s.client.utilisateur.prenom,
-                        email: s.client.utilisateur.email,
-                        image: s.client.utilisateur.image
-                    }
-                    : null
-            },
-            prestataire: {
-                ...s.prestataire,
-                utilisateur: s.prestataire?.utilisateur
-                    ? {
-                        nom: s.prestataire.utilisateur.nom,
-                        prenom: s.prestataire.utilisateur.prenom,
-                        email: s.prestataire.utilisateur.email
-                    }
-                    : null,
-                entreprise: s.prestataire?.entreprise
-                    ? {
-                        nomEntreprise: s.prestataire.entreprise.nomEntreprise,
-                        siteWeb: s.prestataire.entreprise.siteWeb
-                    }
-                    : null
-            }
-        }));
+        // const cleanedSignales = signales.map((s) => ({
+        //     id: s.id,
+        //     raison: s.raison,
+        //     date: s.date,
+        //     clientId: s.clientId,
+        //     prestataireId: s.prestataireId,
+        //     client: {
+        //         ...s.client,
+        //         utilisateur: s.client?.utilisateur
+        //             ? {
+        //                 nom: s.client.utilisateur.nom,
+        //                 prenom: s.client.utilisateur.prenom,
+        //                 email: s.client.utilisateur.email,
+        //                 image: s.client.utilisateur.image
+        //             }
+        //             : null
+        //     },
+        //     prestataire: {
+        //         ...s.prestataire,
+        //         utilisateur: s.prestataire?.utilisateur
+        //             ? {
+        //                 nom: s.prestataire.utilisateur.nom,
+        //                 prenom: s.prestataire.utilisateur.prenom,
+        //                 email: s.prestataire.utilisateur.email
+        //             }
+        //             : null,
+        //         entreprise: s.prestataire?.entreprise
+        //             ? {
+        //                 nomEntreprise: s.prestataire.entreprise.nomEntreprise,
+        //                 siteWeb: s.prestataire.entreprise.siteWeb
+        //             }
+        //             : null
+        //     }
+        // }));
 
-        res.json(cleanedSignales);
+        res.json(signales);
     } catch (error) {
         console.error("Erreur signalements :", error);
         res.status(500).json({ message: error.message });
     }
 });
+router.get("/mesSignalements/:clientId", async (req, res) => {
+    try {
+        const clientId = Number(req.params.clientId);
 
+        if (!clientId) {
+            return res.status(400).json({ message: "ClientId requis" });
+        }
+
+        const signales = await prisma.signalement.findMany({
+            where: { clientId },
+            include: {
+                client: {
+                    include: { utilisateur: true }
+                },
+                prestataire: {
+                    include: { utilisateur: true, entreprise: true }
+                }
+            },
+            orderBy: { date: 'desc' }
+        });
+
+        res.status(200).json(signales);
+    } catch (error) {
+        console.error("Erreur mesSignalements :", error);
+        res.status(500).json({ message: error.message });
+    }
+});
 
 // signaler prestataire
 router.post("/AjoutSignale", async (req, res) => {

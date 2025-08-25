@@ -73,6 +73,7 @@ router.get('/favoris/:clientId', async (req, res) => {
                 prestataire: {
                     include: {
                         utilisateur: true,
+                        entreprise: true,
                         service: true,
                     },
                 },
@@ -95,6 +96,7 @@ router.get('/non-favoris/:clientId', async (req, res) => {
                 prestataire: {
                     include: {
                         utilisateur: true,
+                        entreprise: true,
                         service: true,
                     },
                 },

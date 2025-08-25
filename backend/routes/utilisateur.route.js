@@ -215,7 +215,12 @@ router.post('/register', async (req, res) => {
                     },
                     include: { utilisateur: true }
                 });
-
+                await prisma.notification.create({
+                    data: {
+                        contenu: `Nouveau compte PRESTATAIRE créé. Veuillez activer le compte de ${prestataire.utilisateur.nom} ${prestataire.utilisateur.prenom}.`,
+                        utilisateurId: prestataire.utilisateurIdPre
+                    }
+                });
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: prestataire });
             }
             else if (userCreate.role === 'ENTREPRISE') {
@@ -248,7 +253,12 @@ router.post('/register', async (req, res) => {
                         prestataire: true
                     }
                 });
-
+                await prisma.notification.create({
+                    data: {
+                        contenu: `Nouveau compte ENTREPRISE créé. Veuillez activer le compte de ${entreprise.nomEntreprise}.`,
+                        utilisateurId: prestataire.utilisateurIdPre
+                    }
+                });
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: entreprise });
             }
             else {
@@ -553,10 +563,17 @@ router.post('/login', async (req, res) => {
                             utilisateur: true
                         }
                     })
+                    const stats = {
+                        rendezVous: await prisma.rendezVous.count({ where: { clientId: utilisateur.id } }),
+                        avis: await prisma.avis.count({ where: { clientId: utilisateur.id } }),
+                        signalements: await prisma.signalement.count({ where: { clientId: utilisateur.id } })
+                    };
+
+
                     return res.status(200).send({
-                        success: true, token, refreshToken, user: client
+                        success: true, token, refreshToken, user: client, stats
                     })
-                } else if (utilisateur.role == 'PRESTATAIRE') {
+                } else if (utilisateur.role == 'PRESTATAIRE' || utilisateur.role == 'ENTREPRISE') {
                     const prestataire = await prisma.prestataire.findUnique({
                         where: {
                             utilisateurIdPre: utilisateur.id
@@ -565,17 +582,15 @@ router.post('/login', async (req, res) => {
                             utilisateur: true, entreprise: true
                         }
                     })
+                    const stats = {
+                        rendezVous: await prisma.rendezVous.count({ where: { prestataireId: utilisateur.id } }),
+                        avis: await prisma.avis.count({ where: { prestataireId: utilisateur.id } }),
+                        signalements: await prisma.signalement.count({ where: { prestataireId: utilisateur.id } })
+                    };
                     return res.status(200).send({
-                        success: true, token, refreshToken, user: prestataire
+                        success: true, token, refreshToken, user: prestataire, stats
                     })
-                } else if (utilisateur.role == 'entreprise') {
-                    const entreprise = await prisma.entreprise.findUnique({
-                        where: { prestataireId: utilisateur.prestataire.id },
-                        include: { prestataire: { include: { utilisateur: true } } }
-                    });
-                    return res.status(200).send({
-                        success: true, token, refreshToken, user: entreprise
-                    })
+
                 } else {
                     const admin = await prisma.admin.findUnique({
                         where: {
@@ -646,78 +661,100 @@ router.get('/Allentreprises', async (req, res) => {
 
 // modifier le compte
 router.put('/:id', async (req, res) => {
-    let { nom, prenom, email, motDePasse, image, genre } = req.body;
+    let { nom, prenom, email, motDePasse, image, genre, currentPassword } = req.body;
     const id = Number(req.params.id);
 
     try {
         await prisma.$transaction(async (prisma) => {
             const user = await prisma.utilisateur.findUnique({
                 where: { id },
-                include: { prestataire: true, clien: true }
+                include: { prestataire: true, client: true }
             });
 
             if (!user) {
                 return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
             }
 
-        const emailCleaned = email?.trim().toLowerCase();
-           const  emailChanged = email && email !== user.email;
+
+            if (motDePasse) {
+                if (!currentPassword) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Le mot de passe actuel est requis pour modifier le mot de passe."
+                    });
+                }
+
+
+                const isPasswordValid = await bcrypt.compare(currentPassword, user.motDePasse);
+                if (!isPasswordValid) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Le mot de passe actuel est incorrect."
+                    });
+                }
+
+                // Hasher le nouveau mot de passe
+                const salt = await bcrypt.genSalt(10);
+                motDePasse = await bcrypt.hash(motDePasse, salt);
+            }
+
+            const emailCleaned = email?.trim().toLowerCase();
+            const emailChanged = email && email !== user.email;
             if (emailChanged) {
                 const utilisateurActifAvecEmail = await prisma.utilisateur.findFirst({
                     where: {
                         email: emailCleaned,
-                        id: { not: id }, 
+                        id: { not: id },
                         OR: [
                             { client: { isActive: true } },
                             { prestataire: { isActive: true } }
                         ]
-        }
-    });
+                    }
+                });
 
-        if (utilisateurActifAvecEmail) {
-            return res.status(400).json({
-                success: false,
-                message: "Cet email est déjà utilisé par un autre compte actif."
+                if (utilisateurActifAvecEmail) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Cet email est déjà utilisé par un autre compte actif."
+                    });
+                }
+            }
+            let dataU = { nom, prenom, email, image, genre }
+            if (motDePasse) {
+                dataU.motDePasse = motDePasse;
+            }
+            await prisma.utilisateur.update({
+                data: dataU,
+                where: { id },
             });
-        }
-    }
-            let dataU = { nom, prenom, email, motDePasse, image, genre }
-    if (motDePasse) {
-        const salt = await bcrypt.genSalt(10);
-        dataU.motDePasse = await bcrypt.hash(motDePasse, salt);
-    }
-    await prisma.utilisateur.update({
-        data: dataU,
-        where: { id },
-    });
 
-    if (user.role === 'CLIENT') {
-        const { numTel, ville, adresse } = req.body;
-        const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+            if (user.role === 'CLIENT') {
+                const { numTel, ville, adresse } = req.body;
+                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
 
-        const updateData = {
-            numTel, ville, adresse, latitude: coords?.latitude ?? null,
-            longitude: coords?.longitude ?? null,
-        };
+                const updateData = {
+                    numTel, ville, adresse, latitude: coords?.latitude ?? null,
+                    longitude: coords?.longitude ?? null,
+                };
 
-        if (emailChanged) {
-            updateData.isActive = false;
-        }
+                if (emailChanged) {
+                    updateData.isActive = false;
+                }
 
-        const client = await prisma.client.update({
-            data: updateData,
-            where: { utilisateurIdCl: id },
-            include: { utilisateur: true }
-        });
+                const client = await prisma.client.update({
+                    data: updateData,
+                    where: { utilisateurIdCl: id },
+                    include: { utilisateur: true }
+                });
 
 
-        if (emailChanged) {
-            const mailOption = {
+                if (emailChanged) {
+                    const mailOption = {
 
-                from: '"DomiService" <domiservicesm@gmail.com>',
-                to: email,
-                subject: 'Validation du compte',
-                html: `  
+                        from: '"DomiService" <domiservicesm@gmail.com>',
+                        to: email,
+                        subject: 'Validation du compte',
+                        html: `  
                         <h2>Bienvenue, ${nom}!</h2>
                         <h4>Cher(e) ${nom},
                         Nous vous remercions pour votre inscription sur Domi Service ! Pour activer votre compte, veuillez cliquer sur le lien ci-dessous :
@@ -727,97 +764,120 @@ router.put('/:id', async (req, res) => {
                         <p>----------</p>
                         <p>DomiServicer</p>
                     `
-            };
-            transporter.sendMail(mailOption, function (error, info) {
-                if (error) {
-                    console.error("Erreur d'envoi mail validation:", error);
-                } else {
-                    console.log("Mail de validation envoyé:", info.response);
+                    };
+                    transporter.sendMail(mailOption, function (error, info) {
+                        if (error) {
+                            console.error("Erreur d'envoi mail validation:", error);
+                        } else {
+                            console.log("Mail de validation envoyé:", info.response);
+                        }
+                    });
                 }
-            });
-        }
 
-        return res.status(200).json({
-            success: true,
-            message: "Compte client mis à jour avec succès",
-            user: client
-        });
-    } else if (user.role === 'PRESTATAIRE' || user.role === 'ENTREPRISE') {
-        const {
-            adresse, ville, numTel, tarifDeplacement,
-            experience, competence,
-            nomEntreprise, siteWeb, identifiant, Spécialite, descriptionCourte
-        } = req.body;
-        const coords = await geocodeAdresse(`${adresse}, ${ville}`);
-        // 1. Mise à jour du prestataire
-        const prestataireData = {
-            adresse, ville, numTel, tarifDeplacement,
-            experience, competence, Spécialite, descriptionCourte, latitude: coords?.latitude ?? null,
-            longitude: coords?.longitude ?? null,
+                return res.status(200).json({
+                    success: true,
+                    message: "Compte client mis à jour avec succès",
+                    user: client
+                });
+            } else if (user.role === 'PRESTATAIRE' || user.role === 'ENTREPRISE') {
+                const {
+                    adresse, ville, numTel, tarifDeplacement,
+                    experience, competence,
+                    nomEntreprise, siteWeb, identifiant, Spécialite, descriptionCourte
+                } = req.body;
 
-        };
+                const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+                // 1. Mise à jour du prestataire
+                const prestataireData = {
+                    adresse, ville, numTel, tarifDeplacement:
+                        tarifDeplacement && tarifDeplacement !== ""
+                            ? parseFloat(tarifDeplacement)
+                            : null,
+                    experience, competence, Spécialite, descriptionCourte, latitude: coords?.latitude ?? null,
+                    longitude: coords?.longitude ?? null,
 
-        if (emailChanged) prestataireData.isActive = false;
+                };
 
-        const prestataireUpdated = await prisma.prestataire.update({
-            where: { utilisateurIdPre: id },
-            data: prestataireData,
-            include: { utilisateur: true }
-        });
+                if (emailChanged) prestataireData.isActive = false;
 
+                const prestataireUpdated = await prisma.prestataire.update({
+                    where: { utilisateurIdPre: id },
+                    data: prestataireData,
+                    include: { utilisateur: true, entreprise: true }
+                });
+                await prisma.notification.create({
+                    data: {
+                        contenu: `Le compte de ${prestataireUpdated.utilisateur.nom} ${prestataireUpdated.utilisateur.prenom} a été désactivé suite à la modification de l'email. Veuillez réactiver le compte pour le nouvel email.`,
+                        utilisateurId: id 
+                    }
+                });
 
-        if (user.role === 'ENTREPRISE') {
-            const entrepriseCurrent = await prisma.entreprise.findUnique({
-                where: { prestataireId: id },
-            });
+                if (user.role === 'ENTREPRISE') {
+                    const entrepriseCurrent = await prisma.entreprise.findUnique({
+                        where: { prestataireId: id },
+                    });
 
-            const identifiantChanged = identifiant && identifiant !== entrepriseCurrent?.identifiant;
+                    const identifiantChanged = identifiant && identifiant !== entrepriseCurrent?.identifiant;
 
-            const entrepriseData = {
-                nomEntreprise,
-                siteWeb,
-            };
-            if (identifiant) entrepriseData.identifiant = identifiant;
-            if (emailChanged || identifiantChanged) entrepriseData.isActive = false;
+                    const entrepriseData = {
+                        nomEntreprise,
+                        siteWeb,
+                    };
+                    if (identifiant) entrepriseData.identifiant = identifiant;
+                    if (emailChanged || identifiantChanged) {
+                        await prisma.prestataire.update({
+                            where: { utilisateurIdPre: id },
+                            data: { isActive: false },
+                        });
+                        await prisma.notification.create({
+                            data: {
+                                contenu: `Le compte de ${prestataireUpdated.entreprise.nomEntreprise}  a été désactivé suite à la modification de l'email ou de l'identifiant. Veuillez réactiver le compte.`,
+                                utilisateurId: id 
+                            }
+                        });
+                    }
 
-            const entrepriseUpdated = await prisma.entreprise.update({
-                where: { prestataireId: id },
-                data: entrepriseData,
-                include: { prestataire: { include: { utilisateur: true } } }
-            });
+                    const entrepriseUpdated = await prisma.entreprise.update({
+                        where: { prestataireId: id },
+                        data: entrepriseData,
+                        // include: { prestataire: { include: { utilisateur: true } } }
+                    });
 
-            return res.status(200).json({
-                success: true,
-                message: "Compte entreprise mis à jour",
-                user: entrepriseUpdated
-            });
+                    return res.status(200).json({
+                        success: true,
+                        message: "Compte entreprise mis à jour",
+                        user: {
+                            ...prestataireUpdated,
+                            entreprise: entrepriseUpdated,
+                        },
+                    });
 
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Compte prestataire mis à jour",
-            user: prestataireUpdated
-        });
+                }
+                return res.status(200).json({
+                    success: true,
+                    message: "Compte prestataire mis à jour",
+                    user: prestataireUpdated
+                });
 
-    } else {
-        let { email, nom, prenom, motDePasse, image, genre } = req.body
-        const admin = await prisma.admin.findUnique({
-            where: {
-                utilisateurIdAd: Number(id),
-            },
-            include: {
-                utilisateur: true
+            } else {
+                let { email, nom, prenom, motDePasse, image, genre } = req.body
+                const admin = await prisma.admin.findUnique({
+                    where: {
+                        utilisateurIdAd: Number(id),
+                    },
+                    include: {
+                        utilisateur: true
+                    }
+                })
+                return res.status(201).send({
+                    success: true, message: "Compte update successfully", user: admin
+                })
             }
-        })
-        return res.status(201).send({
-            success: true, message: "Compte update successfully", user: admin
-        })
-    }
-});
+        });
     } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Erreur serveur", error: error.message });
-}
+        console.error(error);
+        res.status(500).json({ success: false, message: "Erreur serveur", error: error.message });
+    }
 });
 
 // Stockage temporaire des codes (email ou numéro)

@@ -195,7 +195,7 @@ const AProposSection = () => {
                 }
             `}</style>
 
-            <div className="a-propos-section">
+            <div className="a-propos-section" id="apropos-section">
                 <div className="cercle-decoration" />
                 <div className="a-propos-left">
                     <img src={technicien} alt="Technicien" className="main-img" />

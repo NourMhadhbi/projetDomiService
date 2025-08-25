@@ -1,121 +1,151 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { Box, Typography, Paper, Chip, CircularProgress, useTheme } from "@mui/material";
+import { Box, Typography, Paper, CircularProgress, useTheme, Chip } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faList, faUser, faBuilding, faCalendar, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import {
+    faList,
+    faBuilding,
+    faCalendar,
+    faUser,
+    faEnvelope,
+    faTags,
+    faHeartBroken
+} from "@fortawesome/free-solid-svg-icons";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchSignales } from "../../features/SignalementSlice";
+import { fetchNonFavoris } from "../../features/favorisPrestataireSlice";
 import { MaterialReactTable } from 'material-react-table';
 
-const ListeSignaleAdmin = () => {
+const ListNonFavorisPrestataires = () => {
     const dispatch = useDispatch();
-    const { isLoggedIn } = useSelector((state) => state.auth);
-    const { signales, loading } = useSelector((state) => state.signalement);
+    const { isLoggedIn, user } = useSelector((state) => state.auth);
+    // Correction: Vérifiez le chemin exact dans votre store
+    const { nonFavoris, loading } = useSelector((state) => state.favoris);
     const theme = useTheme();
 
     useEffect(() => {
-        dispatch(fetchSignales());
-    }, [dispatch]);
+        if (user?.utilisateur?.id) {
+            dispatch(fetchNonFavoris(user.utilisateur.id))
+                .unwrap()
+                .then((data) => console.log("Non favoris reçus:", data))
+                .catch((err) => console.error("Erreur fetchNonFavoris:", err));
+        }
+    }, [dispatch, user]);
 
     // Transformer les données pour MRT
-    const rows = useMemo(
-        () =>
-            signales.map((s) => ({
-                id: s.id,
-                raison: s.raison || "—",
-                date: s.date
-                    ? new Date(s.date).toLocaleDateString("fr-FR", {
+    const rows = useMemo(() =>
+        nonFavoris.map((item) => {
+            const prestataire = item.prestataire || {};
+            const utilisateur = prestataire.utilisateur || {};
+            const entreprise = prestataire.entreprise || {};
+            const service = prestataire.service || {};
+
+            return {
+                id: item.id,
+                type: entreprise.nomEntreprise ? "Entreprise" : "Prestataire",
+                nom: entreprise.nomEntreprise
+                    ? `${utilisateur.nom || ""} ${utilisateur.prenom || ""}`.trim()
+                    : `${utilisateur.nom || ""} ${utilisateur.prenom || ""}`.trim(),
+                entrepriseNom: entreprise.nomEntreprise || "—",
+                service: service.nom || "—",
+                telephone: utilisateur.numTel || "—",
+                email: utilisateur.email || "—",
+                dateAjout: item.dateAjout
+                    ? new Date(item.dateAjout).toLocaleDateString("fr-FR", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
                     })
                     : "—",
-                clientName: s.client?.utilisateur
-                    ? `${s.client.utilisateur.nom} ${s.client.utilisateur.prenom}`
-                    : s.clientId ?? "—",
-                prestataireName: s.prestataire?.utilisateur
-                    ? `${s.prestataire.utilisateur.nom} ${s.prestataire.utilisateur.prenom}`
-                    : s.prestataireId ?? "—",
-            })),
-        [signales]
+            };
+        }),
+        [nonFavoris]
     );
 
-    // Colonnes MRT avec des largeurs proportionnelles
-    const columns = useMemo(
-        () => [
-            {
-                accessorKey: 'id',
-                header: 'ID',
-                size: 70,
-                Cell: ({ cell }) => (
-                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                        #{cell.getValue()}
-                    </Box>
-                ),
-            },
-            {
-                accessorKey: 'clientName',
-                header: 'Client',
-                size: 180,
-                Cell: ({ cell }) => (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FontAwesomeIcon icon={faUser} style={{ marginRight: 8, color: '#6c757d' }} />
-                        <span>{cell.getValue()}</span>
-                    </Box>
-                ),
-            },
-            {
-                accessorKey: 'prestataireName',
-                header: 'Prestataire / Entreprise',
-                size: 220,
-                Cell: ({ cell }) => (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    // Colonnes MRT
+    const columns = useMemo(() => [
+        {
+            accessorKey: 'id',
+            header: 'ID',
+            size: 30,
+            Cell: ({ cell }) => (
+                <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
+                    #{cell.getValue()}
+                </Box>
+            ),
+        },
+        {
+            accessorKey: 'nom',
+            header: 'Nom / Responsable',
+            size: 250,
+            Cell: ({ cell }) => (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FontAwesomeIcon icon={faUser} style={{ marginRight: 8, color: '#6c757d' }} />
+                    <span>{cell.getValue()}</span>
+                </Box>
+            ),
+        },
+        {
+            accessorKey: 'type',
+            header: 'Type',
+            size: 200,
+            Cell: ({ cell }) => (
+                <Chip
+                    label={cell.getValue()}
+                    color={cell.getValue() === "Entreprise" ? "primary" : "secondary"}
+                    variant="outlined"
+                    size="small"
+                />
+            ),
+        },
+        {
+            accessorKey: 'entrepriseNom',
+            header: 'Entreprise',
+            size: 200,
+            Cell: ({ cell, row }) => (
+                row.original.type === "Entreprise"
+                    ? <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <FontAwesomeIcon icon={faBuilding} style={{ marginRight: 8, color: '#6c757d' }} />
                         <span>{cell.getValue()}</span>
                     </Box>
-                ),
-            },
-            {
-                accessorKey: 'raison',
-                header: 'Raison du signalement',
-                minSize: 200,
-                maxSize: 400,
-                Cell: ({ cell }) => (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FontAwesomeIcon icon={faExclamationTriangle} style={{ marginRight: 8, color: '#dc3545' }} />
-                        <Chip
-                            label={cell.getValue()}
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                            sx={{
-                                borderRadius: 1,
-                                maxWidth: '100%',
-                                '& .MuiChip-label': {
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                }
-                            }}
-                        />
-                    </Box>
-                ),
-            },
-            {
-                accessorKey: 'date',
-                header: 'Date',
-                size: 120,
-                Cell: ({ cell }) => (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FontAwesomeIcon icon={faCalendar} style={{ marginRight: 8, color: '#6c757d' }} />
-                        <span>{cell.getValue()}</span>
-                    </Box>
-                ),
-            },
-        ],
-        []
-    );
+                    : <Chip label="—" size="small" variant="outlined" />
+            ),
+        },
+        {
+            accessorKey: 'service',
+            header: 'Service',
+            size: 200,
+            Cell: ({ cell }) => (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FontAwesomeIcon icon={faTags} style={{ marginRight: 8, color: '#6c757d' }} />
+                    <span>{cell.getValue()}</span>
+                </Box>
+            ),
+        },
+        { accessorKey: 'telephone', header: 'Téléphone', size: 200 },
+        {
+            accessorKey: 'email',
+            header: 'Email',
+            size: 200,
+            Cell: ({ cell }) => (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FontAwesomeIcon icon={faEnvelope} style={{ marginRight: 8, color: '#6c757d' }} />
+                    <span>{cell.getValue()}</span>
+                </Box>
+            ),
+        },
+        {
+            accessorKey: 'dateAjout',
+            header: "Date d'ajout",
+            size: 200,
+            Cell: ({ cell }) => (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FontAwesomeIcon icon={faCalendar} style={{ marginRight: 8, color: '#6c757d' }} />
+                    <span>{cell.getValue()}</span>
+                </Box>
+            ),
+        },
+    ], []);
 
     return (
         <>
@@ -141,7 +171,7 @@ const ListeSignaleAdmin = () => {
                         mr: 2
                     }}>
                         <FontAwesomeIcon
-                            icon={faList}
+                            icon={faHeartBroken} // Changé de faHeart à faList pour les non-favoris
                             style={{ fontSize: 24, color: "white" }}
                         />
                     </Box>
@@ -154,10 +184,10 @@ const ListeSignaleAdmin = () => {
                                 mb: 0.5
                             }}
                         >
-                            Liste des signalements
+                            Liste des non-favoris
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Gestion des signalements des clients envers les prestataires
+                            Prestataires et entreprises non ajoutés aux favoris
                         </Typography>
                     </Box>
                 </Box>
@@ -177,10 +207,10 @@ const ListeSignaleAdmin = () => {
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
                             <CircularProgress sx={{ color: 'primary.main' }} />
                             <Typography variant="body1" sx={{ ml: 2 }}>
-                                Chargement des données...
+                                Chargement...
                             </Typography>
                         </Box>
-                    ) : signales.length === 0 ? (
+                    ) : nonFavoris.length === 0 ? ( // Correction: nonFavoris au lieu de favoris
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -189,12 +219,12 @@ const ListeSignaleAdmin = () => {
                             height: 300,
                             color: 'text.secondary'
                         }}>
-                            <FontAwesomeIcon icon={faList} style={{ fontSize: 48, marginBottom: 16 }} />
+                            <FontAwesomeIcon icon={faHeartBroken} style={{ fontSize: 48, marginBottom: 16, color: theme.palette.text.secondary }} />
                             <Typography variant="h6" gutterBottom>
-                                Aucun signalement trouvé
+                                Aucun prestataire trouvé
                             </Typography>
                             <Typography variant="body2">
-                                Tous les signalements apparaîtront ici
+                                Tous les prestataires sont dans vos favoris
                             </Typography>
                         </Box>
                     ) : (
@@ -209,10 +239,11 @@ const ListeSignaleAdmin = () => {
                             enableFullScreenToggle={false}
                             enableDensityToggle={false}
                             enableHiding={false}
+                            layoutMode="table"
                             initialState={{
                                 pagination: { pageSize: 10, pageIndex: 0 },
                                 density: 'comfortable',
-                                sorting: [{ id: 'id', desc: true }]
+                                sorting: [{ id: 'dateAjout', desc: true }]
                             }}
                             muiTableContainerProps={{
                                 sx: {
@@ -272,7 +303,7 @@ const ListeSignaleAdmin = () => {
                                     borderColor: 'grey.300',
                                 },
                             }}
-                            layoutMode="table"
+
                             displayColumnDefOptions={{
                                 'mrt-row-actions': {
                                     header: 'Actions',
@@ -292,4 +323,4 @@ const ListeSignaleAdmin = () => {
     );
 };
 
-export default ListeSignaleAdmin;
+export default ListNonFavorisPrestataires;

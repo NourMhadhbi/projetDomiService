@@ -23,15 +23,22 @@ import {
     fetchById,
     createRendezVous,
     updateRendezVous,
-    deleteRendezVous
+    deleteRendezVous,
+    confirmRendezVous,
+    cancelRendezVous,
+    finishRendezVous
 } from '../../features/RendezVousSlice';
+
 import { fetchIntervenantbyId } from '../../features/UtilisateurSlice';
 import ModalInfo from './ModalInfo';
 
 
 
+
 const CalendrierRendezVous = () => {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
+    const prestataireConnect = user?.utilisateur.role === "PRESTATAIRE";
+    console.log("est prestataire", prestataireConnect)
     const [popoverEventId, setPopoverEventId] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const popoverRef = useRef(null);
@@ -67,11 +74,16 @@ const CalendrierRendezVous = () => {
         intervenant
     } = useSelector((state) => state.utilisateur);
 
-
-
     useEffect(() => {
-        dispatch(fetchByIntervenant(id));
-    }, [dispatch, id]);
+        if (isLoggedIn) {
+            if (user?.utilisateur.role === 'CLIENT') dispatch(fetchByIntervenant(id));
+            else if (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE') dispatch(fetchByIntervenant(user.utilisateurIdPre));
+        }
+    }, [isLoggedIn, user, id, dispatch]);
+
+    // useEffect(() => {
+    //     dispatch(fetchByIntervenant(id));
+    // }, [dispatch, id]);
     useEffect(() => {
         if (id) {
             dispatch(fetchIntervenantbyId(id));
@@ -115,6 +127,7 @@ const CalendrierRendezVous = () => {
     };
 
     const handleEventClick = (clickInfo) => {
+
         setPopoverEventId(clickInfo.event.id);
         setAnchorEl(clickInfo.el);
 
@@ -122,7 +135,28 @@ const CalendrierRendezVous = () => {
         dispatch(fetchById(parseInt(clickInfo.event.id)));
     };
 
+    const [heureError, setHeureError] = useState("");
+
+
+    const estHeureDisponible = (date, heure) => {
+        const dateToCheck = `${date}T${heure}:00`;
+        return !liste.some(rdv => {
+
+            const rdvDateHeure = rdv.date ? rdv.date.slice(0, 16) : '';
+            return (
+                rdv.prestataireId === formData.prestataireId &&
+                rdvDateHeure === dateToCheck.slice(0, 16) &&
+                rdv.id !== formData.id
+            );
+        });
+    };
     const onSave = async () => {
+        setHeureError("");
+
+        if (!estHeureDisponible(formData.date, formData.heure)) {
+            setHeureError("Cet intervenant a déjà un rendez-vous à cette heure.");
+            return;
+        }
         const dateTime = `${formData.date}T${formData.heure}:00`;
         const payload = { ...formData, date: dateTime };
 
@@ -211,7 +245,73 @@ const CalendrierRendezVous = () => {
             });
         }
     };
+    //Prestataire
+    const onConfirmer = async (idRdv) => {
+        try {
+            await dispatch(confirmRendezVous({ id: idRdv })).unwrap();
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous confirmé avec succès !',
+                confirmButtonColor: '#198754'
+            });
+        } catch (err) {
+            Swal.fire('Erreur', 'Impossible de confirmer le rendez-vous.', 'error');
+        }
+    };
 
+    const onTerminer = async (idRdv) => {
+        try {
+            await dispatch(finishRendezVous({ id: idRdv })).unwrap();
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous terminé avec succès !',
+                confirmButtonColor: '#198754'
+            });
+        } catch (err) {
+            Swal.fire('Erreur', 'Impossible de terminer le rendez-vous.', 'error');
+        }
+    };
+
+    const onAnnuler = async (idRdv) => {
+        const { isConfirmed } = await Swal.fire({
+            icon: 'warning',
+            title: 'Confirmer l\'annulation',
+            text: 'Souhaitez-vous vraiment annuler ce rendez-vous ?',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, annuler',
+            cancelButtonText: 'Non',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: false,
+            customClass: {
+                popup: 'rounded-4 shadow',
+                title: 'fs-5 fw-semibold',
+                confirmButton: 'px-4 py-2',
+                cancelButton: 'px-4 py-2'
+            }
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            await dispatch(cancelRendezVous({ id: idRdv })).unwrap();
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous annulé avec succès !',
+                confirmButtonColor: '#198754'
+            });
+        } catch (err) {
+            Swal.fire('Erreur', 'Impossible d\'annuler le rendez-vous.', 'error');
+        }
+    };
+
+    //Fin Partie
     const openAddModal = () => {
         setFormData({
             id: '',
@@ -231,8 +331,8 @@ const CalendrierRendezVous = () => {
     const events = liste.map(rdv => ({
         id: rdv.id?.toString() || '',
         title: `RDV ${rdv.id ?? ''}`,
-        date: (rdv.date && rdv.date.split('T')[0]) || '', // fallback si date est vide
-        backgroundColor: STATUTS[rdv.statut]?.color || '#198754', // fallback si statut invalide
+        date: (rdv.date && rdv.date.split('T')[0]) || '',
+        backgroundColor: STATUTS[rdv.statut]?.color || '#198754', 
         textColor: 'white',
         extendedProps: {
             statut: rdv.statut || 'INCONNU',
@@ -284,23 +384,29 @@ const CalendrierRendezVous = () => {
                             locale={frLocale}
                             themeSystem="bootstrap5"
                             events={events}
-                            dateClick={handleDateClick}
+                            dateClick={user?.utilisateur.role === 'CLIENT' ? handleDateClick : undefined}
                             eventClick={handleEventClick}
                             height="auto"
                             headerToolbar={{
                                 left: 'prev,next today',
                                 center: 'title',
-                                right: 'dayGridMonth,timeGridWeek,listWeek,addButton'
+                                right: user?.utilisateur.role === 'CLIENT'
+                                    ? 'dayGridMonth,timeGridWeek,listWeek,addButton'
+                                    : 'dayGridMonth,timeGridWeek,listWeek'
                             }}
-                            customButtons={{
-                                addButton: {
-                                    text: 'Obtenir un rendez-Vous',
-                                    click: openAddModal,
-                                },
-                            }}
-                            dayCellDidMount={(info) => {
+                            customButtons={
+                                user?.utilisateur.role === 'CLIENT'
+                                    ? {
+                                        addButton: {
+                                            text: 'Obtenir un rendez-Vous',
+                                            click: openAddModal,
+                                        },
+                                    }
+                                    : {}
+                            }
+                            dayCellDidMount={user?.utilisateur.role === 'CLIENT' ? (info) => {
                                 info.el.style.cursor = 'pointer';
-                            }}
+                            } : undefined}
                             eventDidMount={(info) => {
                                 info.el.style.cursor = 'pointer';
                             }}
@@ -350,6 +456,7 @@ const CalendrierRendezVous = () => {
                             open={showPopoverModal}
                             onClose={closePopover}
                             rendezVousActuel={rendezVousActuel}
+                            clientid={rendezVousActuel?.clientId}
                             onEdit={() => {
                                 setViewMode(true);
                                 setPanelOpen(true);
@@ -358,6 +465,10 @@ const CalendrierRendezVous = () => {
                             }}
                             onDelete={onDelete}
                             STATUTS={STATUTS}
+
+                            onConfirmer={onConfirmer}
+                            onAnnuler={onAnnuler}
+                            onTerminer={onTerminer}
                         />
                     </div>
                 </div>
@@ -373,6 +484,8 @@ const CalendrierRendezVous = () => {
                     setEventData={setFormData}
                     mode={viewMode ? 'modification' : 'ajout'}
                     dateReadonly={dateReadonly}
+                    heureError={heureError}
+                    setHeureError={setHeureError}
                 />
             </div>
             <Footer />

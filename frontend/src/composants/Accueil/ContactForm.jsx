@@ -1,25 +1,120 @@
-// src/components/ContactForm.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import Swal from 'sweetalert2';
+import { envoyerContactAsync, resetContactState } from '../../features/ContactSlice';
 
+const ContactForm = ({ isClientConnected, user }) => {
+  const dispatch = useDispatch();
 
-const ContactForm = ({ isClientConnected,user }) => {
   const [formData, setFormData] = useState({
     name: '',
+    prenom: '',
     email: '',
     phone: '',
     subject: '',
     message: ''
   });
 
+
+  useEffect(() => {
+    if (isClientConnected && user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.utilisateur.nom || '',
+        prenom: user.utilisateur.prenom || '',
+        email: user.utilisateur.email || '',
+        phone: user.numTel || '',
+      }));
+    } else {
+
+      setFormData(prev => ({
+        ...prev,
+        name: '',
+        prenom: '',
+        email: '',
+        phone: '',
+      }));
+    }
+  }, [isClientConnected, user]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Formulaire soumis :', formData);
-    alert('Message envoyé avec succès !');
+    Swal.fire({
+      title: '⏳ Envoi en cours...',
+      html: `<p style="margin:0; font-size: 15px; color:#6c757d;">
+             Merci de patienter pendant l’envoi de votre message.
+           </p>`,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      background: '#f8f9fa',
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+    try {
+
+      await dispatch(envoyerContactAsync({
+        nom: formData.name,
+        prenom: formData.prenom,
+        email: formData.email || undefined,
+        telephone: formData.phone || undefined,
+
+        sujet: formData.subject,
+        message: formData.message,
+      })).unwrap();
+
+      Swal.fire({
+        title: ' Message envoyé avec succès',
+        html: `
+           <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+             <p style="margin:0; font-size: 15px; line-height:1.5;">
+               Merci <strong>${formData.prenom || formData.name}</strong>, votre message a bien été transmis.<br>
+               Notre équipe vous répondra dans les plus brefs délais.
+             </p>
+           </div>
+         `,
+        icon: 'success',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#198754',
+        background: '#f0f9ff',
+        iconColor: '#198754',
+        timer: 8000,
+        timerProgressBar: true
+      });
+
+
+      dispatch(resetContactState());
+
+
+      setFormData(prev => ({
+        ...prev,
+        subject: '',
+        message: '',
+      }));
+
+      dispatch(resetContactState());
+    } catch (error) {
+      Swal.fire({
+        title: 'Une erreur est survenue',
+        html: `
+         <p style="margin:0; font-size: 15px; line-height:1.5;">
+           Impossible d’envoyer votre message pour le moment.<br>
+           <strong>${error}</strong><br><br>
+           Veuillez réessayer plus tard ou contacter notre support.
+         </p>
+       `,
+        icon: 'error',
+        confirmButtonText: 'Fermer',
+        confirmButtonColor: '#d33',
+        background: '#fff5f5',
+        iconColor: '#c70000',
+      });
+    }
   };
 
   return (
@@ -30,12 +125,50 @@ const ContactForm = ({ isClientConnected,user }) => {
         </h2>
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="contact-row">
-            <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Votre nom" required />
-            <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Adresse email" required />
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Votre nom"
+              required
+            // disabled={isClientConnected}
+            />
+            <input
+              type="text"
+              name="prenom"
+              value={formData.prenom}
+              onChange={handleChange}
+              placeholder="Votre prenom"
+              required
+            // disabled={isClientConnected}
+            />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Adresse email"
+              required
+            // disabled={isClientConnected}
+            />
           </div>
           <div className="contact-row">
-            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Numéro de téléphone" required />
-            <select name="subject" value={formData.subject} onChange={handleChange} required>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Numéro de téléphone"
+              required
+            // disabled={isClientConnected}
+            />
+            <select
+              name="subject"
+              value={formData.subject}
+              onChange={handleChange}
+              required
+            >
               <option value="">Sélectionnez le sujet</option>
               <option value="Demande générale">Demande générale</option>
               <option value="Service technique">Service technique</option>
@@ -53,94 +186,85 @@ const ContactForm = ({ isClientConnected,user }) => {
           <button
             type="submit"
             className="contact-su"
-            disabled={!isClientConnected || user?.utilisateur.role === 'ADMIN'}
+            disabled={user?.utilisateur?.role === 'ADMIN'}
           >
             SOUMETTRE MAINTENANT
           </button>
-
         </form>
       </div>
-      <style>{`.contact-wrapper {
-  background-color: #ffffffff;
-  padding: 40px 20px;
-  display: flex;
-  justify-content: center;
-}
-.contact-su:disabled {
-  opacity: 0.5;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-.contact-box {
-  width: 100%;
-  max-width: 1000px;
-    background-color: #e5e5e5ff;
-
-  padding: 40px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.05);
-}
-
-.contact-title {
-  text-align: center;
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 30px;
-}
-
-.contact-title span {
-  color: #f0380f;
-}
-
-.contact-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.contact-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.contact-row input,
-.contact-row select {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  background: #f5f5f5;
-  font-size: 16px;
-  border-radius: 2px;
-}
-
-.contact-form textarea {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  border: none;
-  background: #f5f5f5;
-  resize: none;
-  border-radius: 2px;
-}
-
-.contact-su {
-   background-color: #e6471d;
-  color: #fff;
-  border: none;
-  padding: 14px 28px;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.contact-su:hover {
-  background-color: #d93108;
-}
-`}</style>
+      <style>{`
+        .contact-wrapper {
+          background-color: #ffffffff;
+          padding: 40px 20px;
+          display: flex;
+          justify-content: center;
+        }
+        .contact-su:disabled {
+          opacity: 0.5;
+          pointer-events: none;
+          cursor: not-allowed;
+        }
+        .contact-box {
+          width: 100%;
+          max-width: 1000px;
+          background-color: #e5e5e5ff;
+          padding: 40px;
+          box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+        .contact-title {
+          text-align: center;
+          font-size: 28px;
+          font-weight: 700;
+          margin-bottom: 30px;
+        }
+        .contact-title span {
+          color: #f0380f;
+        }
+        .contact-form {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .contact-row {
+          display: flex;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+        .contact-row input,
+        .contact-row select {
+          flex: 1;
+          padding: 14px;
+          border: none;
+          background: #f5f5f5;
+          font-size: 16px;
+          border-radius: 2px;
+        }
+        .contact-form textarea {
+          width: 100%;
+          padding: 14px;
+          font-size: 16px;
+          border: none;
+          background: #f5f5f5;
+          resize: none;
+          border-radius: 2px;
+        }
+        .contact-su {
+          background-color: #e6471d;
+          color: #fff;
+          border: none;
+          padding: 14px 28px;
+          font-weight: 600;
+          font-size: 16px;
+          cursor: pointer;
+          border-radius: 4px;
+          transition: all 0.3s ease;
+          text-align: center;
+          text-transform: uppercase;
+        }
+        .contact-su:hover {
+          background-color: #d93108;
+        }
+      `}</style>
     </section>
   );
 };

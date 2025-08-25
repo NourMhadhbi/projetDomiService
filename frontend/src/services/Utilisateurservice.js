@@ -18,11 +18,13 @@ export const getPrestatairesProches = async (clientId) => {
 
     return response.data;
 };
+
+
 export const activerCompte = async (id) => {
     const response = await Api.put(`${UTILISATEUR_API}/activePrestataire?id=${id}`);
     return response.data;
 };
 export const desactiverCompte = async (id, raison) => {
-  const response = await Api.put(`${UTILISATEUR_API}/desactive?id=${id}`, { raison });
-  return response.data;
+    const response = await Api.put(`${UTILISATEUR_API}/desactive?id=${id}`, { raison });
+    return response.data;
 };
