@@ -54,6 +54,247 @@ async function geocodeAdresse(adresse) {
         longitude: parseFloat(lon),
     };
 }
+// router.post('/register', async (req, res) => {
+
+//     try {
+//         await prisma.$transaction(async (prisma) => {
+//             const {
+//                 nom,
+//                 prenom,
+//                 email,
+//                 numTel,
+//                 motDePasse,
+//                 role,
+//                 genre,
+//                 adresse,
+//                 ville,
+//                 tarifDeplacement,
+//                 serviceId,
+//                 nomEntreprise,
+//                 Spécialite, descriptionCourte,
+//                 siteWeb,
+//                 identifiant
+//             } = req.body;
+//             const emailCleaned = email && email.trim() !== "" ? email.trim() : undefined;
+
+//             if (emailCleaned) {
+//                 const existingClient = await prisma.utilisateur.findFirst({
+//                     where: {
+//                         email: emailCleaned,
+//                         client: {
+//                             isActive: true
+//                         }
+//                     },
+//                     include: {
+//                         client: true
+//                     }
+//                 });
+//                 const existingPrestataire = await prisma.utilisateur.findFirst({
+//                     where: {
+//                         email: emailCleaned,
+//                         prestataire: {
+//                             isActive: true
+//                         }
+//                     },
+//                     include: {
+//                         prestataire: true
+//                     }
+//                 });
+
+//                 if (existingClient || existingPrestataire) {
+//                     return res.status(400).send({ success: false, message: "Cet email est déjà utilisé." });
+//                 }
+//             } else if (numTel) {
+//                 const existingClient = await prisma.client.findFirst({ where: { numTel, isActive: true } });
+//                 const existingPrestataire = await prisma.prestataire.findFirst({ where: { numTel, isActive: true } });
+//                 if (existingClient || existingPrestataire) {
+//                     return res.status(400).send({ success: false, message: "Numéro de téléphone déjà utilisé." });
+//                 }
+//             } else {
+//                 return res.status(400).send({ success: false, message: "Email ou numéro de téléphone requis." });
+//             }
+
+//             const getImageByRole = (role) => {
+//                 switch (role) {
+//                     case 'ADMIN':
+//                         return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713924474/images/xg1htshcaarthxvnj9vg.png';
+//                     case 'CLIENT':
+//                         return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/ze5ytyshmweusb4gypsr.png';
+//                     case 'PRESTATAIRE':
+//                         return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/xdvavia4ci9f25eywjxu.png';
+//                     case 'ENTREPRISE':
+//                         return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/z2i2yr8gsct1qrgh1viv.png';
+//                     default:
+//                         return " ";
+//                 }
+//             };
+
+//             const salt = await bcrypt.genSalt(10);
+//             const motDePasseCrypte = await bcrypt.hash(motDePasse, salt);
+//             const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+//             const userCreate = await prisma.utilisateur.create({
+//                 data: {
+//                     nom,
+//                     prenom,
+//                     email: emailCleaned,
+//                     role,
+//                     motDePasse: motDePasseCrypte,
+//                     genre,
+//                     image: getImageByRole(role)
+//                 }
+//             });
+
+//             if (userCreate.role === 'CLIENT') {
+//                 // const { adresse, ville, numTel } = req.body;
+//                 const client = await prisma.client.create({
+//                     data: {
+//                         utilisateurIdCl: userCreate.id,
+//                         numTel,
+//                         adresse,
+//                         ville,
+//                         latitude: coords?.latitude ?? null,
+//                         longitude: coords?.longitude ?? null,
+//                     },
+//                     include: { utilisateur: true }
+//                 });
+//                 if (email && email.trim() !== '') {
+
+//                     const mailOption = {
+//                         from: '"DomiService" <domiservicesm@gmail.com>',
+//                         to: userCreate.email,
+//                         subject: 'Validation du compte',
+//                         html: `  
+//             <h2>Bienvenue, ${userCreate.nom}!</h2>
+//             <h4>Cher(e) ${userCreate.nom},
+//             Nous vous remercions pour votre inscription sur Domi Service ! Pour activer votre compte, veuillez cliquer sur le lien ci-dessous :
+//             <p><a href="http://${req.headers.host}/api/utilisateur/activeClient/utilisateur?email=${userCreate.email}">cliquez ici</a></p>.
+//             Une fois votre compte activé, vous pourrez accéder à toutes les fonctionnalités de notre plateforme</h4>
+//             <p>Cordialement,</p>
+//             <p>----------</p>
+//             <p>DomiServicer</p>
+//           `
+//                     };
+//                     transporter.sendMail(mailOption, (error, info) => {
+//                         if (error) console.log(error);
+//                         else console.log('la validation du compte a été envoyée à votre compte');
+//                     });
+
+//                     return res.status(202).send({ success: true, message: "Succes", user: client });
+//                 }
+//                 else if (numTel && numTel.trim() !== '') {
+//                     try {
+//                         const activationLink = `https://${req.headers.host}/api/utilisateur/activeClient/utilisateur?numTel=${numTel}`;
+//                         await twilioClient.messages.create({
+//                             body: `Bonjour ${userCreate.nom}, merci pour votre inscription sur Domi Service. Activez votre compte ici : ${activationLink}`,
+//                             from: process.env.TWILIO_PHONE_NUMBER,
+//                             to: numTel.startsWith('+') ? numTel : '+216' + numTel
+//                         }).then(message => {
+//                             console.log('Message envoyé, SID :', message.sid);
+//                         }).catch(error => {
+//                             console.error('Erreur en envoyant SMS:', error);
+//                         });
+//                     } catch (smsError) {
+//                         console.error(`Erreur lors de l'envoi du SMS de validation:`, smsError);
+//                     }
+//                 }
+//             }
+//             else if (userCreate.role === 'PRESTATAIRE') {
+//                 // const { adresse, ville, numTel, tarifDeplacement, serviceId } = req.body;
+
+//                 // IMPORTANT : selon ton modèle, Prestataire a un champ serviceId et entrepriseId, et utilisateurIdPre
+//                 const prestataire = await prisma.prestataire.create({
+//                     data: {
+//                         utilisateurIdPre: userCreate.id,
+//                         adresse,
+//                         ville,
+//                         numTel,
+//                         latitude: coords?.latitude ?? null,
+//                         longitude: coords?.longitude ?? null,
+//                         descriptionCourte, Spécialite,
+//                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
+//                         serviceId: Number(serviceId)
+//                     },
+//                     include: { utilisateur: true }
+//                 });
+//                 await prisma.notification.create({
+//                     data: {
+//                         contenu: `Nouveau compte PRESTATAIRE créé. Veuillez activer le compte de ${prestataire.utilisateur.nom} ${prestataire.utilisateur.prenom}.`,
+//                         utilisateurId: prestataire.utilisateurIdPre
+//                     }
+//                 });
+//                 return res.status(201).send({ success: true, message: "Compte created successfully", user: prestataire });
+//             }
+//             else if (userCreate.role === 'ENTREPRISE') {
+//                 // const { nomEntreprise, adresse, ville, numTel, tarifDeplacement, siteWeb, identifiant, serviceId } = req.body;
+
+
+//                 const prestataire = await prisma.prestataire.create({
+//                     data: {
+//                         utilisateurIdPre: userCreate.id,
+//                         adresse,
+//                         ville,
+//                         numTel,
+//                         latitude: coords?.latitude ?? null,
+//                         longitude: coords?.longitude ?? null,
+//                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
+//                         serviceId: Number(serviceId),
+//                         isActive: false
+//                     }
+//                 });
+
+
+//                 const entreprise = await prisma.entreprise.create({
+//                     data: {
+//                         prestataireId: prestataire.utilisateurIdPre,
+//                         nomEntreprise,
+//                         siteWeb,
+//                         identifiant
+//                     },
+//                     include: {
+//                         prestataire: true
+//                     }
+//                 });
+//                 await prisma.notification.create({
+//                     data: {
+//                         contenu: `Nouveau compte ENTREPRISE créé. Veuillez activer le compte de ${entreprise.nomEntreprise}.`,
+//                         utilisateurId: prestataire.utilisateurIdPre
+//                     }
+//                 });
+//                 return res.status(201).send({ success: true, message: "Compte created successfully", user: entreprise });
+//             }
+//             else {
+//                 // Admin 
+//                 const admin = await prisma.admin.create({
+//                     data: {
+//                         utilisateurIdAd: userCreate.id
+//                     }
+//                 });
+//                 return res.status(201).send({ success: true, message: "Compte created successfully", user: admin });
+//             }
+//         });
+//         if (!coords) {
+//             return res.status(400).json({ error: "Impossible de géocoder l'adresse" });
+//         }
+//     } catch (err) {
+//         console.log(err);
+//         res.status(500).send({ success: false, message: err.message });
+//     }
+// });
+
+// router.get('/profil', authMiddleware, async (req, res) => {
+//     try {
+//         // req.user est défini dans authMiddleware
+//         const user = await prisma.utilisateur.findUnique({
+//             where: { id: req.user.iduser }
+//         });
+//         if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+//         const { motDePasse, ...userData } = user;
+//         res.json({ user: userData });
+//     } catch (error) {
+//         res.status(500).json({ message: "Erreur serveur" });
+//     }
+// });
 router.post('/register', async (req, res) => {
     try {
         await prisma.$transaction(async (prisma) => {
@@ -74,42 +315,37 @@ router.post('/register', async (req, res) => {
                 siteWeb,
                 identifiant
             } = req.body;
+
             const emailCleaned = email && email.trim() !== "" ? email.trim() : undefined;
 
             if (emailCleaned) {
-                const existingClient = await prisma.utilisateur.findFirst({
+                const existingUserEmail = await prisma.utilisateur.findFirst({
                     where: {
                         email: emailCleaned,
-                        client: {
-                            isActive: true
-                        }
-                    },
-                    include: {
-                        client: true
+                        OR: [
+                            { client: { isActive: true } },
+                            { prestataire: { isActive: true } }
+                        ]
                     }
                 });
-                const existingPrestataire = await prisma.utilisateur.findFirst({
-                    where: {
-                        email: emailCleaned,
-                        prestataire: {
-                            isActive: true
-                        }
-                    },
-                    include: {
-                        prestataire: true
-                    }
-                });
-
-                if (existingClient || existingPrestataire) {
+                if (existingUserEmail) {
                     return res.status(400).send({ success: false, message: "Cet email est déjà utilisé." });
                 }
-            } else if (numTel) {
-                const existingClient = await prisma.client.findFirst({ where: { numTel, isActive: true } });
-                const existingPrestataire = await prisma.prestataire.findFirst({ where: { numTel, isActive: true } });
-                if (existingClient || existingPrestataire) {
+            }
+
+            if (numTel && numTel.trim() !== "") {
+                const existingUserTel = await prisma.utilisateur.findFirst({
+                    where: {
+                        OR: [
+                            { client: { numTel, isActive: true } },
+                            { prestataire: { numTel, isActive: true } }
+                        ]
+                    }
+                });
+                if (existingUserTel) {
                     return res.status(400).send({ success: false, message: "Numéro de téléphone déjà utilisé." });
                 }
-            } else {
+            } else if (!emailCleaned) {
                 return res.status(400).send({ success: false, message: "Email ou numéro de téléphone requis." });
             }
 
@@ -131,6 +367,7 @@ router.post('/register', async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const motDePasseCrypte = await bcrypt.hash(motDePasse, salt);
             const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+
             const userCreate = await prisma.utilisateur.create({
                 data: {
                     nom,
@@ -144,7 +381,6 @@ router.post('/register', async (req, res) => {
             });
 
             if (userCreate.role === 'CLIENT') {
-                // const { adresse, ville, numTel } = req.body;
                 const client = await prisma.client.create({
                     data: {
                         utilisateurIdCl: userCreate.id,
@@ -157,7 +393,6 @@ router.post('/register', async (req, res) => {
                     include: { utilisateur: true }
                 });
                 if (email && email.trim() !== '') {
-
                     const mailOption = {
                         from: '"DomiService" <domiservicesm@gmail.com>',
                         to: userCreate.email,
@@ -177,7 +412,6 @@ router.post('/register', async (req, res) => {
                         if (error) console.log(error);
                         else console.log('la validation du compte a été envoyée à votre compte');
                     });
-
                     return res.status(202).send({ success: true, message: "Succes", user: client });
                 }
                 else if (numTel && numTel.trim() !== '') {
@@ -198,9 +432,6 @@ router.post('/register', async (req, res) => {
                 }
             }
             else if (userCreate.role === 'PRESTATAIRE') {
-                // const { adresse, ville, numTel, tarifDeplacement, serviceId } = req.body;
-
-                // IMPORTANT : selon ton modèle, Prestataire a un champ serviceId et entrepriseId, et utilisateurIdPre
                 const prestataire = await prisma.prestataire.create({
                     data: {
                         utilisateurIdPre: userCreate.id,
@@ -224,9 +455,6 @@ router.post('/register', async (req, res) => {
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: prestataire });
             }
             else if (userCreate.role === 'ENTREPRISE') {
-                // const { nomEntreprise, adresse, ville, numTel, tarifDeplacement, siteWeb, identifiant, serviceId } = req.body;
-
-
                 const prestataire = await prisma.prestataire.create({
                     data: {
                         utilisateurIdPre: userCreate.id,
@@ -240,8 +468,6 @@ router.post('/register', async (req, res) => {
                         isActive: false
                     }
                 });
-
-
                 const entreprise = await prisma.entreprise.create({
                     data: {
                         prestataireId: prestataire.utilisateurIdPre,
@@ -262,7 +488,6 @@ router.post('/register', async (req, res) => {
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: entreprise });
             }
             else {
-                // Admin 
                 const admin = await prisma.admin.create({
                     data: {
                         utilisateurIdAd: userCreate.id
@@ -271,29 +496,11 @@ router.post('/register', async (req, res) => {
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: admin });
             }
         });
-        if (!coords) {
-            return res.status(400).json({ error: "Impossible de géocoder l'adresse" });
-        }
     } catch (err) {
         console.log(err);
         res.status(500).send({ success: false, message: err.message });
     }
 });
-
-// router.get('/profil', authMiddleware, async (req, res) => {
-//     try {
-//         // req.user est défini dans authMiddleware
-//         const user = await prisma.utilisateur.findUnique({
-//             where: { id: req.user.iduser }
-//         });
-//         if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
-//         const { motDePasse, ...userData } = user;
-//         res.json({ user: userData });
-//     } catch (error) {
-//         res.status(500).json({ message: "Erreur serveur" });
-//     }
-// });
 
 
 //activer le compte
@@ -719,6 +926,28 @@ router.put('/:id', async (req, res) => {
                     });
                 }
             }
+            const numTelChanged =
+                (user.client && req.body.numTel && req.body.numTel !== user.client.numTel) ||
+                (user.prestataire && req.body.numTel && req.body.numTel !== user.prestataire.numTel);
+
+            if (numTelChanged) {
+                const utilisateurActifAvecTel = await prisma.utilisateur.findFirst({
+                    where: {
+                        id: { not: id },
+                        OR: [
+                            { client: { numTel: req.body.numTel, isActive: true } },
+                            { prestataire: { numTel: req.body.numTel, isActive: true } }
+                        ]
+                    }
+                });
+
+                if (utilisateurActifAvecTel) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Ce numéro de téléphone est déjà utilisé par un autre compte actif."
+                    });
+                }
+            }
             let dataU = { nom, prenom, email, image, genre }
             if (motDePasse) {
                 dataU.motDePasse = motDePasse;
@@ -808,7 +1037,7 @@ router.put('/:id', async (req, res) => {
                 await prisma.notification.create({
                     data: {
                         contenu: `Le compte de ${prestataireUpdated.utilisateur.nom} ${prestataireUpdated.utilisateur.prenom} a été désactivé suite à la modification de l'email. Veuillez réactiver le compte pour le nouvel email.`,
-                        utilisateurId: id 
+                        utilisateurId: id
                     }
                 });
 
@@ -832,7 +1061,7 @@ router.put('/:id', async (req, res) => {
                         await prisma.notification.create({
                             data: {
                                 contenu: `Le compte de ${prestataireUpdated.entreprise.nomEntreprise}  a été désactivé suite à la modification de l'email ou de l'identifiant. Veuillez réactiver le compte.`,
-                                utilisateurId: id 
+                                utilisateurId: id
                             }
                         });
                     }

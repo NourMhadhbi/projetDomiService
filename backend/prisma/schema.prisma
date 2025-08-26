@@ -50,8 +50,8 @@ model Utilisateur {
   client        Client?
   admin          Admin? 
  HistoriqueApp        HistoriqueApp[]
-  messagesEnvoyes     Message[]       @relation("MessagesEnvoyes")
-  messagesRecus       Message[]       @relation("MessagesRecus")
+  //messagesEnvoyes     Message[]       @relation("MessagesEnvoyes")
+//  messagesRecus       Message[]       @relation("MessagesRecus")
   notifications       Notification[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
@@ -72,7 +72,7 @@ model Client {
   favorisPrestataires FavorisPrestataire[]
   historiquePrestataire HistoriquePrestataire []
   signalements   Signalement[]
-    messages        ContactMessage[] @relation("ClientMessages")
+   // messages        ContactMessage[] @relation("ClientMessages")
 }
 model Admin {
   utilisateurIdAd Int @db.UnsignedInt     @id @unique
@@ -103,7 +103,7 @@ model Prestataire {
   signalementsRecus Signalement[]
   favorisPrestataires FavorisPrestataire[]
   historiquePrestataire HistoriquePrestataire[]
-  messages        ContactMessage[] @relation("PrestataireMessages")
+//  messages        ContactMessage[] @relation("PrestataireMessages")
 
 }
 
@@ -139,7 +139,7 @@ model RendezVous {
  
   client          Client      @relation(fields: [clientId], references: [utilisateurIdCl])
   prestataire     Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre])
-  messages        Message[]
+//  messages        Message[]
     createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
 }
@@ -174,21 +174,21 @@ model Signalement {
   updatedAt     DateTime        @default(now())
 }
 
-model Message {
-  id               Int         @id @default(autoincrement())
-  contenu          String
-  dateEnvoi        DateTime    @default(now())
-  expediteurId     Int @db.UnsignedInt
-  destinataireId   Int @db.UnsignedInt
+//model Message {
+  //id               Int         @id @default(autoincrement())
+  //contenu          String
+//  dateEnvoi        DateTime    @default(now())
+  //expediteurId     Int @db.UnsignedInt
+ // destinataireId   Int @db.UnsignedInt
 
-  rendezVousId     Int?
-  expediteur       Utilisateur @relation("MessagesEnvoyes", fields: [expediteurId], references: [id])
-  destinataire     Utilisateur @relation("MessagesRecus", fields: [destinataireId], references: [id])
+//  rendezVousId     Int?
+//  expediteur       Utilisateur @relation("MessagesEnvoyes", fields: [expediteurId], references: [id])
+ // destinataire     Utilisateur @relation("MessagesRecus", fields: [destinataireId], references: [id])
 
-  rendezVous       RendezVous? @relation(fields: [rendezVousId], references: [id])
-    createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @default(now())
-}
+//  rendezVous       RendezVous? @relation(fields: [rendezVousId], references: [id])
+ //   createdAt     DateTime        @default(now())
+//  updatedAt     DateTime        @default(now())
+//}
 
 model Notification {
   id            Int         @id @default(autoincrement())
@@ -226,18 +226,7 @@ model FavorisPrestataire {
     createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
 }
-model ContactMessage {
-  id            Int        @id @default(autoincrement())
-  sujet         String?
-  message       String
-  createdAt     DateTime   @default(now())
 
-  clientId      Int? @db.UnsignedInt
-  client        Client?      @relation(fields: [clientId], references: [utilisateurIdCl], name: "ClientMessages")
-
-  prestataireId Int? @db.UnsignedInt
-  prestataire   Prestataire? @relation(fields: [prestataireId], references: [utilisateurIdPre], name: "PrestataireMessages")
-}
 model HistoriqueApp {
   id           Int          @id @default(autoincrement())
   utilisateurId Int         @db.UnsignedInt

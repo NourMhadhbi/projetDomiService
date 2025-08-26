@@ -13,7 +13,7 @@ import {
     ListItemText,
     Divider
 } from '@mui/material';
-
+import { NavLink } from 'react-router-dom';
 const ProfilMenu = ({ user }) => {
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
@@ -69,20 +69,21 @@ const ProfilMenu = ({ user }) => {
                     <Divider component="li" />
                     <ListItem
                         button
+                        component={NavLink}
+                        to="/accueil"
                         onClick={() => {
                             dispatch(logout());
                             dispatch(clearNotifications());
                             dispatch(reset());
-                            navigate('/accueil');
                         }}
                         sx={{
-                            '&:hover': { backgroundColor: '#f0f0f0' }
+                            color: 'black', // force le texte en noir
+                            textDecoration: 'none', // supprime le souligné
+                            '&:hover': { backgroundColor: '#f0f0f0' },
+                            '&.active': { color: 'black' } // ignore la couleur active du NavLink
                         }}
                     >
-                        <ListItemText
-                            primary="Déconnexion"
-                            sx={{ py: 0.25, minHeight: '1px', cursor: "pointer" }}
-                        />
+                        <ListItemText primary="Se déconnecter" sx={{ py: 0.25, minHeight: '1px' }} />
                     </ListItem>
                 </List>
             </Menu>

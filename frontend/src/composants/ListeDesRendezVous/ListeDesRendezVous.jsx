@@ -453,7 +453,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendarAlt, faUser, faBuilding, faMapMarkerAlt, faComment } from '@fortawesome/free-solid-svg-icons';
+import { faCalendarAlt, faUser, faBuilding, faMapMarkerAlt, faEnvelope, faComment, faPhone, faCheckCircle, faCheckDouble, faTimesCircle, faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     fetchByClient,
@@ -466,12 +466,27 @@ import {
 } from '../../features/RendezVousSlice';
 
 const STATUTS = {
-    EN_ATTENTE: { label: 'En attente', color: '#ff9800', icon: '⏳' },
-    CONFIRME: { label: 'Confirmé', color: '#4caf50', icon: '✅' },
-    ANNULE: { label: 'Annulé', color: '#f44336', icon: '❌' },
-    TERMINE: { label: 'Terminé', color: '#9e9e9e', icon: '✔️' },
+    EN_ATTENTE: {
+        label: 'En attente',
+        color: '#bc8f05',
+        icon: <FontAwesomeIcon icon={faHourglassHalf} />,
+    },
+    CONFIRME: {
+        label: 'Confirmé',
+        color: '#127547',
+        icon: <FontAwesomeIcon icon={faCheckCircle} />,
+    },
+    ANNULE: {
+        label: 'Annulé',
+        color: '#a90616',
+        icon: <FontAwesomeIcon icon={faTimesCircle} />,
+    },
+    TERMINE: {
+        label: 'Terminé',
+        color: '#949091',
+        icon: <FontAwesomeIcon icon={faCheckDouble} />,
+    },
 };
-
 const ListeRendezVous = () => {
     const dispatch = useDispatch();
     const theme = useTheme();
@@ -494,52 +509,80 @@ const ListeRendezVous = () => {
             else if (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE') dispatch(fetchByIntervenant(user.utilisateurIdPre));
         }
     }, [isLoggedIn, user, listeRendezVous, dispatch]);
-
+    const rows = useMemo(() => listeRendezVous?.map((rdv) => {
+        const client = rdv.client?.utilisateur;
+        return {
+            id: rdv.id,
+            raison: rdv.raison,
+            date: new Date(rdv.date).toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }),
+            lieu: rdv.lieuDintervention,
+            prestataire: rdv.prestataire?.entreprise?.nomEntreprise || `${rdv.prestataire?.utilisateur?.prenom ?? ''} ${rdv.prestataire?.utilisateur?.nom ?? ''}`,
+            nomClient: `${client?.prenom ?? ''} ${client?.nom ?? ''}`,
+            contactClient: client?.email || rdv.client?.numTel || '',
+            contactPrestataire: rdv.prestataire?.utilisateur?.email || rdv.prestataire?.numTel || '',
+            adresseClient: `${rdv.client?.ville ?? ''}, ${rdv.client?.adresse ?? ''}`,
+            statut: rdv.statut,
+            rdv,
+        }
+    }) || [], [listeRendezVous]);
     // Extraire les IDs sélectionnés
-    const selectedIds = useMemo(() => Object.keys(rowSelection), [rowSelection]);
+    const selectedIds = useMemo(
+        () => Object.keys(rowSelection).map((key) => rows[Number(key)]?.id),
+        [rowSelection, rows]
+    );
 
     const onSave = async () => {
         const dateTime = `${formData.date}T${formData.heure}:00`;
+        Swal.fire({
+            title: 'Mise à jour en cours...',
+            text: 'Veuillez patienter',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
         try {
             await dispatch(updateRendezVous({ ...formData, date: dateTime })).unwrap();
 
-            // Message de succès amélioré
             Swal.fire({
-                title: 'Succès',
+                title: 'Rendez-vous modifié ✅',
                 html: `
-                    <div style="text-align: center;">
-                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                        </svg>
-                        <h3 style="color: #2E7D32; margin: 15px 0 10px;">Rendez-vous modifié</h3>
-                        <p style="color: #616161; margin: 0;">Votre rendez-vous a été mis à jour avec succès.</p>
-                    </div>
-                `,
-                showConfirmButton: true,
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <p style="margin:0; text-align: center;">
+                        Votre rendez-vous a été mis à jour avec succès.<br>
+                        Vous pouvez continuer à gérer vos rendez-vous ci-dessous.
+                    </p>
+                </div>
+            `,
+                icon: 'success',
                 confirmButtonText: 'Continuer',
-                confirmButtonColor: '#4CAF50',
-                timer: 3000
+                confirmButtonColor: '#198754',
+                background: '#f0f9ff',
+                iconColor: '#198754',
+                timer: 10000,
+                timerProgressBar: true,
             });
 
             setPanelOpen(false);
             if (isIntervenant) dispatch(fetchByIntervenant(user.utilisateurIdPre));
             else dispatch(fetchByClient(user.utilisateurIdCl));
         } catch (err) {
-            // Message d'erreur amélioré
             Swal.fire({
-                title: 'Erreur',
+                title: '⚠ Oups, une erreur est survenue',
                 html: `
-                    <div style="text-align: center;">
-                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C6.48 22 12 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#F44336"/>
-                        </svg>
-                        <h3 style="color: #D32F2F; margin: 15px 0 10px;">Une erreur est survenue</h3>
-                        <p style="color: #616161; margin: 0;">${err.message || 'Une erreur inattendue s\'est produite.'}</p>
-                    </div>
-                `,
-                showConfirmButton: true,
-                confirmButtonText: 'Compris',
-                confirmButtonColor: '#F44336'
+                <p>${err.message || 'Impossible de mettre à jour le rendez-vous pour le moment.'}</p>
+                <p>Veuillez réessayer plus tard ou contacter le support si le problème persiste.</p>
+            `,
+                icon: 'error',
+                confirmButtonText: 'Fermer',
+                confirmButtonColor: '#d33',
+                background: '#fff5f5',
+                iconColor: '#c70000',
             });
         }
     };
@@ -547,32 +590,41 @@ const ListeRendezVous = () => {
     const onDelete = async (rdv) => {
         const { isConfirmed } = await Swal.fire({
             icon: 'warning',
-            title: 'Supprimer ce rendez-vous?',
-            text: 'Cette action est irréversible',
+            title: 'Voulez‑vous vraiment supprimer ce rendez‑vous ?',
+            html: `
+        <p style="margin:0; text-align: center;">
+            Cette action est <strong>irréversible</strong>.<br>
+            Assurez‑vous de vouloir continuer.
+        </p>
+    `,
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Oui, supprimer',
-            cancelButtonText: 'Annuler'
+            cancelButtonText: 'Annuler',
+            reverseButtons: false,
+            focusCancel: true,
         });
         if (isConfirmed) {
             await dispatch(deleteRendezVous({ id: rdv.id })).unwrap();
 
             Swal.fire({
-                title: 'Supprimé',
+                title: 'Rendez-vous supprimé',
                 html: `
-                    <div style="text-align: center;">
-                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                        </svg>
-                        <h3 style="color: #2E7D32; margin: 15px 0 10px;">Rendez-vous supprimé</h3>
-                        <p style="color: #616161; margin: 0;">Le rendez-vous a été supprimé avec succès.</p>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <p style="margin:0; text-align: center;">
+                            Le rendez-vous a été supprimé avec succès.<br>
+                            Vous pouvez continuer à gérer vos rendez-vous ci-dessous.
+                        </p>
                     </div>
                 `,
-                showConfirmButton: true,
+                icon: 'success',
                 confirmButtonText: 'Continuer',
-                confirmButtonColor: '#4CAF50',
-                timer: 3000
+                confirmButtonColor: '#198754',
+                background: '#f0f9ff',
+                iconColor: '#198754',
+                timer: 10000,
+                timerProgressBar: true,
             });
 
             if (isIntervenant) dispatch(fetchByIntervenant(user.utilisateurIdPre));
@@ -585,7 +637,7 @@ const ListeRendezVous = () => {
         if (toDelete.length === 0) return Swal.fire('Info', 'Aucun rendez-vous en attente sélectionné', 'info');
         const { isConfirmed } = await Swal.fire({
             icon: 'warning',
-            title: 'Confirmer la suppression?',
+            title: 'Voulez‑vous confirmer la suppression ?',
             text: `${toDelete.length} rendez-vous seront supprimés`,
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -598,20 +650,27 @@ const ListeRendezVous = () => {
             setRowSelection({});
 
             Swal.fire({
-                title: 'Supprimés',
+                title: 'Suppression réussie',
                 html: `
-                    <div style="text-align: center;">
-                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                        </svg>
-                        <h3 style="color: #2E7D32; margin: 15px 0 10px;">${toDelete.length} rendez-vous supprimés</h3>
-                        <p style="color: #616161; margin: 0;">Les rendez-vous sélectionnés ont été supprimés avec succès.</p>
-                    </div>
-                `,
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
+            </svg>
+            <h3 style="color: #2E7D32; margin: 0;">${toDelete.length} rendez-vous supprimé${toDelete.length > 1 ? 's' : ''}</h3>
+            <p style="color: #616161; margin: 0; text-align: center;">
+                ${toDelete.length > 1
+                        ? 'Les rendez-vous sélectionnés ont été supprimés avec succès.'
+                        : 'Le rendez-vous a été supprimé avec succès.'}
+            </p>
+        </div>
+    `,
                 showConfirmButton: true,
-                confirmButtonText: 'Continuer',
+                confirmButtonText: 'OK',
                 confirmButtonColor: '#4CAF50',
-                timer: 3000
+                background: '#f0f9f5',
+                iconColor: '#4CAF50',
+                timer: 8000,
+                timerProgressBar: true
             });
 
             dispatch(fetchByClient(user.utilisateurIdCl));
@@ -620,87 +679,218 @@ const ListeRendezVous = () => {
 
     const handleConfirmSelection = async () => {
         const toConfirm = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
+        Swal.fire({ title: 'Confirmation en cours...', text: 'Veuillez patienter', didOpen: () => Swal.showLoading(), allowOutsideClick: false, allowEscapeKey: false });
         for (const r of toConfirm) await dispatch(confirmRendezVous(r.rdv)).unwrap();
 
         Swal.fire({
-            title: 'Confirmés',
+            title: 'Rendez-vous confirmés',
             html: `
-                <div style="text-align: center;">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                    </svg>
-                    <h3 style="color: #2E7D32; margin: 15px 0 10px;">${toConfirm.length} rendez-vous confirmés</h3>
-                    <p style="color: #616161; margin: 0;">Les rendez-vous sélectionnés ont été confirmés avec succès.</p>
-                </div>
-            `,
+        <div style="
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px;
+        ">
+            <svg width="70" height="70" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
+            </svg>
+            <h2 style="
+                color: #2E7D32; 
+                font-size: 1.5rem; 
+                font-weight: 600; 
+                margin: 0;
+            ">
+                ${toConfirm.length} rendez-vous confirmés
+            </h2>
+            <p style="
+                color: #555; 
+                font-size: 1rem; 
+                text-align: center; 
+                margin: 0;
+                line-height: 1.4;
+            ">
+                Les rendez-vous sélectionnés ont été confirmés avec succès.
+            </p>
+        </div>
+    `,
             showConfirmButton: true,
             confirmButtonText: 'Continuer',
             confirmButtonColor: '#4CAF50',
-            timer: 3000
+            background: '#f0fdf4',
+            timer: 6000,
+            timerProgressBar: true,
+            icon: 'success',
+            iconColor: '#4CAF50'
         });
+
 
         setRowSelection({});
         dispatch(fetchByIntervenant(user.utilisateurIdPre));
     };
 
-    const handleCancelSelection = async () => {
-        const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
-        for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
 
-        Swal.fire({
-            title: 'Annulés',
-            html: `
-                <div style="text-align: center;">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                    </svg>
-                    <h3 style="color: #2E7D32; margin: 15px 0 10px;">${toCancel.length} rendez-vous annulés</h3>
-                    <p style="color: #616161; margin: 0;">Les rendez-vous sélectionnés ont été annulés avec succès.</p>
-                </div>
-            `,
-            showConfirmButton: true,
-            confirmButtonText: 'Continuer',
-            confirmButtonColor: '#4CAF50',
-            timer: 3000
-        });
+const handleCancelSelection = async () => {
+    const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
 
-        setRowSelection({});
-    };
+    Swal.fire({
+        title: 'Annulation en cours...',
+        text: 'Merci de patienter, vos actions sont en cours de traitement.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    });
 
-    const handleFinishSelection = async () => {
-        const toFinish = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'CONFIRME');
-        for (const r of toFinish) await dispatch(finishRendezVous(r.rdv)).unwrap();
+    for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
+    Swal.close();
 
-        Swal.fire({
-            title: 'Terminés',
-            html: `
-                <div style="text-align: center;">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#4CAF50"/>
-                    </svg>
-                    <h3 style="color: #2E7D32; margin: 15px 0 10px;">${toFinish.length} rendez-vous terminés</h3>
-                    <p style="color: #616161; margin: 0;">Les rendez-vous sélectionnés ont été marqués comme terminés.</p>
-                </div>
-            `,
-            showConfirmButton: true,
-            confirmButtonText: 'Continuer',
-            confirmButtonColor: '#4CAF50',
-            timer: 3000
-        });
+    Swal.fire({
+        title: 'Rendez-vous annulés',
+        html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+                    ${toCancel.length} rendez-vous ont été annulés avec succès.
+                </p>
+               </div>`,
+        confirmButtonText: 'Terminé',
+        confirmButtonColor: '#a90616'
+    });
 
-        setRowSelection({});
-        dispatch(fetchByIntervenant(user.utilisateurIdPre));
-    };
+    setRowSelection({});
+};
+
+
+const handleFinishSelection = async () => {
+    const toFinish = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'CONFIRME');
+
+    Swal.fire({
+        title: 'Finalisation en cours...',
+        text: 'Merci de patienter pendant la mise à jour des rendez-vous.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    });
+
+    for (const r of toFinish) await dispatch(finishRendezVous(r.rdv)).unwrap();
+    Swal.close();
+
+    Swal.fire({
+        title: 'Rendez-vous terminés',
+        html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#9E9E9E" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+                    ${toFinish.length} rendez-vous ont été marqués comme terminés avec succès.
+                </p>
+               </div>`,
+        confirmButtonText: 'Terminé',
+        confirmButtonColor: '#9E9E9E'
+    });
+
+    setRowSelection({});
+    dispatch(fetchByIntervenant(user.utilisateurIdPre));
+};
+
+
+const handleConfirmSingle = async (rdv) => {
+    Swal.fire({
+        title: 'Confirmation en cours...',
+        text: 'Merci de patienter pendant la confirmation du rendez-vous.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    });
+
+    await dispatch(confirmRendezVous(rdv)).unwrap();
+    Swal.close();
+
+    Swal.fire({
+        title: 'Rendez-vous confirmé',
+        html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#4CAF50" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+                    Le rendez-vous a été confirmé avec succès.
+                </p>
+               </div>`,
+        confirmButtonText: 'Terminé',
+        confirmButtonColor: '#4CAF50'
+    });
+
+    dispatch(fetchByIntervenant(user.utilisateurIdPre));
+};
+
+
+const handleCancelSingle = async (rdv) => {
+    Swal.fire({
+        title: 'Annulation en cours...',
+        text: 'Merci de patienter pendant l’annulation du rendez-vous.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    });
+
+    await dispatch(cancelRendezVous(rdv)).unwrap();
+    Swal.close();
+
+    Swal.fire({
+        title: 'Rendez-vous annulé',
+        html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+                    Le rendez-vous a été annulé avec succès.
+                </p>
+               </div>`,
+        confirmButtonText: 'Terminé',
+        confirmButtonColor: '#a90616'
+    });
+
+    dispatch(fetchByIntervenant(user.utilisateurIdPre));
+};
+
+
+const handleFinishSingle = async (rdv) => {
+    Swal.fire({
+        title: 'Finalisation en cours...',
+        html: '<p style="font-size:0.95rem; color:#616161; margin-top:8px;">Merci de patienter pendant la finalisation du rendez-vous.</p>',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    });
+
+    await dispatch(finishRendezVous(rdv)).unwrap();
+    Swal.close();
+
+    Swal.fire({
+        title: 'Rendez-vous terminé',
+        html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#9E9E9E" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+                    Le rendez-vous a été marqué comme terminé.
+                </p>
+               </div>`,
+        confirmButtonText: 'Terminé',
+        confirmButtonColor: '#9E9E9E'
+    });
+
+    dispatch(fetchByIntervenant(user.utilisateurIdPre));
+};
+
 
     const renderIntervenantActions = (rdv) => (
         <Box
             sx={{
                 width: '100%',
                 display: 'flex',
-                flexDirection: {
-                    xs: 'column',
-                    sm: 'row',
-                },
+                flexDirection: { xs: 'column', sm: 'row' },
                 justifyContent: 'flex-start',
                 alignItems: 'center',
                 py: 1,
@@ -713,11 +903,7 @@ const ListeRendezVous = () => {
                         size="small"
                         variant="contained"
                         startIcon={<CheckCircleIcon />}
-                        onClick={async () => {
-                            await dispatch(confirmRendezVous(rdv)).unwrap();
-                            await Swal.fire('Succès', 'Rendez-vous confirmé.', 'success');
-                            dispatch(fetchByIntervenant(user.utilisateurIdPre));
-                        }}
+                        onClick={() => handleConfirmSingle(rdv)}
                         sx={{
                             backgroundColor: '#2e7d32',
                             fontWeight: 'bold',
@@ -740,11 +926,7 @@ const ListeRendezVous = () => {
                         size="small"
                         variant="contained"
                         startIcon={<CancelIcon />}
-                        onClick={async () => {
-                            await dispatch(cancelRendezVous(rdv)).unwrap();
-                            await Swal.fire('Succès', 'Rendez-vous annulé.', 'success');
-                            dispatch(fetchByIntervenant(user.utilisateurIdPre));
-                        }}
+                        onClick={() => handleCancelSingle(rdv)}
                         sx={{
                             backgroundColor: '#ef6c00',
                             fontWeight: 'bold',
@@ -761,16 +943,13 @@ const ListeRendezVous = () => {
                     </Button>
                 </>
             )}
+
             {rdv.statut === 'CONFIRME' && (
                 <Button
                     size="small"
                     variant="contained"
                     startIcon={<DoneAllIcon />}
-                    onClick={async () => {
-                        await dispatch(finishRendezVous(rdv)).unwrap();
-                        await Swal.fire('Succès', 'Rendez-vous terminé.', 'success');
-                        dispatch(fetchByIntervenant(user.utilisateurIdPre));
-                    }}
+                    onClick={() => handleFinishSingle(rdv)}
                     sx={{
                         backgroundColor: '#787877',
                         fontWeight: 'bold',
@@ -793,29 +972,16 @@ const ListeRendezVous = () => {
         </Box>
     );
 
-    const rows = useMemo(() => listeRendezVous?.map((rdv) => {
-        const client = rdv.client?.utilisateur;
-        return {
-            id: rdv.id,
-            raison: rdv.raison,
-            date: new Date(rdv.date).toLocaleString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            }),
-            lieu: rdv.lieuDintervention,
-            prestataire: rdv.prestataire?.entreprise?.nomEntreprise || `${rdv.prestataire?.utilisateur?.prenom ?? ''} ${rdv.prestataire?.utilisateur?.nom ?? ''}`,
-            nomClient: `${client?.prenom ?? ''} ${client?.nom ?? ''}`,
-            contactClient: client?.email || client?.telephone || '',
-            adresseClient: `${rdv.client?.ville ?? ''}, ${rdv.client?.adresse ?? ''}`,
-            statut: rdv.statut,
-            rdv,
-        }
-    }) || [], [listeRendezVous]);
+    const getContactIcon = (contact) => {
+        if (!contact) return faEnvelope; // Par défaut email
+        return contact.includes('@') ? faEnvelope : faPhone;
+    };
 
-    const selectedRows = useMemo(() => rows.filter(row => selectedIds.includes(row.id)), [selectedIds, rows]);
+
+    const selectedRows = useMemo(
+        () => rows.filter((row) => selectedIds.includes(row.id)),
+        [selectedIds, rows]
+    );
     const allEnAttente = selectedRows.length > 0 && selectedRows.every(row => row.statut === 'EN_ATTENTE');
     const allConfirme = selectedRows.length > 0 && selectedRows.every(row => row.statut === 'CONFIRME');
     const statutsSelectionnes = new Set(selectedRows.map(row => row.statut));
@@ -826,7 +992,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'nomClient',
             header: 'Client',
-            size: 150,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faUser} style={{ color: '#757575', fontSize: '14px' }} />
@@ -837,17 +1003,23 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'contactClient',
             header: 'Contact',
-            size: 180,
+            size: 200,
             Cell: ({ cell }) => (
-                <Typography variant="body2" color="textSecondary">
-                    {cell.getValue()}
-                </Typography>
+                <Box display="flex" alignItems="center" gap={1}>
+                    <FontAwesomeIcon
+                        icon={getContactIcon(cell.getValue())}
+                        style={{ color: '#757575', fontSize: '14px' }}
+                    />
+                    <Typography variant="body2" color="textSecondary">
+                        {cell.getValue()}
+                    </Typography>
+                </Box>
             ),
         },
         {
             accessorKey: 'raison',
             header: 'Raison',
-            size: 200,
+            size: 300,
             Cell: ({ cell }) => (
                 <Box
                     sx={{
@@ -880,7 +1052,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'date',
             header: 'Date',
-            size: 150,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faCalendarAlt} style={{ color: '#757575', fontSize: '14px' }} />
@@ -891,7 +1063,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'adresseClient',
             header: 'Adresse client',
-            size: 180,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
@@ -906,7 +1078,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'lieu',
             header: 'Lieu d\'intervention',
-            size: 180,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
@@ -921,31 +1093,34 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'statut',
             header: 'Statut',
-            size: 120,
-            Cell: ({ cell }) => (
-                <Chip
-                    icon={<span>{STATUTS[cell.getValue()]?.icon}</span>}
-                    label={STATUTS[cell.getValue()]?.label || cell.getValue()}
-                    sx={{
-                        backgroundColor: STATUTS[cell.getValue()]?.color,
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        '& .MuiChip-icon': { color: '#fff', marginLeft: '8px' }
-                    }}
-                />
-            ),
+            size: 200,
+            Cell: ({ cell }) => {
+                const statut = STATUTS[cell.getValue()];
+                return (
+                    <Chip
+                        icon={statut?.icon}   // ✅ direct, sans <span>
+                        label={statut?.label || cell.getValue()}
+                        sx={{
+                            backgroundColor: statut?.color,
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            '& .MuiChip-icon': { color: '#fff', marginLeft: '8px' }, // ici tu forces bien en blanc
+                        }}
+                    />
+                );
+            },
         },
         {
             accessorKey: 'actions',
             header: 'Actions',
-            size: 200,
+            size: 250,
             Cell: ({ row }) => renderIntervenantActions(row.original.rdv),
         }
     ] : [
         {
             accessorKey: 'prestataire',
             header: 'Prestataire',
-            size: 180,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon
@@ -957,9 +1132,25 @@ const ListeRendezVous = () => {
             ),
         },
         {
+            accessorKey: 'contactPrestataire',
+            header: 'Contact',
+            size: 200,
+            Cell: ({ cell }) => (
+                <Box display="flex" alignItems="center" gap={1}>
+                    <FontAwesomeIcon
+                        icon={getContactIcon(cell.getValue())}
+                        style={{ color: '#757575', fontSize: '14px' }}
+                    />
+                    <Typography variant="body2" color="textSecondary">
+                        {cell.getValue()}
+                    </Typography>
+                </Box>
+            ),
+        },
+        {
             accessorKey: 'raison',
             header: 'Raison',
-            size: 250,
+            size: 300,
             Cell: ({ cell }) => (
                 <Box
                     sx={{
@@ -992,7 +1183,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'date',
             header: 'Date',
-            size: 150,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faCalendarAlt} style={{ color: '#757575', fontSize: '14px' }} />
@@ -1003,7 +1194,7 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'lieu',
             header: 'Adresse',
-            size: 180,
+            size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
@@ -1018,24 +1209,27 @@ const ListeRendezVous = () => {
         {
             accessorKey: 'statut',
             header: 'Statut',
-            size: 120,
-            Cell: ({ cell }) => (
-                <Chip
-                    icon={<span>{STATUTS[cell.getValue()]?.icon}</span>}
-                    label={STATUTS[cell.getValue()]?.label || cell.getValue()}
-                    sx={{
-                        backgroundColor: STATUTS[cell.getValue()]?.color,
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        '& .MuiChip-icon': { color: '#fff', marginLeft: '8px' }
-                    }}
-                />
-            ),
+            size: 200,
+            Cell: ({ cell }) => {
+                const statut = STATUTS[cell.getValue()];
+                return (
+                    <Chip
+                        icon={statut?.icon}
+                        label={statut?.label || cell.getValue()}
+                        sx={{
+                            backgroundColor: statut?.color,
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            '& .MuiChip-icon': { color: '#fff', marginLeft: '8px' }, // ici tu forces bien en blanc
+                        }}
+                    />
+                );
+            },
         },
         {
             accessorKey: 'actions',
             header: 'Actions',
-            size: 120,
+            size: 250,
             Cell: ({ row }) => {
                 const { rdv } = row.original;
                 const isEditable = rdv.statut === 'EN_ATTENTE';

@@ -155,12 +155,12 @@ const Login = () => {
                         </Button>
                     </Form>
 
-                    {message && (
-                        <Typography color="error" className="text-center mt-2">
-                            {message}
-                        </Typography>
-                    )}
 
+                    {message && (
+                        <div className="alert alert-danger small text-center p-2 mb-3">
+                            {message}
+                        </div>
+                    )}
 
                     <div className="text-center mt-auto" style={{ fontSize: '0.85rem' }}>
                         Vous n'avez pas de compte ?{' '}

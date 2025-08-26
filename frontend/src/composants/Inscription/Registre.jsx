@@ -7,26 +7,22 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
 import { Form, InputGroup, Button } from 'react-bootstrap';
 import { register } from "../../features/AuthSlice";
-import { useDispatch } from "react-redux";
-
+import { useDispatch, useSelector } from "react-redux";
+import { fetchServicesNA } from '../../features/ServiceSlice';
 export default function Registre() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [services, setServices] = useState([]);
+
 
     const toggleShowPassword = () => setShowPassword(prev => !prev);
     const toggleShowConfirmPassword = () => setShowConfirmPassword(prev => !prev);
-
+    const [errorMessage, setErrorMessage] = useState("");
+    const { services, loading: servicesLoading, error: servicesError } = useSelector((state) => state.service);
     useEffect(() => {
-        // Exemple statique : remplacer par appel API si besoin
-        setServices([
-            { id: 1, nom: 'Plomberie' },
-            { id: 2, nom: 'Electricité' },
-            { id: 3, nom: 'Jardinage' },
-        ]);
-    }, []);
+        dispatch(fetchServicesNA());
+    }, [dispatch]);
 
     const formik = useFormik({
         initialValues: {
@@ -58,21 +54,19 @@ export default function Registre() {
                     tarifDeplacement: values.tarifDeplacement ? Number(values.tarifDeplacement) : 0.0,
                     serviceId: Number(values.serviceId),
                 };
-                console.log("Payload envoyé au register :", payload);
+
 
                 const response = await dispatch(register(payload)).unwrap();
 
-                console.log("Réponse reçue du backend :", response);
-                if (!response.success) {
-                    console.error("Erreur lors de l'inscription:", values);
-                    alert(response.message || "Erreur lors de l'inscription, veuillez réessayer.");
-                    setSubmitting(false);
-                    return;
-                }
+
+
                 navigate('/login');
             } catch (error) {
-                console.error("Erreur lors de l'inscription:", error);
-                alert(error?.response?.data?.message || error?.message || "Erreur lors de l'inscription, veuillez réessayer.");
+
+                setErrorMessage(
+                    error ||
+                    "Erreur lors de l'inscription, veuillez réessayer."
+                );
             }
             setSubmitting(false);
         },
@@ -84,7 +78,7 @@ export default function Registre() {
     useEffect(() => {
         console.log("Valeurs du formulaire :", formik.values);
         if (formik.values.role === 'ENTREPRISE') {
-            formik.setFieldValue('genre', 'AUTRE');
+            formik.setFieldValue('genre', 'ENTITÉ');
         }
     }, [formik.values.role]);
     console.log("Formik values en temps réel :", formik.values);
@@ -97,6 +91,7 @@ export default function Registre() {
                         <h3 className="mt-2 h3">Inscription à DomiService</h3>
                     </div>
                     <form onSubmit={formik.handleSubmit} noValidate >
+
                         {/* Nom & Prénom dynamiques */}
                         <div className="mb-3">
                             <label htmlFor="nom" className="form-label">
@@ -300,7 +295,7 @@ export default function Registre() {
                         <fieldset className="mb-3">
                             <legend className="col-form-label pt-0">Genre *</legend>
                             <div className="d-flex gap-4 flex-wrap">
-                                {['HOMME', 'FEMME', 'AUTRE'].map((g) => (
+                                {['HOMME', 'FEMME', 'ENTITÉ'].map((g) => (
                                     <div className="form-check" key={g}>
                                         <input
                                             className="form-check-input"
@@ -355,11 +350,15 @@ export default function Registre() {
                                         value={formik.values.serviceId}
                                     >
                                         <option value="">-- Sélectionnez un service --</option>
-                                        {services.map(service => (
-                                            <option key={service.id} value={service.id}>
-                                                {service.nom}
-                                            </option>
-                                        ))}
+                                        {services && services.length > 0 ? (
+                                            services.map(service => (
+                                                <option key={service.id} value={service.id}>
+                                                    {service.nom}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>Aucun service disponible</option>
+                                        )}
                                     </select>
                                     {formik.touched.serviceId && formik.errors.serviceId && (
                                         <div className="invalid-feedback">{formik.errors.serviceId}</div>
@@ -455,7 +454,11 @@ export default function Registre() {
                             </>
                         )}
 
-
+                        {errorMessage && (
+                            <div className="alert alert-danger small text-center p-2 mb-3">
+                                {errorMessage}
+                            </div>
+                        )}
 
 
                         <div className="d-flex gap-3 justify-content-start">

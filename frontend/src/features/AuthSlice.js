@@ -3,29 +3,31 @@ import { signup, signin, modifierCompte } from "../services/Authservice";
 export const register = createAsyncThunk(
     "auth/register",
     async (user, thunkAPI) => {
-        const { rejectWithValue } = thunkAPI;
         try {
             const res = await signup(user);
-            return res.data
+            return res.data;
+        } catch (error) {
+
+            const message =
+                error.response?.data?.message || error.message || "Erreur inconnue";
+            return thunkAPI.rejectWithValue(message);
         }
-        catch (error) {
-            return rejectWithValue(error.message);
-        }
-    });
+    }
+);
 
 export const login = createAsyncThunk(
-  "auth/login",
-  async (user, thunkAPI) => {
-    try {
-      const res = await signin(user); 
-      return res.data; 
-    } catch (error) {
-      
-      const message =
-        error.response?.data?.message || "Erreur inconnue lors de la connexion.";
-      return thunkAPI.rejectWithValue(message);
+    "auth/login",
+    async (user, thunkAPI) => {
+        try {
+            const res = await signin(user);
+            return res.data;
+        } catch (error) {
+
+            const message =
+                error.response?.data?.message || "Erreur inconnue lors de la connexion.";
+            return thunkAPI.rejectWithValue(message);
+        }
     }
-  }
 );
 export const logout = createAsyncThunk("auth/logout", () => {
     localStorage.clear();

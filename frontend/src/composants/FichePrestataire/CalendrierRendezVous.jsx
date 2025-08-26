@@ -150,6 +150,7 @@ const CalendrierRendezVous = () => {
             );
         });
     };
+  
     const onSave = async () => {
         setHeureError("");
 
@@ -157,45 +158,58 @@ const CalendrierRendezVous = () => {
             setHeureError("Cet intervenant a déjà un rendez-vous à cette heure.");
             return;
         }
+
         const dateTime = `${formData.date}T${formData.heure}:00`;
         const payload = { ...formData, date: dateTime };
 
         try {
+            // Afficher le loader
+            Swal.fire({
+                title: viewMode ? 'Modification en cours...' : 'Ajout en cours...',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant le traitement de votre demande.</p>',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+
             if (viewMode) {
                 await dispatch(updateRendezVous(payload)).unwrap();
-                Swal.fire({
-                    title: 'Modification réussie !',
-                    text: 'Le rendez-vous a été modifié avec succès.',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#198754'
-                });
-
             } else {
                 await dispatch(createRendezVous(payload)).unwrap();
-                Swal.fire({
-                    title: 'Ajout réussi !',
-                    text: 'Le rendez-vous a été ajouté avec succès.',
-                    icon: 'success',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#198754' // vert Bootstrap
-                });
             }
-            dispatch(fetchByIntervenant(id));
 
+            Swal.close();
+
+            // Afficher le succès
+            Swal.fire({
+                title: viewMode ? 'Rendez-vous modifié !' : 'Rendez-vous ajouté !',
+                html: `<div style="text-align:center;">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="#198754">
+                        <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <p style="color:#616161; margin-top:12px; font-size:0.95rem;">
+                        Le rendez-vous a été ${viewMode ? 'modifié' : 'créé'} avec succès.
+                    </p>
+                  </div>`,
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'OK'
+            });
+
+            dispatch(fetchByIntervenant(id));
             setPanelOpen(false);
             setPopoverEventId(null);
             setAnchorEl(null);
 
         } catch (err) {
             Swal.fire({
-                title: 'Erreur',
-                text: err.message || 'Une erreur est survenue.',
                 icon: 'error',
+                title: 'Erreur',
+                text: err.message || 'Une erreur est survenue lors du traitement.',
                 confirmButtonText: 'Fermer'
             });
         }
     };
+
 
     const onDelete = async () => {
         const { isConfirmed } = await Swal.fire({
@@ -205,7 +219,7 @@ const CalendrierRendezVous = () => {
             showCancelButton: true,
             confirmButtonText: 'Supprimer',
             cancelButtonText: 'Annuler',
-            confirmButtonColor: '#dc3545',  // rouge Bootstrap
+            confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
             reverseButtons: false,
             customClass: {
@@ -219,23 +233,35 @@ const CalendrierRendezVous = () => {
         if (!isConfirmed) return;
 
         try {
+            Swal.fire({
+                title: 'Suppression en cours...',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant la suppression du rendez-vous.</p>',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+
             await dispatch(deleteRendezVous({ id: formData.id })).unwrap();
+            Swal.close();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous supprimé !',
+                html: `<div style="text-align:center;">
+                    <svg width="60" height="60" fill="#dc3545" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <p style="color:#616161; margin-top:12px; font-size:0.95rem;">Le rendez-vous a été supprimé avec succès.</p>
+                  </div>`,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'OK'
+            });
+
             setPanelOpen(false);
             setPopoverEventId(null);
             setAnchorEl(null);
             dispatch(fetchByIntervenant(id));
-            Swal.fire({
-                icon: 'success',
-                title: 'Rendez-vous supprimé',
-                text: 'Suppression effectuée avec succès.',
-                confirmButtonColor: '#198754',
-                confirmButtonText: 'OK',
-                customClass: {
-                    popup: 'rounded-4 shadow',
-                    title: 'fs-5 fw-semibold',
-                    confirmButton: 'px-4 py-2'
-                }
-            });
+
         } catch (err) {
             Swal.fire({
                 icon: 'error',
@@ -245,36 +271,36 @@ const CalendrierRendezVous = () => {
             });
         }
     };
-    //Prestataire
+
+
     const onConfirmer = async (idRdv) => {
         try {
+            Swal.fire({
+                title: 'Confirmation en cours...',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant la confirmation du rendez-vous.</p>',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+
             await dispatch(confirmRendezVous({ id: idRdv })).unwrap();
-            dispatch(fetchByIntervenant(user.utilisateurIdPre));
-            setShowPopoverModal(false);
+            Swal.close();
+
             Swal.fire({
                 icon: 'success',
-                title: 'Rendez-vous confirmé avec succès !',
-                confirmButtonColor: '#198754'
+                title: 'Rendez-vous confirmé !',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Le rendez-vous a été confirmé avec succès.</p>',
+                confirmButtonColor: '#198754',
+                confirmButtonText: 'OK'
             });
+
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
         } catch (err) {
             Swal.fire('Erreur', 'Impossible de confirmer le rendez-vous.', 'error');
         }
     };
 
-    const onTerminer = async (idRdv) => {
-        try {
-            await dispatch(finishRendezVous({ id: idRdv })).unwrap();
-            dispatch(fetchByIntervenant(user.utilisateurIdPre));
-            setShowPopoverModal(false);
-            Swal.fire({
-                icon: 'success',
-                title: 'Rendez-vous terminé avec succès !',
-                confirmButtonColor: '#198754'
-            });
-        } catch (err) {
-            Swal.fire('Erreur', 'Impossible de terminer le rendez-vous.', 'error');
-        }
-    };
 
     const onAnnuler = async (idRdv) => {
         const { isConfirmed } = await Swal.fire({
@@ -298,18 +324,61 @@ const CalendrierRendezVous = () => {
         if (!isConfirmed) return;
 
         try {
+            Swal.fire({
+                title: 'Annulation en cours...',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant l\'annulation du rendez-vous.</p>',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+
             await dispatch(cancelRendezVous({ id: idRdv })).unwrap();
-            dispatch(fetchByIntervenant(user.utilisateurIdPre));
-            setShowPopoverModal(false);
+            Swal.close();
+
             Swal.fire({
                 icon: 'success',
-                title: 'Rendez-vous annulé avec succès !',
-                confirmButtonColor: '#198754'
+                title: 'Rendez-vous annulé !',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Le rendez-vous a été annulé avec succès.</p>',
+                confirmButtonColor: '#FF9800',
+                confirmButtonText: 'OK'
             });
+
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
         } catch (err) {
             Swal.fire('Erreur', 'Impossible d\'annuler le rendez-vous.', 'error');
         }
     };
+
+
+    const onTerminer = async (idRdv) => {
+        try {
+            Swal.fire({
+                title: 'Finalisation en cours...',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant la finalisation du rendez-vous.</p>',
+                didOpen: () => Swal.showLoading(),
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
+
+            await dispatch(finishRendezVous({ id: idRdv })).unwrap();
+            Swal.close();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous terminé !',
+                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Le rendez-vous a été marqué comme terminé avec succès.</p>',
+                confirmButtonColor: '#9E9E9E',
+                confirmButtonText: 'OK'
+            });
+
+            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            setShowPopoverModal(false);
+        } catch (err) {
+            Swal.fire('Erreur', 'Impossible de terminer le rendez-vous.', 'error');
+        }
+    };
+
 
     //Fin Partie
     const openAddModal = () => {
@@ -332,7 +401,7 @@ const CalendrierRendezVous = () => {
         id: rdv.id?.toString() || '',
         title: `RDV ${rdv.id ?? ''}`,
         date: (rdv.date && rdv.date.split('T')[0]) || '',
-        backgroundColor: STATUTS[rdv.statut]?.color || '#198754', 
+        backgroundColor: STATUTS[rdv.statut]?.color || '#198754',
         textColor: 'white',
         extendedProps: {
             statut: rdv.statut || 'INCONNU',

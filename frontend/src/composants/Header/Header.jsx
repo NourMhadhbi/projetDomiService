@@ -31,6 +31,7 @@ const Header = ({ isClientConnected, intervenant }) => {
     const dispatch = useDispatch();
     // const [ongletActif, setOngletActif] = useState("services");
     const [filteredServices, setFilteredServices] = useState([]);
+    
     console.log("client", isClientConnected);
 
     const {
@@ -411,8 +412,8 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 // onClick={isClientConnected ? toggleSearch : undefined}
                                 onClick={toggleSearch}
                                 style={{
-                                    opacity: isClientConnected ? 1 : 0.3,
-                                    pointerEvents: isClientConnected ? 'auto' : 'none',
+                                    opacity:  1 ,
+                                    pointerEvents: 'auto',
                                 }}
                             >
                                 <FontAwesomeIcon icon={faSearch} />
@@ -420,8 +421,8 @@ const Header = ({ isClientConnected, intervenant }) => {
 
                             <div
                                 style={{
-                                    opacity: isClientConnected ? 1 : 0.3,
-                                    pointerEvents: isClientConnected ? 'auto' : 'none',
+                                    opacity:  1 ,
+                                    pointerEvents:  'auto',
                                 }}
                             >
                                 <NotificationMenu isClientConnected={isLoggedIn} user={user} />
