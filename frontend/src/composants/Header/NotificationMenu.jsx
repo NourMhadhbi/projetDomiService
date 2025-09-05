@@ -59,7 +59,10 @@ const NotificationMenu = () => {
         handleClose();
         const contenu = notif.contenu.toLowerCase();
 
-        if (user?.utilisateur?.role === "PRESTATAIRE" && (contenu.includes("rendezvous") || contenu.includes("rendez-vous"))) {
+        if (
+            (user?.utilisateur?.role === "PRESTATAIRE" || user?.utilisateur?.role === "ENTREPRISE") &&
+            (contenu.includes("rendezvous") || contenu.includes("rendez-vous"))
+        ) {
             navigate('/calendrier');
             return;
         }
@@ -133,15 +136,15 @@ const NotificationMenu = () => {
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 {isLoggedIn ? (
-                    <>
-                        <MenuItem disabled>
+                    [
+                        <MenuItem key="title" disabled>
                             <Typography variant="subtitle1" fontWeight="bold">
                                 Notifications
                             </Typography>
-                        </MenuItem>
-                        <Divider />
-                        {notifications.length > 0 ? (
-                            notifications.map((notif) => (
+                        </MenuItem>,
+                        <Divider key="divider" />,
+                        ...(notifications.length > 0
+                            ? notifications.map((notif) => (
                                 <MenuItem
                                     key={notif.id}
                                     onClick={() => handleNotificationClick(notif)}
@@ -153,8 +156,11 @@ const NotificationMenu = () => {
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: 'gray' }}>
                                             {new Date(notif.dateEnvoi).toLocaleString('fr-FR', {
-                                                day: '2-digit', month: '2-digit', year: 'numeric',
-                                                hour: '2-digit', minute: '2-digit'
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
                                             })}
                                         </Typography>
                                     </Box>
@@ -168,12 +174,12 @@ const NotificationMenu = () => {
                                     />
                                 </MenuItem>
                             ))
-                        ) : (
-                            <MenuItem disabled>
-                                <ListItemText primary="Aucune notification" />
-                            </MenuItem>
-                        )}
-                    </>
+                            : [
+                                <MenuItem key="noNotif" disabled>
+                                    <ListItemText primary="Aucune notification" />
+                                </MenuItem>
+                            ])
+                    ]
                 ) : (
                     <Box sx={{ p: 2 }}>
                         <Box sx={loginContentWrapper}>
@@ -200,12 +206,12 @@ const NotificationMenu = () => {
                                 borderRadius: 2,
                                 py: 1,
                                 mb: 1,
-                                textDecoration: 'none', 
-                                color: 'white', 
+                                textDecoration: 'none',
+                                color: 'white',
                                 '&:hover': {
                                     background: 'linear-gradient(135deg, #1a3a6c 0%, #1a3a6c 100%)',
                                 },
-                                '&.active': { color: 'white' } 
+                                '&.active': { color: 'white' }
                             }}
                         >
                             Se connecter

@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 
-const ConsultationsMensuellesChart = ({data}) => {
+const ConsultationsMensuellesChart = ({ data }) => {
   return (
     <div style={{ width: "100%", height: 400, margin: "0 auto" }}>
       <ResponsiveContainer>
@@ -46,6 +46,13 @@ const ConsultationsMensuellesChart = ({data}) => {
             stroke="#ff7043"
             fill="url(#colorPrestataires)"
             name="Prestataires"
+          />
+          <Area
+            type="monotone"
+            dataKey="entreprises"
+            stroke="#6b0357ff"
+            fill="url(#colorPrestataires)"
+            name="entreprises"
           />
         </AreaChart>
       </ResponsiveContainer>

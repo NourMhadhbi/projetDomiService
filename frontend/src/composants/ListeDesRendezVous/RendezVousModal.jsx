@@ -29,7 +29,7 @@ export default function RendezVousModal({
         setEventData(prev => ({ ...prev, [key]: value }));
         // setEventData?.(prev => ({ ...prev, [key]: value }));
     };
-
+    console.log("intervenant", intervenant)
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
 
@@ -49,7 +49,7 @@ export default function RendezVousModal({
                     value={
                         intervenant?.entreprise?.nomEntreprise
                             ? intervenant.entreprise.nomEntreprise
-                            : intervenant?.nom || ''
+                            : intervenant?.utilisateur.nom + " " + intervenant?.utilisateur.prenom || ''
                     }
                     onChange={e => handleChange('intervenant', e.target.value)}
                     margin="normal"

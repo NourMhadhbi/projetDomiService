@@ -431,7 +431,7 @@ const ListeAvis = () => {
 
 
     const handleSave = async () => {
-       
+
         Swal.fire({
             title: 'Mise à jour...',
             text: 'Veuillez patienter',
@@ -634,24 +634,6 @@ const ListeAvis = () => {
             },
             size: 200
         },
-        {
-            accessorKey: 'adresseClient',
-            header: 'Adresse',
-            Cell: ({ cell }) => (
-                <Link to={`/MapAdresse?adresseA=${encodeURIComponent(cell.getValue())}`}
-                    style={{
-                        color: theme.palette.primary.main,
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}>
-                    <Typography variant="body2" sx={{ '&:hover': { textDecoration: 'underline' } }}>
-                        {cell.getValue()}
-                    </Typography>
-                </Link>
-            ),
-            size: 200,
-        }
     ] : [
         {
             accessorKey: 'id',

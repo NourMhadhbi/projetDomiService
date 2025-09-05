@@ -1,15 +1,10 @@
 import React, { useEffect } from 'react';
-
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { getTop5Thunk } from '../../features/ServiceSlice';
-
-
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-
-
 
 const ServicesSection = () => {
   const dispatch = useDispatch();
@@ -19,6 +14,7 @@ const ServicesSection = () => {
   useEffect(() => {
     dispatch(getTop5Thunk());
   }, [dispatch]);
+  
   const settings = {
     dots: false,
     infinite: true,
@@ -43,51 +39,34 @@ const ServicesSection = () => {
           </span>
           <h2 className="services-title">Les Services les Plus Demandés</h2>
         </div>
-        {/* <button className="services-btn" onClick={() => navigate("/service")}>EXPLOREZ TOUS LES SERVICES</button> */}
       </div>
 
-      <Slider {...settings} className="services-slider" >
-        {topServices
-          // && topServices.filter(service => service.totalRDV > 0).length > 0 ? (
-          //     topServices
-          //         .filter(service => service.totalRDV > 0)
-          .map((service, index) => (
-            <div
-              className="service-wrapper"
-              key={index}
-              onClick={() => {
-                console.log("Service cliqué :", service.id);
-                navigate(`/prestataires?service=${service.id}`);
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="icon-circle">
-                {console.log("image", service.image)}
-                <img src={`/${service.image}`} alt={service.nom} />
-              </div>
-              <div className="service-card">
-                <h3>{service.nom}</h3>
-                <p>{service.description}</p>
-              </div>
+      <Slider {...settings} className="services-slider">
+        {topServices.map((service, index) => (
+          <div
+            className="service-wrapper"
+            key={index}
+            onClick={() => navigate(`/prestataires?service=${service.id}`)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="icon-circle">
+              <img
+                src={service.image || 'https://via.placeholder.com/150'}
+                alt={service.nom}
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/150';
+                }}
+              />
             </div>
-          ))
-
-          // : 
-          // (
-          //     <div className="no-service">
-          //         Aucun service disponible.
-          //     </div>
-          // )
-        }
+            <div className="service-card">
+              <h3>{service.nom}</h3>
+              <p>{service.description}</p>
+            </div>
+          </div>
+        ))}
       </Slider>
 
-
       <style>{`
-            .no-service {
-  text-align: center;
-  color: #999;
-  padding: 40px;
-}
         .services-section {
           background-color: #f2f2f2ff;
           padding: 80px 5%;
@@ -120,72 +99,53 @@ const ServicesSection = () => {
           font-weight: 700;
           color: #111;
           font-style: italic;
-
         }
 
-        .services-btn {
-          background-color: #e6471d;
-          color: #fff;
-          border: none;
-          padding: 15px 25px;
-          font-weight: bold;
-          cursor: pointer;
-          border-radius: 2px;
-        }
-   .services-btn:hover {
-          background-color: #f8f7f7ff;
-          color: #e6471d;
-        }
         .services-slider {
           margin-top: 20px;
-          gap:1px;
         }
 
         .service-wrapper {
           position: relative;
-          overflow: visible;
           margin: 30px 15px;
+          padding-top: 40px; /* Réduit l'espace au-dessus */
         }
 
         .icon-circle {
-          position: absolute;
-          top: -50px;
-          left: 50%;
-          transform: translateX(-50%);
+          position: relative;
           width: 120px;
           height: 120px;
+          margin: 0 auto;
           background: white;
           border-radius: 50%;
           display: flex;
           justify-content: center;
           align-items: center;
-          border: 12px solid rgba(169, 168, 217, 0.5);
+          border: 8px solid rgba(169, 168, 217, 0.5); /* Bordure réduite */
+          overflow: hidden;
           z-index: 10;
         }
 
         .icon-circle img {
-          width: 50px;
-          height: 100px;
-          object-fit: contain;
-        
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
         }
 
         .service-card {
-          position: relative;
           background-color: white;
-          padding: 80px 20px 40px;
+          padding: 70px 20px 30px; /* Padding supérieur réduit */
+          margin-top: -50px; /* Remonte la carte vers le cercle */
           clip-path: polygon(0 0%, 100% 5%, 100% 100%, 0% 100%);
-        //   border-radius: 0 0 20px 20px;
-        //   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
           text-align: center;
           transition: all 0.3s ease;
-          overflow: visible;
+          min-height: 320px;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          position: relative;
           z-index: 1;
-          width: 95%;
-min-height: 350px;
-display: flex;
-flex-direction: column;
-  gap: 15px;
         }
 
         .service-card:hover {
@@ -193,11 +153,8 @@ flex-direction: column;
           color: white;
         }
 
-.service-card:hover p {
-  color: white;
-}
-        .service-card:hover .icon-circle img {
-          filter: brightness(0) invert(1);
+        .service-card:hover p {
+          color: white;
         }
 
         .service-card h3 {
@@ -213,19 +170,8 @@ flex-direction: column;
           font-weight: 500;
         }
 
-        .more-btn {
-          margin-top: 20px;
-          padding: 10px 20px;
-          display: inline-block;
-          font-weight: 600;
-          background-color: white;
-          color: #e6471d;
-          text-decoration: none;
-        }
-
         .slick-slide,
-        .slick-track,
-        .services-slider {
+        .slick-track {
           overflow: visible !important;
         }
 
@@ -238,6 +184,11 @@ flex-direction: column;
             flex-direction: column;
             align-items: flex-start;
             gap: 20px;
+          }
+          
+          .service-card {
+            min-height: 280px;
+            padding: 60px 15px 25px;
           }
         }
       `}</style>

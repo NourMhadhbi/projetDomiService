@@ -41,7 +41,7 @@ const HomePage = () => {
         <><Header isClientConnected={isLoggedIn} />
             <AProposSection />
             <ServiceSecion />
-            <PrestatairesPopulaires  isClientConnected={isLoggedIn} />
+            <PrestatairesPopulaires  isClientConnected={isLoggedIn} user={user} />
             {user?.utilisateur?.role === 'CLIENT' ? (
                 <PrestatairesProche />
             ) : (

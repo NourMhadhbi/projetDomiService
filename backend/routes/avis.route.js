@@ -132,12 +132,12 @@ router.put("/Modifieravis/:id", async (req, res) => {
         });
 
 
-        const contenuNotif = `
-      Avis modifié :
-      Note : ${avisModifie.note ?? 'Non spécifiée'}.
-      ${avisModifie.aime ? "Le client apprécie votre service." : ""}
-      ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}` : ""}
-    `.trim();
+        //     const contenuNotif = `
+        //   Avis modifié :
+        //   Note : ${avisModifie.note ?? 'Non spécifiée'}.
+        //   ${avisModifie.aime ? "Le client apprécie votre service." : ""}
+        //   ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}` : ""}
+        // `.trim();
 
 
         let destinataireNom = "";
@@ -148,32 +148,32 @@ router.put("/Modifieravis/:id", async (req, res) => {
         } else {
             destinataireNom = utilisateurDestinataire.nom;
         }
-        if (utilisateurDestinataire) {
+        //     if (utilisateurDestinataire) {
 
-            await prisma.notification.create({
-                data: {
-                    contenu: contenuNotif,
-                    utilisateurId: utilisateurDestinataire.id,
+        //         await prisma.notification.create({
+        //             data: {
+        //                 contenu: contenuNotif,
+        //                 utilisateurId: utilisateurDestinataire.id,
 
-                },
-            });
+        //             },
+        //         });
 
-            if (utilisateurDestinataire.email && utilisateurDestinataire.email.trim() !== "") {
-                const sujet = "Mise à jour de votre avis - DomiService";
-                const messageHtml = `
-        <p>Bonjour ${destinataireNom},</p>
-        <p>Un client a modifié son avis concernant votre service :</p>
-        <p>
-          <strong>Note :</strong> ${avisModifie.note ?? 'Non spécifiée'}<br>
-          ${avisModifie.aime ? "Le client apprécie votre service.<br>" : ""}
-          ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}<br>` : ""}
-        </p>
-        <p>Cordialement,<br>L’équipe DomiService</p>
-      `;
+        //         if (utilisateurDestinataire.email && utilisateurDestinataire.email.trim() !== "") {
+        //             const sujet = "Mise à jour de votre avis - DomiService";
+        //             const messageHtml = `
+        //     <p>Bonjour ${destinataireNom},</p>
+        //     <p>Un client a modifié son avis concernant votre service :</p>
+        //     <p>
+        //       <strong>Note :</strong> ${avisModifie.note ?? 'Non spécifiée'}<br>
+        //       ${avisModifie.aime ? "Le client apprécie votre service.<br>" : ""}
+        //       ${avisModifie.commentaire ? `Commentaire : ${avisModifie.commentaire}<br>` : ""}
+        //     </p>
+        //     <p>Cordialement,<br>L’équipe DomiService</p>
+        //   `;
 
-                await sendMailToUser(utilisateurDestinataire.email, sujet, messageHtml);
-            }
-        }
+        //             await sendMailToUser(utilisateurDestinataire.email, sujet, messageHtml);
+        //         }
+        //     }
 
         res.json(avisModifie);
     } catch (error) {
@@ -200,7 +200,9 @@ router.put("/archiveAvis/:id", async (req, res) => {
 //Récupérer un avis par ID
 router.get("/:id", async (req, res) => {
     const id = Number(req.params.id);
-
+    if (isNaN(id)) {
+        return res.status(400).json({ message: "ID invalide" });
+    }
     try {
         const avis = await prisma.avis.findUnique({
             where: { id },
@@ -364,13 +366,13 @@ router.get("/", async (req, res) => {
         }).map(a => a.clientId);
         const satisfiedCustomerCount = [...new Set(satisfiedClientIds)].length;
 
-        //  Expert Plumbers (moyenne >= 8)
+        //  Expert  (moyenne >= 8)
         const expertPrestataires = prestataires.filter(p => {
             const avisForP = avis.filter(a => a.prestataireId === p.utilisateurIdPre);
             if (avisForP.length === 0) return false;
 
             const avg = avisForP.reduce((acc, a) => acc + (a.note || 0), 0) / avisForP.length;
-            return avg >= 8;
+            return avg >= 7;
         }).length;
 
         //  Quality Products (% prestataires avec moyenne >= 7)

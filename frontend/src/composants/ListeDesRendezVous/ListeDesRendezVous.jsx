@@ -588,22 +588,23 @@ const ListeRendezVous = () => {
     };
 
     const onDelete = async (rdv) => {
+
         const { isConfirmed } = await Swal.fire({
             icon: 'warning',
             title: 'Voulez‑vous vraiment supprimer ce rendez‑vous ?',
-            html: `
-        <p style="margin:0; text-align: center;">
-            Cette action est <strong>irréversible</strong>.<br>
-            Assurez‑vous de vouloir continuer.
-        </p>
-    `,
+            text: 'Cette action est irréversible.',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Oui, supprimer',
+            confirmButtonText: 'Supprimer',
             cancelButtonText: 'Annuler',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
             reverseButtons: false,
-            focusCancel: true,
+            customClass: {
+                popup: 'rounded-4 shadow',
+                title: 'fs-5 fw-semibold',
+                confirmButton: 'px-4 py-2',
+                cancelButton: 'px-4 py-2'
+            }
         });
         if (isConfirmed) {
             await dispatch(deleteRendezVous({ id: rdv.id })).unwrap();
@@ -635,15 +636,23 @@ const ListeRendezVous = () => {
     const handleDeleteSelection = async () => {
         const toDelete = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
         if (toDelete.length === 0) return Swal.fire('Info', 'Aucun rendez-vous en attente sélectionné', 'info');
+
         const { isConfirmed } = await Swal.fire({
             icon: 'warning',
             title: 'Voulez‑vous confirmer la suppression ?',
-            text: `${toDelete.length} rendez-vous seront supprimés`,
+            text: 'Cette action est irréversible.',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Oui, supprimer',
-            cancelButtonText: 'Annuler'
+            confirmButtonText: 'Supprimer',
+            cancelButtonText: 'Annuler',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            reverseButtons: false,
+            customClass: {
+                popup: 'rounded-4 shadow',
+                title: 'fs-5 fw-semibold',
+                confirmButton: 'px-4 py-2',
+                cancelButton: 'px-4 py-2'
+            }
         });
         if (isConfirmed) {
             for (const row of toDelete) await dispatch(deleteRendezVous({ id: row.id })).unwrap();
@@ -730,23 +739,23 @@ const ListeRendezVous = () => {
     };
 
 
-const handleCancelSelection = async () => {
-    const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
+    const handleCancelSelection = async () => {
+        const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
 
-    Swal.fire({
-        title: 'Annulation en cours...',
-        text: 'Merci de patienter, vos actions sont en cours de traitement.',
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-    });
+        Swal.fire({
+            title: 'Annulation en cours...',
+            text: 'Merci de patienter, vos actions sont en cours de traitement.',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
 
-    for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
-    Swal.close();
+        for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
+        Swal.close();
 
-    Swal.fire({
-        title: 'Rendez-vous annulés',
-        html: `<div style="text-align:center;">
+        Swal.fire({
+            title: 'Rendez-vous annulés',
+            html: `<div style="text-align:center;">
                 <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -754,31 +763,31 @@ const handleCancelSelection = async () => {
                     ${toCancel.length} rendez-vous ont été annulés avec succès.
                 </p>
                </div>`,
-        confirmButtonText: 'Terminé',
-        confirmButtonColor: '#a90616'
-    });
+            confirmButtonText: 'Terminé',
+            confirmButtonColor: '#a90616'
+        });
 
-    setRowSelection({});
-};
+        setRowSelection({});
+    };
 
 
-const handleFinishSelection = async () => {
-    const toFinish = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'CONFIRME');
+    const handleFinishSelection = async () => {
+        const toFinish = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'CONFIRME');
 
-    Swal.fire({
-        title: 'Finalisation en cours...',
-        text: 'Merci de patienter pendant la mise à jour des rendez-vous.',
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-    });
+        Swal.fire({
+            title: 'Finalisation en cours...',
+            text: 'Merci de patienter pendant la mise à jour des rendez-vous.',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
 
-    for (const r of toFinish) await dispatch(finishRendezVous(r.rdv)).unwrap();
-    Swal.close();
+        for (const r of toFinish) await dispatch(finishRendezVous(r.rdv)).unwrap();
+        Swal.close();
 
-    Swal.fire({
-        title: 'Rendez-vous terminés',
-        html: `<div style="text-align:center;">
+        Swal.fire({
+            title: 'Rendez-vous terminés',
+            html: `<div style="text-align:center;">
                 <svg width="60" height="60" fill="#9E9E9E" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -786,30 +795,30 @@ const handleFinishSelection = async () => {
                     ${toFinish.length} rendez-vous ont été marqués comme terminés avec succès.
                 </p>
                </div>`,
-        confirmButtonText: 'Terminé',
-        confirmButtonColor: '#9E9E9E'
-    });
+            confirmButtonText: 'Terminé',
+            confirmButtonColor: '#9E9E9E'
+        });
 
-    setRowSelection({});
-    dispatch(fetchByIntervenant(user.utilisateurIdPre));
-};
+        setRowSelection({});
+        dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    };
 
 
-const handleConfirmSingle = async (rdv) => {
-    Swal.fire({
-        title: 'Confirmation en cours...',
-        text: 'Merci de patienter pendant la confirmation du rendez-vous.',
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-    });
+    const handleConfirmSingle = async (rdv) => {
+        Swal.fire({
+            title: 'Confirmation en cours...',
+            text: 'Merci de patienter pendant la confirmation du rendez-vous.',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
 
-    await dispatch(confirmRendezVous(rdv)).unwrap();
-    Swal.close();
+        await dispatch(confirmRendezVous(rdv)).unwrap();
+        Swal.close();
 
-    Swal.fire({
-        title: 'Rendez-vous confirmé',
-        html: `<div style="text-align:center;">
+        Swal.fire({
+            title: 'Rendez-vous confirmé',
+            html: `<div style="text-align:center;">
                 <svg width="60" height="60" fill="#4CAF50" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -817,29 +826,29 @@ const handleConfirmSingle = async (rdv) => {
                     Le rendez-vous a été confirmé avec succès.
                 </p>
                </div>`,
-        confirmButtonText: 'Terminé',
-        confirmButtonColor: '#4CAF50'
-    });
+            confirmButtonText: 'Terminé',
+            confirmButtonColor: '#4CAF50'
+        });
 
-    dispatch(fetchByIntervenant(user.utilisateurIdPre));
-};
+        dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    };
 
 
-const handleCancelSingle = async (rdv) => {
-    Swal.fire({
-        title: 'Annulation en cours...',
-        text: 'Merci de patienter pendant l’annulation du rendez-vous.',
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-    });
+    const handleCancelSingle = async (rdv) => {
+        Swal.fire({
+            title: 'Annulation en cours...',
+            text: 'Merci de patienter pendant l’annulation du rendez-vous.',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
 
-    await dispatch(cancelRendezVous(rdv)).unwrap();
-    Swal.close();
+        await dispatch(cancelRendezVous(rdv)).unwrap();
+        Swal.close();
 
-    Swal.fire({
-        title: 'Rendez-vous annulé',
-        html: `<div style="text-align:center;">
+        Swal.fire({
+            title: 'Rendez-vous annulé',
+            html: `<div style="text-align:center;">
                 <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -847,29 +856,29 @@ const handleCancelSingle = async (rdv) => {
                     Le rendez-vous a été annulé avec succès.
                 </p>
                </div>`,
-        confirmButtonText: 'Terminé',
-        confirmButtonColor: '#a90616'
-    });
+            confirmButtonText: 'Terminé',
+            confirmButtonColor: '#a90616'
+        });
 
-    dispatch(fetchByIntervenant(user.utilisateurIdPre));
-};
+        dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    };
 
 
-const handleFinishSingle = async (rdv) => {
-    Swal.fire({
-        title: 'Finalisation en cours...',
-        html: '<p style="font-size:0.95rem; color:#616161; margin-top:8px;">Merci de patienter pendant la finalisation du rendez-vous.</p>',
-        didOpen: () => Swal.showLoading(),
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-    });
+    const handleFinishSingle = async (rdv) => {
+        Swal.fire({
+            title: 'Finalisation en cours...',
+            html: '<p style="font-size:0.95rem; color:#616161; margin-top:8px;">Merci de patienter pendant la finalisation du rendez-vous.</p>',
+            didOpen: () => Swal.showLoading(),
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
 
-    await dispatch(finishRendezVous(rdv)).unwrap();
-    Swal.close();
+        await dispatch(finishRendezVous(rdv)).unwrap();
+        Swal.close();
 
-    Swal.fire({
-        title: 'Rendez-vous terminé',
-        html: `<div style="text-align:center;">
+        Swal.fire({
+            title: 'Rendez-vous terminé',
+            html: `<div style="text-align:center;">
                 <svg width="60" height="60" fill="#9E9E9E" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -877,12 +886,12 @@ const handleFinishSingle = async (rdv) => {
                     Le rendez-vous a été marqué comme terminé.
                 </p>
                </div>`,
-        confirmButtonText: 'Terminé',
-        confirmButtonColor: '#9E9E9E'
-    });
+            confirmButtonText: 'Terminé',
+            confirmButtonColor: '#9E9E9E'
+        });
 
-    dispatch(fetchByIntervenant(user.utilisateurIdPre));
-};
+        dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    };
 
 
     const renderIntervenantActions = (rdv) => (
@@ -1067,8 +1076,22 @@ const handleFinishSingle = async (rdv) => {
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
-                    <Link to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`} style={{ color: '#1976d2', textDecoration: 'none' }}>
-                        <Typography variant="body2" sx={{ '&:hover': { textDecoration: 'underline' } }}>
+                    <Link
+                        to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`}
+                        onClick={(e) => {
+                            e.preventDefault(); // empêche la navigation normale
+                            window.open(
+                                `/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            );
+                        }}
+                        style={{ color: '#1976d2', textDecoration: 'none' }}
+                    >
+                        <Typography
+                            variant="body2"
+                            sx={{ "&:hover": { textDecoration: "underline" } }}
+                        >
                             {cell.getValue()}
                         </Typography>
                     </Link>
@@ -1082,8 +1105,22 @@ const handleFinishSingle = async (rdv) => {
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
-                    <Link to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`} style={{ color: '#1976d2', textDecoration: 'none' }}>
-                        <Typography variant="body2" sx={{ '&:hover': { textDecoration: 'underline' } }}>
+                    <Link
+                        to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`}
+                        onClick={(e) => {
+                            e.preventDefault(); // empêche la navigation interne
+                            window.open(
+                                `/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            );
+                        }}
+                        style={{ color: '#1976d2', textDecoration: 'none' }}
+                    >
+                        <Typography
+                            variant="body2"
+                            sx={{ "&:hover": { textDecoration: "underline" } }}
+                        >
                             {cell.getValue()}
                         </Typography>
                     </Link>
@@ -1193,13 +1230,27 @@ const handleFinishSingle = async (rdv) => {
         },
         {
             accessorKey: 'lieu',
-            header: 'Adresse',
+            header: 'Lieu d\'intervention',
             size: 200,
             Cell: ({ cell }) => (
                 <Box display="flex" alignItems="center" gap={1}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#757575', fontSize: '14px' }} />
-                    <Link to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`} style={{ color: '#1976d2', textDecoration: 'none' }}>
-                        <Typography variant="body2" sx={{ '&:hover': { textDecoration: 'underline' } }}>
+                    <Link
+                        to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`}
+                        onClick={(e) => {
+                            e.preventDefault(); // bloque la navigation interne
+                            window.open(
+                                `/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            );
+                        }}
+                        style={{ color: '#1976d2', textDecoration: 'none' }}
+                    >
+                        <Typography
+                            variant="body2"
+                            sx={{ "&:hover": { textDecoration: "underline" } }}
+                        >
                             {cell.getValue()}
                         </Typography>
                     </Link>

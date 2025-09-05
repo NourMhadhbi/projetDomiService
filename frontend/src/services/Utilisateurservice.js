@@ -2,7 +2,11 @@ import Api from '../axios/Api';
 const UTILISATEUR_API = '/utilisateur';
 export const getIntervenant = async () => {
     const response = await Api.get(`${UTILISATEUR_API}/getintervenant`);
-    return response.data; // seulement le tableau d'intervenants
+    return response.data; 
+};
+export const getTousPrestataires = async () => {
+    const response = await Api.get(`${UTILISATEUR_API}/Allprestataires`);
+    return response.data;
 };
 export const getUtilisateurs = async (role = 'TOUS') => {
     const response = await Api.get(`${UTILISATEUR_API}/utilisateursA?role=${role}`);

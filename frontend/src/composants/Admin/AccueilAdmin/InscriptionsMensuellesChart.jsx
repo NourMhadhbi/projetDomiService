@@ -12,9 +12,9 @@ import {
 
 
 
-const InscriptionsMensuellesChart = ({data}) => {
+const InscriptionsMensuellesChart = ({ data }) => {
   return (
-   <div style={{ width: "100%", height: 400, margin: "0 auto" }}>
+    <div style={{ width: "100%", height: 400, margin: "0 auto" }}>
       <ResponsiveContainer>
         <AreaChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
           <defs>
@@ -49,6 +49,13 @@ const InscriptionsMensuellesChart = ({data}) => {
             stroke="#ff9800"
             fill="url(#colorPrestataires)"
             name="Prestataires"
+          />
+          <Area
+            type="monotone"
+            dataKey="entreprises"
+            stroke="#6b0357ff"
+            fill="url(#colorPrestataires)"
+            name="entreprises"
           />
         </AreaChart>
       </ResponsiveContainer>

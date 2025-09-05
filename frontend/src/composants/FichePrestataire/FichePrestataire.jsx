@@ -81,7 +81,7 @@ function App() {
     return (
         <>
             <Header isClientConnected={isClientConnected} intervenant={intervenant} />
-            <ProfileSection isClientConnected={isClientConnected} intervenant={intervenant} />
+            <ProfileSection isClientConnected={isClientConnected} intervenant={intervenant} user={user} />
             <ExperienceSection isClientConnected={isClientConnected} intervenant={intervenant} />
             <StatisticsSection id={id} />
             {/* <MapPres /> */}

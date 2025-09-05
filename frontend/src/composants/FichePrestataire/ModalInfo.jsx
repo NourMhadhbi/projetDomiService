@@ -31,7 +31,7 @@ export default function ModalInfo({
     onTerminer
 }) {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
-    const estPrestataire = user?.utilisateur.role === 'PRESTATAIRE';
+    const estPrestataire = (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE');
     const estClient = user?.utilisateur.role === 'CLIENT';
     console.log("role", utilisateur)
     return (
@@ -139,7 +139,7 @@ export default function ModalInfo({
                             {rendezVousActuel?.date?.split('T')[1]?.slice(0, 5) || 'Heure non précisée'}
                         </Typography>
                     </Box>
-                    {estClient && user?.utilisateur?.id === clientid && (
+                    {((estClient && user?.utilisateur?.id === clientid) || estPrestataire) && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <PlaceIcon sx={{ color: orange[600] }} />
                             <Typography variant="body2">

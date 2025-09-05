@@ -24,7 +24,7 @@ enum Role {
 enum Genre{
   FEMME 
   HOMME
-  AUTRE
+  ENTITÉ
 }
 
 enum StatutRDV {
@@ -50,8 +50,7 @@ model Utilisateur {
   client        Client?
   admin          Admin? 
  HistoriqueApp        HistoriqueApp[]
-  //messagesEnvoyes     Message[]       @relation("MessagesEnvoyes")
-//  messagesRecus       Message[]       @relation("MessagesRecus")
+
   notifications       Notification[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @default(now())
@@ -90,7 +89,7 @@ model Prestataire {
   tarifDeplacement Float?
   experience       String?   @db.MediumText 
   competence       String?  @db.MediumText 
-  Spécialite       String  @db.MediumText 
+  Spécialite       String?  @db.MediumText 
   descriptionCourte String? @db.MediumText 
   isActive         Boolean    @default(false)
   serviceId        Int
@@ -118,7 +117,7 @@ model Entreprise {
 model Service {
   id          Int         @id @default(autoincrement())
   nom         String
-  description String?
+  description String?   @db.Text
  image         String? 
  etatArchive   Boolean    @default(false)
 
@@ -146,7 +145,7 @@ model RendezVous {
 
 model Avis {
   id             Int         @id @default(autoincrement())
-  commentaire    String?
+  commentaire    String?     @db.Text
   note     Float?
   aime           Boolean   @default(false)
   date           DateTime    @default(now())
@@ -192,7 +191,7 @@ model Signalement {
 
 model Notification {
   id            Int         @id @default(autoincrement())
-  contenu       String
+  contenu       String      @db.Text
   dateEnvoi     DateTime    @default(now())
   estLue        Boolean     @default(false)
   utilisateurId Int         @db.UnsignedInt

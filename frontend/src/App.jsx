@@ -98,7 +98,7 @@ function App() {
         <Route path="/prestataires/contact/:prestataireId" element={<PrivateRoute><ClientsContactPrestataire /></PrivateRoute>} />
         <Route path="/Contact" element={<PrivateRoute><PageContact /></PrivateRoute>} />
         <Route path="/Profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
-        <Route path="/about" element={<PrivateRoute><About /></PrivateRoute>} />
+        <Route path="/about" element={<About />} />
         <Route
           path="/admin/dashboard"
           element={

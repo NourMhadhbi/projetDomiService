@@ -110,7 +110,13 @@ const CalendrierRendezVous = () => {
 
     const handleDateClick = (arg) => {
         const selectedDate = arg.dateStr;
-        if (new Date(selectedDate) < new Date()) return;
+        const dateAujourdhui = new Date();
+        dateAujourdhui.setHours(0, 0, 0, 0);
+
+        const dateCliquee = new Date(selectedDate);
+        dateCliquee.setHours(0, 0, 0, 0);
+
+        if (dateCliquee < dateAujourdhui) return;
         setFormData({
             id: '',
             date: selectedDate,
@@ -150,7 +156,7 @@ const CalendrierRendezVous = () => {
             );
         });
     };
-  
+
     const onSave = async () => {
         setHeureError("");
 
@@ -214,7 +220,7 @@ const CalendrierRendezVous = () => {
     const onDelete = async () => {
         const { isConfirmed } = await Swal.fire({
             icon: 'warning',
-            title: 'Confirmer la suppression',
+            title: 'Voulez‑vous confirmer la suppression ?',
             text: 'Cette action est irréversible.',
             showCancelButton: true,
             confirmButtonText: 'Supprimer',
@@ -498,7 +504,9 @@ const CalendrierRendezVous = () => {
                                     <span className="badge rounded-pill me-1" style={{ backgroundColor: eventInfo.event.backgroundColor, color: eventInfo.event.textColor }}>
                                         {STATUTS[eventInfo.event.extendedProps.statut]?.label.charAt(0)}
                                     </span>
-                                    <span className="text-truncate">{eventInfo.event.title}</span>
+                                    <span className="text-truncate">
+                                        {eventInfo.event.extendedProps.raison ? eventInfo.event.extendedProps.raison.split(' ')[0] + '...' : ''}
+                                    </span>
                                 </div>
                             )}
                         />

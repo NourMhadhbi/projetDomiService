@@ -27,13 +27,8 @@ import {
 const Header = ({ isClientConnected, intervenant }) => {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { id } = useParams();
-    console.log("id", id);
     const dispatch = useDispatch();
-    // const [ongletActif, setOngletActif] = useState("services");
     const [filteredServices, setFilteredServices] = useState([]);
-    
-    console.log("client", isClientConnected);
-
     const {
         services,
         service,
@@ -100,7 +95,7 @@ const Header = ({ isClientConnected, intervenant }) => {
             );
             setFilteredServices(resultats);
         } else {
-            setFilteredServices([]); // réinitialiser si on change d'onglet
+            setFilteredServices([]);
         }
     }, [searchQuery, services, ongletActif]);
 
@@ -182,7 +177,7 @@ const Header = ({ isClientConnected, intervenant }) => {
 
         else if (params.get('consultes')) {
 
-            breadcrumbItems.push({ label: "Prestataires et entreprises les plus consultés", to: null });
+            breadcrumbItems.push({ label: "Tous les prestataires et entreprises", to: null });
         }
 
         breadcrumbItems.push({ label: "Prestataires & Entreprises", to: null });
@@ -278,7 +273,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                             <ul className="navbar-nav ms-auto">
                                 <li className="nav-item">
                                     <NavLink
-                                        to="/accueil"
+                                        to={user?.utilisateur?.role === "ADMIN" ? "/admin/dashboard" : "/accueil"}
                                         className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
                                     >
                                         Accueil
@@ -412,7 +407,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 // onClick={isClientConnected ? toggleSearch : undefined}
                                 onClick={toggleSearch}
                                 style={{
-                                    opacity:  1 ,
+                                    opacity: 1,
                                     pointerEvents: 'auto',
                                 }}
                             >
@@ -421,8 +416,8 @@ const Header = ({ isClientConnected, intervenant }) => {
 
                             <div
                                 style={{
-                                    opacity:  1 ,
-                                    pointerEvents:  'auto',
+                                    opacity: 1,
+                                    pointerEvents: 'auto',
                                 }}
                             >
                                 <NotificationMenu isClientConnected={isLoggedIn} user={user} />
@@ -521,19 +516,19 @@ const Header = ({ isClientConnected, intervenant }) => {
                             <div className="resultats-services bg-white shadow-sm rounded p-3 mt-2">
                                 {filteredServices.length > 0 ? (
                                     filteredServices.map((s) => (
-                                        <div
+                                        <NavLink
                                             key={s.id}
-                                            className="d-flex justify-content-between align-items-center border-bottom py-2"
-                                            style={{ cursor: 'pointer' }}
+                                            to={`/prestataires?service=${s.id}`}
+                                            className="d-flex justify-content-between align-items-center border-bottom py-2 text-decoration-none"
+                                          style={{ cursor: 'pointer', color: 'black' }} 
                                             onClick={() => {
-                                                navigate(`/prestataires?service=${s.id}`);
                                                 setIsSearchOpen(false);
                                                 setSearchQuery('');
                                             }}
                                         >
-                                            <div>
+                                            <div className="d-flex align-items-center">
                                                 <img
-                                                    src={s.image ? `/${s.image}` : '/default-image.jpg'}
+                                                    src={s.image ? s.image : 'https://via.placeholder.com/150'}
                                                     alt={s.nom}
                                                     style={{
                                                         width: '60px',
@@ -550,14 +545,14 @@ const Header = ({ isClientConnected, intervenant }) => {
                                                     </small>
                                                 </div>
                                             </div>
-
-                                        </div>
+                                        </NavLink>
                                     ))
                                 ) : (
                                     <p className="text-muted text-center">Aucun service trouvé</p>
                                 )}
                             </div>
                         )}
+
                     </div>
                 </div>
             )}

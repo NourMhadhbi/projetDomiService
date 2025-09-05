@@ -38,7 +38,7 @@ import {
     Visibility,
     VisibilityOff,
     Lock,
-    Person,
+
     Email,
     Phone,
     LocationOn,
@@ -49,15 +49,23 @@ import {
     Star,
     Event,
     Warning,
-    Security, Notes,
+    Security, Notes, Person, Accessibility, Home,
+    LocationCity, BusinessCenter,
+
+    History,
+    Description,
+    Fingerprint,
+    Language,
+    Badge
 } from "@mui/icons-material";
+
 import { styled } from "@mui/material/styles";
 import { FilePond, registerPlugin } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css';
-import { updateCompte, logout } from "../../features/AuthSlice";
+import { updateCompte, logout, reset } from "../../features/AuthSlice";
 import Swal from "sweetalert2";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
@@ -138,21 +146,9 @@ const PageProfil = () => {
     const [files, setFiles] = useState([]);
     const filePondRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
-    const isActive = user?.utilisateur?.isActive ?? user?.isActive ?? true;
-    console.log("isActive", user)
-    // useEffect pour vérifier si l'utilisateur n'est plus actif
-    useEffect(() => {
-        if (isActive === false) {
-            dispatch(logout());
-            navigate('/');
-            Swal.fire({
-                icon: 'info',
-                title: 'Déconnexion',
-                text: 'Votre email a été modifié. Veuillez vous reconnecter avec votre nouvel email.',
-                confirmButtonText: 'OK'
-            });
-        }
-    }, [isActive, dispatch, navigate]);
+    const isActive = user?.isActive ?? true;
+
+
     // Configuration Cloudinary
     const serverOptions = {
         process: {
@@ -195,11 +191,11 @@ const PageProfil = () => {
             }
         }
     };
-
+    console.log("utilisateur", user)
     const [form, setForm] = useState({
         id: user?.utilisateur?.id || "",
-        nom: user?.utilisateur?.nom || "",
-        prenom: user?.utilisateur?.prenom || "",
+        nom: user?.utilisateur?.nom || user?.nom || "",
+        prenom: user?.utilisateur?.prenom || user?.prenom || "",
         email: user?.utilisateur?.email || user?.email || "",
         genre: user?.utilisateur?.genre
             ? user.utilisateur.genre.charAt(0).toUpperCase() +
@@ -208,9 +204,10 @@ const PageProfil = () => {
         adresse: user?.adresse || "",
         ville: user?.ville || "",
         numTel: user?.numTel || "",
-        specialite: user?.specialite || "",
+        Spécialite: user?.Spécialite || "",
         competence: user?.competence || "",
         experience: user?.experience || "",
+        descriptionCourte: user?.descriptionCourte || "",
         tarifDeplacement: user?.tarifDeplacement || "",
         nomEntreprise: user?.entreprise?.nomEntreprise || "",
         siteWeb: user?.entreprise?.siteWeb || "",
@@ -258,92 +255,132 @@ const PageProfil = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
+        setForm(prev => ({ ...prev, [name]: value }));
 
-        if (passwordErrors[name]) {
-            setPasswordErrors(prev => {
-                const newErrors = { ...prev };
-                delete newErrors[name];
-                return newErrors;
-            });
-        }
+        if (passwordErrors[name]) { setPasswordErrors(prev => { const newErrors = { ...prev }; delete newErrors[name]; return newErrors; }); }
     };
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
-    const schema = yup.object().shape({
-        newPassword: yup
-            .string()
+    const validatePasswords = () => {
+        const errors = {};
 
-            .min(8, "Minimum 8 caractères")
-            .matches(/[0-9]/, "Doit contenir un chiffre")
-            .matches(/[^a-zA-Z0-9]/, "Doit contenir un symbole"),
-        confirmPassword: yup
-            .string()
-            .oneOf([yup.ref('newPassword'), null], "Les mots de passe ne correspondent pas"),
-
-    });
-
-
-    const formik = useFormik({
-        initialValues: {
-            currentPassword: "",
-            newPassword: "",
-            confirmPassword: "",
-        },
-        validationSchema: schema,
-        onSubmit: async (values, { resetForm }) => {
-            const dataToSend = {
-                ...form,
-                id: u.id,
-                currentPassword: values.currentPassword,
-                motDePasse: values.newPassword,
-                genre: form.genre === "Homme" ? "HOMME" : form.genre === "Femme" ? "FEMME" : null,
-            };
-
-            delete dataToSend.newPassword;
-            delete dataToSend.confirmPassword;
-
-            if (!values.currentPassword) {
-                delete dataToSend.currentPassword;
-                delete dataToSend.motDePasse;
+        if (form.newPassword) {
+            if (form.newPassword.length < 8) {
+                errors.newPassword = "Minimum 8 caractères";
             }
 
-            try {
-                await dispatch(updateCompte(dataToSend)).unwrap();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Modification réussie',
-                    text: 'Vos informations ont été mises à jour avec succès',
-                    confirmButtonText: 'OK',
-                    background: '#f5f5f5',
-                    customClass: {
-                        popup: 'swal-popup-custom',
-                        confirmButton: 'swal-confirm-button'
-                    },
-                    willClose: () => {
-                        setEditModalOpen(false);
-                        setFiles([]);
-                        resetForm(); // ✅ reset Formik (plus besoin de setForm)
-                    }
-                });
-            } catch (error) {
-                console.error("Erreur mise à jour :", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: 'Erreur lors de la mise à jour du compte',
-                    confirmButtonText: 'OK',
-                    background: '#f5f5f5',
-                    customClass: {
-                        popup: 'swal-popup-custom'
-                    }
-                });
+            if (form.newPassword !== form.confirmPassword) {
+                errors.confirmPassword = "Les mots de passe ne correspondent pas";
             }
-        },
-    });
+        }
 
+        return errors;
+    };
+
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+
+        const errors = validatePasswords();
+        if (Object.keys(errors).length > 0) {
+            setPasswordErrors(errors);
+            return;
+        }
+
+
+        const dataToSend = {
+            ...form,
+            id: u.id,
+            motDePasse: form.newPassword,
+            genre:
+                form.genre === "Homme" ? "HOMME" :
+                    form.genre === "Femme" ? "FEMME" :
+                        form.genre === "Entité" ? "ENTITÉ" : null,
+        };
+
+
+        delete dataToSend.newPassword;
+        delete dataToSend.confirmPassword;
+
+        if (!form.currentPassword) {
+            delete dataToSend.currentPassword;
+            delete dataToSend.motDePasse;
+        }
+
+        try {
+
+          const updateResponse=  await dispatch(updateCompte(dataToSend)).unwrap();
+            if (updateResponse.user?.isActive === false) {
+                await Swal.fire({
+                    icon: "info",
+                    title: "Déconnexion",
+                    text: "Votre compte a été désactivé. Vous allez être redirigé.",
+                    confirmButtonText: "OK",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                });
+
+                dispatch(reset());
+                dispatch(logout());
+                navigate("/accueil");
+                return; 
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Modification réussie',
+                text: 'Vos informations ont été mises à jour avec succès',
+                confirmButtonText: 'OK',
+                background: '#f5f5f5',
+                customClass: { popup: 'swal-popup-custom', confirmButton: 'swal-confirm-button' }
+            }).then(() => {
+                dispatch(reset());
+                setEditModalOpen(false);
+                setFiles([]);
+                resetForm();
+
+                // if (!user?.isActive) {
+                //     dispatch(logout());
+                //     Swal.fire({
+                //         icon: 'info',
+                //         title: 'Déconnexion',
+                //         text: 'Vos modifications nécessitent une désactivation de compte.',
+                //         confirmButtonText: 'OK'
+                //     }).then(() => {
+                //         navigate('/accueil');
+                //     });
+                // }
+            });
+
+
+
+            setForm(prev => ({
+                ...prev,
+                newPassword: "",
+                confirmPassword: "",
+                currentPassword: ""
+            }));
+            setPasswordErrors({});
+        } catch (error) {
+            console.error("Erreur mise à jour :", error);
+            dispatch(reset());
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: 'Erreur lors de la mise à jour du compte',
+                confirmButtonText: 'OK',
+                background: '#f5f5f5',
+                customClass: { popup: 'swal-popup-custom' }
+            });
+        }
+    };
+
+
+    console.log('client connecter', isLoggedIn)
     const handleClickShowPassword = (field) => {
         setShowPassword({ ...showPassword, [field]: !showPassword[field] });
     };
@@ -357,7 +394,7 @@ const PageProfil = () => {
                     <ProfileCard>
                         <CardContent sx={{ p: 4 }}>
                             <Grid container spacing={4}>
-                                {/* Colonne gauche - Photo de profil et stats */}
+
                                 <Grid item xs={12} md={4}>
                                     <Box display="flex" flexDirection="column" alignItems="center">
                                         <Box position="relative" mb={3}>
@@ -389,43 +426,43 @@ const PageProfil = () => {
                                             color={roleColors[role] || "default"}
                                             sx={{ mb: 3, fontWeight: 600 }}
                                         />
-
-                                        <Grid container spacing={2} mb={3}>
-                                            <Grid item xs={4}>
-                                                <StatCard>
-                                                    <Event color="primary" />
-                                                    <Typography variant="h6" fontWeight="700" mt={1}>
-                                                        {counter.rendezVous}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="textSecondary">
-                                                        RDV
-                                                    </Typography>
-                                                </StatCard>
+                                        {role !== "ADMIN" && (
+                                            <Grid container spacing={2} mb={3}>
+                                                <Grid item xs={4}>
+                                                    <StatCard>
+                                                        <Event color="primary" />
+                                                        <Typography variant="h6" fontWeight="700" mt={1}>
+                                                            {counter.rendezVous}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            RDV
+                                                        </Typography>
+                                                    </StatCard>
+                                                </Grid>
+                                                <Grid item xs={4}>
+                                                    <StatCard>
+                                                        <Star color="warning" />
+                                                        <Typography variant="h6" fontWeight="700" mt={1}>
+                                                            {counter.avis}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            Avis
+                                                        </Typography>
+                                                    </StatCard>
+                                                </Grid>
+                                                <Grid item xs={4}>
+                                                    <StatCard>
+                                                        <Warning color="error" />
+                                                        <Typography variant="h6" fontWeight="700" mt={1}>
+                                                            {counter.signalements}
+                                                        </Typography>
+                                                        <Typography variant="body2" color="textSecondary">
+                                                            Signals
+                                                        </Typography>
+                                                    </StatCard>
+                                                </Grid>
                                             </Grid>
-                                            <Grid item xs={4}>
-                                                <StatCard>
-                                                    <Star color="warning" />
-                                                    <Typography variant="h6" fontWeight="700" mt={1}>
-                                                        {counter.avis}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="textSecondary">
-                                                        Avis
-                                                    </Typography>
-                                                </StatCard>
-                                            </Grid>
-                                            <Grid item xs={4}>
-                                                <StatCard>
-                                                    <Warning color="error" />
-                                                    <Typography variant="h6" fontWeight="700" mt={1}>
-                                                        {counter.signalements}
-                                                    </Typography>
-                                                    <Typography variant="body2" color="textSecondary">
-                                                        Signals
-                                                    </Typography>
-                                                </StatCard>
-                                            </Grid>
-                                        </Grid>
-
+                                        )}
                                         <EditProfileButton
                                             variant="contained"
                                             startIcon={<Edit />}
@@ -443,24 +480,37 @@ const PageProfil = () => {
 
 
                                 <Grid item xs={12} md={8}>
-
+                                    {/* Informations personnelles */}
                                     <Box mb={4}>
                                         <SectionTitle variant="h6">
+                                            <Person sx={{ mr: 1 }} />
                                             Informations personnelles
                                         </SectionTitle>
                                         <Box sx={{ pl: 2 }}>
-                                            <Typography variant="body1" sx={{ mb: 1 }}>
-                                                <strong>Nom:</strong> {u.nom}
-                                            </Typography>
-                                            <Typography variant="body1" sx={{ mb: 1 }}>
-                                                <strong>Prénom:</strong> {u.prenom}
-                                            </Typography>
-                                            <Typography variant="body1" sx={{ mb: 1 }}>
-                                                <strong>Email:</strong> {u.email}
-                                            </Typography>
-                                            <Typography variant="body1" sx={{ mb: 1 }}>
-                                                <strong>Genre:</strong> {u.genre}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Badge sx={{ mr: 1, mt: 0.5 }} />
+                                                <Typography variant="body1">
+                                                    <strong>Nom:</strong> {u.nom}
+                                                </Typography>
+                                            </Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Person sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                <Typography variant="body1">
+                                                    <strong>Prénom:</strong> {u.prenom}
+                                                </Typography>
+                                            </Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Email sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                <Typography variant="body1">
+                                                    <strong>Email:</strong> {u.email}
+                                                </Typography>
+                                            </Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Accessibility sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                <Typography variant="body1">
+                                                    <strong>Genre:</strong> {u.genre}
+                                                </Typography>
+                                            </Box>
                                         </Box>
                                     </Box>
 
@@ -474,15 +524,24 @@ const PageProfil = () => {
                                                 Coordonnées
                                             </SectionTitle>
                                             <Box sx={{ pl: 2 }}>
-                                                <Typography variant="body1" sx={{ mb: 1 }}>
-                                                    <strong>Adresse:</strong> {user.adresse || "-"}
-                                                </Typography>
-                                                <Typography variant="body1" sx={{ mb: 1 }}>
-                                                    <strong>Ville:</strong> {user.ville || "-"}
-                                                </Typography>
-                                                <Typography variant="body1" sx={{ mb: 1 }}>
-                                                    <strong>Téléphone:</strong> {user.numTel || "-"}
-                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                    <Home sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                    <Typography variant="body1">
+                                                        <strong>Adresse:</strong> {user.adresse || "-"}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                    <LocationCity sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                    <Typography variant="body1">
+                                                        <strong>Ville:</strong> {user.ville || "-"}
+                                                    </Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                    <Phone sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                    <Typography variant="body1">
+                                                        <strong>Téléphone:</strong> {user.numTel || "-"}
+                                                    </Typography>
+                                                </Box>
                                             </Box>
                                         </Box>
                                     )}
@@ -496,21 +555,92 @@ const PageProfil = () => {
                                                     Informations professionnelles
                                                 </SectionTitle>
                                                 <Box sx={{ pl: 2 }}>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Spécialité:</strong> {user.Spécialite || "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Tarif déplacement:</strong> {user.tarifDeplacement ? `${user.tarifDeplacement} DT` : "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Compétences:</strong> {user.competence || "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Expérience:</strong> {user.experience || "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Description:</strong> {user.descriptionCourte || "-"}
-                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                        <BusinessCenter sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                        <Typography variant="body1">
+                                                            <strong>Spécialité:</strong> {user.Spécialite || "-"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                        <AttachMoney sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                        <Typography variant="body1">
+                                                            <strong>Tarif déplacement:</strong> {user.tarifDeplacement ? `${user.tarifDeplacement} DT` : "-"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 600 }}>
+                                                        {/* Compétences */}
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <School sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                                                    Compétences:
+                                                                </Typography>
+                                                                <Box
+                                                                    sx={{
+                                                                        maxHeight: 100,
+                                                                        overflowY: 'auto',
+                                                                        border: '1px solid #eee',
+                                                                        borderRadius: 1,
+                                                                        p: 1,
+                                                                        backgroundColor: '#f9f9f9',
+                                                                    }}
+                                                                >
+                                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                        {user.competence || "-"}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Box>
+
+                                                        {/* Expérience */}
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <History sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                                                    Expérience:
+                                                                </Typography>
+                                                                <Box
+                                                                    sx={{
+                                                                        maxHeight: 100,
+                                                                        overflowY: 'auto',
+                                                                        border: '1px solid #eee',
+                                                                        borderRadius: 1,
+                                                                        p: 1,
+                                                                        backgroundColor: '#f9f9f9',
+                                                                    }}
+                                                                >
+                                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                        {user.experience || "-"}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Box>
+
+                                                        {/* Description */}
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <Description sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
+                                                            <Box sx={{ flex: 1 }}>
+                                                                <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                                                    Description:
+                                                                </Typography>
+                                                                <Box
+                                                                    sx={{
+                                                                        maxHeight: 150,
+                                                                        overflowY: 'auto',
+                                                                        border: '1px solid #eee',
+                                                                        borderRadius: 1,
+                                                                        p: 1,
+                                                                        backgroundColor: '#f9f9f9',
+                                                                    }}
+                                                                >
+                                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                        {user.descriptionCourte || "-"}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+
                                                 </Box>
                                             </Box>
                                         </>
@@ -525,15 +655,24 @@ const PageProfil = () => {
                                                     Détails de l'entreprise
                                                 </SectionTitle>
                                                 <Box sx={{ pl: 2 }}>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Nom:</strong> {user.entreprise?.nomEntreprise || "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Identifiant:</strong> {user.entreprise?.identifiant || "-"}
-                                                    </Typography>
-                                                    <Typography variant="body1" sx={{ mb: 1 }}>
-                                                        <strong>Site web:</strong> {user.entreprise?.siteWeb || "-"}
-                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                        <Business sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                        <Typography variant="body1">
+                                                            <strong>Nom De l'entreprise:</strong> {user.entreprise?.nomEntreprise || "-"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                        <Fingerprint sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                        <Typography variant="body1">
+                                                            <strong>Identifiant:</strong> {user.entreprise?.identifiant || "-"}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                        <Language sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
+                                                        <Typography variant="body1">
+                                                            <strong>Site web:</strong> {user.entreprise?.siteWeb || "-"}
+                                                        </Typography>
+                                                    </Box>
                                                 </Box>
                                             </Box>
                                         </>
@@ -591,7 +730,7 @@ const PageProfil = () => {
                 </Tabs>
 
                 <DialogContent dividers sx={{ p: 3 }}>
-                    <form onSubmit={formik.handleSubmit}>
+                    <form onSubmit={handleSubmit}>
                         {activeTab === 0 && (
                             <Box>
                                 <Box textAlign="center" mb={3}>
@@ -785,6 +924,7 @@ const PageProfil = () => {
                                             >
                                                 <MenuItem value="Homme">Homme</MenuItem>
                                                 <MenuItem value="Femme">Femme</MenuItem>
+                                                <MenuItem value="Entité">Entité</MenuItem>
                                             </Select>
                                         </FormControl>
                                     </Grid>
@@ -1171,21 +1311,17 @@ const PageProfil = () => {
                                         label="Nouveau mot de passe"
                                         name="newPassword"
                                         type={showPassword.new ? "text" : "password"}
-                                        value={formik.values.newPassword}
-                                        onChange={formik.handleChange}
-                                        onBlur={formik.handleBlur}
+                                        value={form.newPassword}
+                                        onChange={handleChange}
                                         margin="normal"
                                         variant="outlined"
-                                        // size supprimé pour taille standard
-                                        error={formik.touched.newPassword && Boolean(formik.errors.newPassword)}
-                                        helperText={formik.touched.newPassword && formik.errors.newPassword}
+                                        size="small"
+                                        error={!!passwordErrors.newPassword}
+                                        helperText={passwordErrors.newPassword}
                                         InputProps={{
                                             endAdornment: (
                                                 <InputAdornment position="end">
-                                                    <IconButton
-                                                        onClick={() => handleClickShowPassword("new")}
-                                                        edge="end"
-                                                    >
+                                                    <IconButton onClick={() => handleClickShowPassword("new")}>
                                                         {showPassword.new ? <VisibilityOff /> : <Visibility />}
                                                     </IconButton>
                                                 </InputAdornment>
@@ -1198,20 +1334,17 @@ const PageProfil = () => {
                                         label="Confirmer le mot de passe"
                                         name="confirmPassword"
                                         type={showPassword.confirm ? "text" : "password"}
-                                        value={formik.values.confirmPassword}
-                                        onChange={formik.handleChange}
-                                        onBlur={formik.handleBlur}
+                                        value={form.confirmPassword}
+                                        onChange={handleChange}
                                         margin="normal"
                                         variant="outlined"
-                                        error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
-                                        helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
+                                        size="small"
+                                        error={!!passwordErrors.confirmPassword}
+                                        helperText={passwordErrors.confirmPassword}
                                         InputProps={{
                                             endAdornment: (
                                                 <InputAdornment position="end">
-                                                    <IconButton
-                                                        onClick={() => handleClickShowPassword("confirm")}
-                                                        edge="end"
-                                                    >
+                                                    <IconButton onClick={() => handleClickShowPassword("confirm")}>
                                                         {showPassword.confirm ? <VisibilityOff /> : <Visibility />}
                                                     </IconButton>
                                                 </InputAdornment>
@@ -1222,11 +1355,11 @@ const PageProfil = () => {
                             </>
                         )}
 
-                        {isError && (
+                        {/* {isError && (
                             <Alert severity="error" sx={{ mt: 2 }}>
                                 {isError.message || "Une erreur s'est produite lors de la mise à jour."}
                             </Alert>
-                        )}
+                        )} */}
 
                         <DialogActions sx={{ px: 0, pt: 3, justifyContent: 'center' }}>
                             <ActionButton

@@ -1,8 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getIntervenant, getIntervenantbyId, getPrestatairesProches, getUtilisateurs, activerCompte, desactiverCompte } from '../services/Utilisateurservice';
+import { getIntervenant, getIntervenantbyId, getPrestatairesProches, getUtilisateurs, activerCompte, desactiverCompte, getTousPrestataires } from '../services/Utilisateurservice';
 export const fetchIntervenant = createAsyncThunk(
     'utilisateur/fetchIntervenant',
     async () => await getIntervenant()
+);
+export const fetchTousPrestataires = createAsyncThunk(
+    'utilisateur/fetchTousPrestataires',
+    async () => await getTousPrestataires()
 );
 export const fetchIntervenantbyId = createAsyncThunk(
     'utilisateur/fetchIntervenantbyId',
@@ -88,6 +92,18 @@ const intervenantSlice = createSlice({
                 state.intervenants = action.payload;
             })
             .addCase(fetchIntervenant.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || action.error.message;
+            })
+            .addCase(fetchTousPrestataires.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchTousPrestataires.fulfilled, (state, action) => {
+                state.loading = false;
+                state.intervenants = action.payload;
+            })
+            .addCase(fetchTousPrestataires.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || action.error.message;
             })

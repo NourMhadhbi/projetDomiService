@@ -3,7 +3,7 @@ import FavorisSection from './FavorisSection';
 
 
 
-const ProfileSection = ({ isClientConnected, intervenant }) => {
+const ProfileSection = ({ isClientConnected, user, intervenant }) => {
 
     useEffect(() => {
         // Animation pour les barres de compétences
@@ -103,7 +103,10 @@ const ProfileSection = ({ isClientConnected, intervenant }) => {
                                 )}
                             </div>
                         ))}
-                        <FavorisSection prestataireId={intervenant?.id} />
+                        {user?.utilisateur?.role === "CLIENT" && (
+                            <FavorisSection prestataireId={intervenant?.id} />
+                        )}
+
                     </div>
 
                 </div>

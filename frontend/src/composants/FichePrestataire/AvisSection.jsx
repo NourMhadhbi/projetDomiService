@@ -7,9 +7,9 @@ import { faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons'
 import * as Yup from "yup";
 import { useDispatch } from "react-redux";
 import { createAvis } from "../../features/AvisSlice"
-
+import Swal from 'sweetalert2';
 const AvisSection = ({ avisP, userC, intervenant }) => {
-
+    console.log("utilisateur", userC.utilisateur.id)
     const dispatch = useDispatch();
     const [showModal, setShowModal] = useState(false);
     const [reaction, setReaction] = useState("like");
@@ -63,7 +63,7 @@ const AvisSection = ({ avisP, userC, intervenant }) => {
     Affiche 1 slide visible, 1 slide défilé, flèches actives.*/
     const settings = {
         dots: true,
-         infinite: avisP.length > 2,
+        infinite: avisP.length > 2,
         speed: 500,
         slidesToShow: 2,
         slidesToScroll: 1,
@@ -129,35 +129,78 @@ const AvisSection = ({ avisP, userC, intervenant }) => {
         try {
             // Valider les données avant envoi
             await avisSchema.validate(avisToValidate);
+
             const avisToSend = {
                 ...avisToValidate,
-                clientId: 16,
+                clientId: userC.utilisateur.id,
                 prestataireId: intervenant.id,
             };
 
+            // Afficher un loader pendant l'envoi
+            Swal.fire({
+                title: 'Envoi de l\'avis...',
+                text: 'Veuillez patienter',
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            });
 
             await dispatch(createAvis(avisToSend)).unwrap();
+            Swal.close();
 
-            alert("Merci pour votre avis !");
+            // Message succès
+            Swal.fire({
+                title: 'Merci pour votre avis !',
+                html: `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <p style="margin:0;">Votre avis a été ajouté avec succès.<br>Vous pouvez continuer à consulter les avis ci-dessous.</p>
+                </div>
+            `,
+                icon: 'success',
+                confirmButtonText: 'Continuer',
+                confirmButtonColor: '#198754',
+                background: '#f0f9ff',
+                iconColor: '#198754',
+                timer: 8000,
+                timerProgressBar: true
+            });
+
+            // Reset du formulaire
             setShowModal(false);
             setFormData({ commentaire: "", note: 0 });
             setReaction("like");
+
         } catch (error) {
-            alert(error.message || "Une erreur est survenue lors de la validation.");
+            Swal.close();
+            Swal.fire({
+                title: '⚠ Oups, une erreur est survenue',
+                html: `
+                <p>${error.message || 'Impossible d\'envoyer votre avis pour le moment.'}</p>
+                <p>Veuillez réessayer plus tard ou contacter le support si le problème persiste.</p>
+            `,
+                icon: 'error',
+                confirmButtonText: 'Fermer',
+                confirmButtonColor: '#d33',
+                background: '#fff5f5',
+                iconColor: '#c70000',
+            });
         }
     };
 
     return (
         <section className="testimonials-section">
             <div className="section-header">
-                <button
-                    className="btn btn-success fw-semibold btn-responsive-avis"
-                    onClick={() => setShowModal(true)}
-                    type="button"
+                {userC?.utilisateur?.role === "CLIENT" && (
+                    <button
+                        className="btn btn-success fw-semibold btn-responsive-avis"
+                        onClick={() => setShowModal(true)}
+                        type="button"
 
-                >
-                    <i className="fas fa-comment-dots me-2"></i> Laisser un avis
-                </button>
+                    >
+                        <i className="fas fa-comment-dots me-2"></i> Laisser un avis
+                    </button>)}
                 <h1 className="section-titleA">Que Disent Nos Clients ?</h1>
                 <div className="section-divider"></div>
             </div>
@@ -178,7 +221,7 @@ const AvisSection = ({ avisP, userC, intervenant }) => {
                         const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
                         return (
                             <div key={index}>
-                                <div className="testimonial-card p-3 shadow rounded">
+                                <div className="testimonial-card p-3 shadow rounded" style={{ maxHeight: "380px" }}>
                                     <div className="client-info d-flex align-items-center mb-2">
                                         <img
                                             src={client?.image || "/placeholder.png"}

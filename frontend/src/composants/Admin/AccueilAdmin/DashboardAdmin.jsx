@@ -64,14 +64,16 @@ const DashboardAdmin = () => {
         ? inscriptionsParMois.map(item => ({
             month: item.mois,
             clients: item.clients,
-            prestataires: item.prestataires
+            prestataires: item.prestataires,
+            entreprises: item.entreprises
         }))
         : [];
     const ConsultationMensuelles = Array.isArray(consultationsMensuelles)
         ? consultationsMensuelles.map(item => ({
             month: item.month,
             clients: item.clients,
-            prestataires: item.prestataires
+            prestataires: item.prestataires,
+            entreprises: item.entreprises
         }))
         : [];
     return (
@@ -127,7 +129,7 @@ const DashboardAdmin = () => {
                 >
                     Nombre de consultations mensuelles de l’application
                 </Typography>
-                    <ConsultationChart data={consultationsMensuelles} /></Box>
+                    <ConsultationChart data={ConsultationMensuelles} /></Box>
 
             </Box>
 

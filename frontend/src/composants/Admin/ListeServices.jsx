@@ -1046,7 +1046,7 @@ const ListeServicesAdmin = () => {
                             initialState={{
                                 pagination: { pageSize: 10, pageIndex: 0 },
                                 density: 'comfortable',
-                                sorting: [{ id: 'id', desc: true }]
+                                sorting: [{ id: 'id', desc: false }]
                             }}
                             muiTableContainerProps={{
                                 sx: {
@@ -1188,7 +1188,7 @@ const ListeServicesAdmin = () => {
                     <TextField
                         label="Description"
                         multiline
-                        rows={4}
+                        rows={6}
                         value={serviceToEdit?.description || ""}
                         onChange={(e) => setServiceToEdit({ ...serviceToEdit, description: e.target.value })}
                         fullWidth
@@ -1336,7 +1336,7 @@ const ListeServicesAdmin = () => {
                     <TextField
                         label="Description"
                         multiline
-                        rows={4}
+                        rows={6}
                         value={newService.description}
                         onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                         fullWidth

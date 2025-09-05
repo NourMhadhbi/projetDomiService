@@ -8,7 +8,7 @@ import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
-import { fetchPrestatairesProches } from '../../features/UtilisateurSlice';
+import { fetchPrestatairesProches, fetchTousPrestataires } from '../../features/UtilisateurSlice';
 import {
     Box,
     MenuItem,
@@ -133,7 +133,7 @@ import {
 //     );
 // };
 
-const PrestataireCard = ({ prestataire, search, service, proche, consultes }) => {
+const PrestataireCard = ({ prestataire, search, service, proche, consultes, user }) => {
     let utilisateur = null;
     let nomAffiche = '';
     let contact = '';
@@ -191,9 +191,10 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
     };
 
     return (
-        <div className="card h-100 border-0 shadow-lg rounded-4 overflow-hidden"
+        <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
             style={{
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                width: '100%',
                 maxWidth: '380px',
                 margin: '0 auto'
             }}>
@@ -316,30 +317,30 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes }) =>
                             </div>
                         </div>
                     )}
+                    {user?.utilisateur?.role === "CLIENT" && (
 
-                    {/* Bouton Prendre Rendez-vous */}
-                    <div className="mt-3 pt-2 border-top">
-                        <button
-                            style={{
-                                backgroundColor: '#f15a24',
-                                color: 'white',
-                                fontWeight: '600',
-                                borderRadius: '12px',
-                                padding: '14px',
-                                width: '100%',
-                                border: 'none',
-                                fontSize: '16px',
-                                transition: 'background 0.3s ease'
-                            }}
-                            onMouseOver={(e) => e.target.style.backgroundColor = '#e14a1c'}
-                            onMouseOut={(e) => e.target.style.backgroundColor = '#f15a24'}
-                            onClick={handleRendezVousClick}
+                        <div className="mt-3 pt-2 border-top">
+                            <button
+                                style={{
+                                    backgroundColor: '#f15a24',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    borderRadius: '12px',
+                                    padding: '14px',
+                                    width: '100%',
+                                    border: 'none',
+                                    fontSize: '16px',
+                                    transition: 'background 0.3s ease'
+                                }}
+                                onMouseOver={(e) => e.target.style.backgroundColor = '#e14a1c'}
+                                onMouseOut={(e) => e.target.style.backgroundColor = '#f15a24'}
+                                onClick={handleRendezVousClick}
 
-                        >
-                            <i className="fas fa-calendar-check me-2"></i>
-                            Prendre Rendez-vous
-                        </button>
-                    </div>
+                            >
+                                <i className="fas fa-calendar-check me-2"></i>
+                                Prendre Rendez-vous
+                            </button>
+                        </div>)}
                 </div>
             </div>
         </div>
@@ -351,7 +352,7 @@ const ListePrestataires = () => {
     const [searchParams] = useSearchParams();
     const [currentPage, setCurrentPage] = useState(1);
     const { isLoggedIn, user } = useSelector((state) => state.auth);
-    const itemsPerPage = 8;
+    const itemsPerPage = 6;
     const [selectedType, setSelectedType] = useState("");
     const [sortBy, setSortBy] = useState("");
     const [selectedVille, setSelectedVille] = useState("");
@@ -362,7 +363,8 @@ const ListePrestataires = () => {
     const consultes = searchParams.get('consultes');
 
     const prestatairesProches = useSelector((state) => state.utilisateur.intervenants);
-    const { data } = useSelector(state => state.historique || {});
+    const prestatairesC = useSelector((state) => state.utilisateur.intervenants);
+    // const { data } = useSelector(state => state.historique || {});
 
     const {
 
@@ -376,7 +378,7 @@ const ListePrestataires = () => {
     } else if (proche) {
         prestataires = Array.isArray(prestatairesProches) ? prestatairesProches : [];
     } else if (consultes) {
-        prestataires = Array.isArray(data) ? data : [];
+        prestataires = Array.isArray(prestatairesC) ? prestatairesC : [];
     }
     useEffect(() => {
         if (search) {
@@ -386,7 +388,7 @@ const ListePrestataires = () => {
         } else if (proche) {
             dispatch(fetchPrestatairesProches(user?.utilisateurIdCl));
         } else if (consultes) {
-            dispatch(fetchPopulaireP());
+            dispatch(fetchTousPrestataires());
         }
     }, [dispatch, search, service, proche, consultes, user?.utilisateurIdCl]);
     useEffect(() => {
@@ -433,11 +435,13 @@ const ListePrestataires = () => {
 
     // Appliquer filtre par type
     let filtres = [...prestataires];
-
+    console.log("filtre", filtres)
     if (selectedType) {
-        filtres = filtres.filter(p =>
-            (search ? p.prestataire?.utilisateur?.role : p.utilisateur?.role) === selectedType
-        );
+        filtres = filtres.filter(p => {
+            const role = search ? p.role : p.utilisateur?.role;
+
+            return role === selectedType;
+        });
     }
 
     if (selectedVille) {
@@ -493,23 +497,41 @@ const ListePrestataires = () => {
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
-            <div className="container mt-5" >
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <span className="pres-label">
-                        <i className="fas fa-tools" style={{ color: "#ff6b00" }}></i> Nos Prestataires & Entreprises
-                    </span>
+            <div className="container mt-5">
+
+                <div className="section-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
+                    <div className="section-badge">
+                        <i className="fas fa-tools"></i> Nos Prestataires & Entreprises
+                    </div>
+                    <h1 className="section-title">
+                        Trouvez le professionnel <span className="highlight">qu'il vous faut</span>
+                    </h1>
+                    <p className="section-subtitle">
+                        Découvrez notre sélection de prestataires qualifiés pour tous vos besoins
+                    </p>
                 </div>
 
-                {loading && <p className="text-center">Chargement...</p>}
-                {error && <p className="text-danger text-center">{error}</p>}
-                <Box
+                {loading && (
+                    <div className="loading-container">
+                        <div className="spinner"></div>
+                        <p>Chargement des prestataires...</p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="error-container">
+                        <i className="fas fa-exclamation-triangle"></i>
+                        <p>{error}</p>
+                    </div>
+                )}
+                {/* <Box
                     className="mb-4"
                     display="flex"
                     flexWrap="wrap"
                     alignItems="center"
                     gap={2}
                 >
-                    {/* Type */}
+                    {/* Type *
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel id="type-select-label">Type</InputLabel>
                         <Select
@@ -524,7 +546,7 @@ const ListePrestataires = () => {
                         </Select>
                     </FormControl>
 
-                    {/* Trier */}
+                    {/* Trier *
                     <FormControl size="small" sx={{ minWidth: 180 }}>
                         <InputLabel id="sort-select-label">Trier par</InputLabel>
                         <Select
@@ -543,7 +565,7 @@ const ListePrestataires = () => {
                         </Select>
                     </FormControl>
 
-                    {/* Ville (visible seulement si "Trier par" = ville) */}
+                    {/* Ville (visible seulement si "Trier par" = ville) *
                     {sortBy === "ville" && (
                         <FormControl size="small" sx={{ minWidth: 150 }}>
                             <InputLabel id="ville-select-label">Ville</InputLabel>
@@ -562,14 +584,91 @@ const ListePrestataires = () => {
                             </Select>
                         </FormControl>
                     )}
-                </Box>
+                </Box> */}
+                <div className="filters-container">
+                    <div className="filters-header">
+                        <i className="fas fa-filter"></i>
+                        <span>Filtrer et trier</span>
+                    </div>
+
+                    <Box
+                        className="filters-box"
+                        display="flex"
+                        flexWrap="wrap"
+                        alignItems="center"
+                        gap={2}
+                    >
+                        {/* Type */}
+                        <FormControl size="small" className="filter-select">
+                            <InputLabel id="type-select-label">Type</InputLabel>
+                            <Select
+                                labelId="type-select-label"
+                                value={selectedType}
+                                label="Type"
+                                onChange={(e) => setSelectedType(e.target.value)}
+                            // displayEmpty
+
+                            >
+                                <MenuItem value="">Tous les types</MenuItem>
+                                <MenuItem value="ENTREPRISE">Entreprises</MenuItem>
+                                <MenuItem value="PRESTATAIRE">Particuliers</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {/* Trier */}
+                        <FormControl size="small" className="filter-select">
+                            <InputLabel id="sort-select-label">Trier par</InputLabel>
+                            <Select
+                                labelId="sort-select-label"
+                                value={sortBy}
+                                label="Trier par"
+                                onChange={(e) => setSortBy(e.target.value)}
+                            //  displayEmpty
+                            >
+                                <MenuItem value="">Par défaut</MenuItem>
+                                <MenuItem value="tarifAsc">Tarif croissant</MenuItem>
+                                <MenuItem value="tarifDesc">Tarif décroissant</MenuItem>
+                                {user?.utilisateur?.role === 'CLIENT' && (
+                                    <MenuItem value="proximite">Plus proche</MenuItem>
+                                )}
+                                <MenuItem value="ville">Ville</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {/* Ville (visible seulement si "Trier par" = ville) */}
+                        {sortBy === "ville" && (
+                            <FormControl size="small" className="filter-select">
+                                <InputLabel id="ville-select-label">Ville</InputLabel>
+                                <Select
+                                    labelId="ville-select-label"
+                                    value={selectedVille}
+                                    label="Ville"
+                                    onChange={(e) => setSelectedVille(e.target.value)}
+                                //  displayEmpty
+                                >
+                                    <MenuItem value="">Toutes les villes</MenuItem>
+                                    {villesDisponibles.map((ville) => (
+                                        <MenuItem key={ville} value={ville}>
+                                            {ville}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
+
+                        {/* Badge de résultats */}
+                        <div className="results-badge">
+                            {filtres.length} {filtres.length === 1 ? 'prestataire' : 'prestataires'} trouvé(s)
+                        </div>
+                    </Box>
+                </div>
 
 
                 <div className="row g-4" >
                     {currentFiltres.length > 0 ? (
                         currentFiltres.map((p) => (
-                            <div className="col-md-6 col-lg-3 mb-4" key={p.utilisateurIdPre} onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
-                                <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} />
+                            <div className="col-md-6 col-lg-4 mb-4" key={p.utilisateurIdPre} onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
+                                <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} user={user} />
                             </div>
                         ))
                     ) : (
@@ -594,18 +693,177 @@ const ListePrestataires = () => {
                     </div>
                 )}
             </div>
-            <style>{` 
-               body {
-        background-color: #fff !important;
-    }
-             .pres-label {
-          font-size: 35px;
-          font-weight: 700;
-          color: #1a3a6c;
-          font-style: italic;
-          text-align: center;
-
-        }`}</style>
+            <style>{`
+                body {
+                    background-color: #f8f9fa !important;
+                }
+                
+                .section-header {
+                    padding: 20px 0;
+                }
+                
+                .section-badge {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #ff6b00 0%, #f15a24 100%);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 50px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                    box-shadow: 0 4px 10px rgba(241, 90, 36, 0.3);
+                }
+                
+                .section-badge i {
+                    margin-right: 8px;
+                }
+                
+                .section-title {
+                    font-size: 2.5rem;
+                    font-weight: 700;
+                    color: #1a3a6c;
+                    margin-bottom: 15px;
+                    line-height: 1.2;
+                }
+                
+                .section-title .highlight {
+                    background: linear-gradient(135deg, #ff6b00 0%, #f15a24 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                
+                .section-subtitle {
+                    font-size: 1.1rem;
+                    color: #6c757d;
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+                
+                .filters-container {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+                    margin-bottom: 30px;
+                }
+                
+                .filters-header {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    color: #1a3a6c;
+                    font-weight: 600;
+                }
+                
+                .filters-header i {
+                    margin-right: 10px;
+                    color: #f15a24;
+                }
+                
+                .filters-box {
+                    padding: 10px 0;
+                }
+                
+                .filter-select {
+                    background: white;
+                    border-radius: 8px;
+                }
+                
+                .filter-select .MuiOutlinedInput-root {
+                    border-radius: 8px;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                }
+                
+                .results-badge {
+                    background: #e9f7ef;
+                    color: #28a745;
+                    padding: 8px 12px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin-left: auto;
+                }
+                
+                .loading-container {
+                    text-align: center;
+                    padding: 40px 0;
+                }
+                
+                .spinner {
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #f15a24;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 15px;
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                .error-container {
+                    text-align: center;
+                    padding: 20px;
+                    background: #ffe6e6;
+                    border-radius: 8px;
+                    color: #dc3545;
+                    margin-bottom: 20px;
+                }
+                
+                .error-container i {
+                    font-size: 24px;
+                    margin-bottom: 10px;
+                    display: block;
+                }
+                
+                .no-results {
+                    text-align: center;
+                    padding: 60px 20px;
+                    color: #6c757d;
+                }
+                
+                .no-results i {
+                    font-size: 48px;
+                    color: #dee2e6;
+                    margin-bottom: 15px;
+                }
+                
+                .no-results h3 {
+                    color: #495057;
+                    margin-bottom: 10px;
+                }
+                
+                .pagination-container {
+                    margin: 40px 0;
+                    display: flex;
+                    justify-content: center;
+                }
+                
+                @media (max-width: 768px) {
+                    .section-title {
+                        font-size: 2rem;
+                    }
+                    
+                    .filters-box {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    
+                    .filter-select {
+                        width: 100%;
+                    }
+                    
+                    .results-badge {
+                        margin-left: 0;
+                        margin-top: 15px;
+                        text-align: center;
+                    }
+                }
+            `}</style>
             <Footer />
         </>
     );

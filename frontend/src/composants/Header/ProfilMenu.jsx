@@ -19,7 +19,7 @@ const ProfilMenu = ({ user }) => {
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
     const dispatch = useDispatch();
-
+    console.log("utilisateur", user)
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
@@ -45,7 +45,7 @@ const ProfilMenu = ({ user }) => {
                 <IconButton onClick={handleClick} sx={{ p: 0 }}>
                     <Avatar
                         alt={'Utilisateur'}
-                        src={user.utilisateur.image}
+                        src={user?.utilisateur?.image || user?.image}
                         sx={{ width: 40, height: 40 }}
                     />
                 </IconButton>
@@ -59,7 +59,7 @@ const ProfilMenu = ({ user }) => {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 PaperProps={{
-                    sx: { width: 180, paddingY: 0.1, paddingX: 0.1 }
+                    sx: { width: 180, paddingY: 0.1, paddingX: 0.1,   cursor: 'pointer' }
                 }}
             >
                 <List sx={{ width: '100%' }} component="nav" aria-label="Profil options" dense>
@@ -77,10 +77,11 @@ const ProfilMenu = ({ user }) => {
                             dispatch(reset());
                         }}
                         sx={{
-                            color: 'black', // force le texte en noir
-                            textDecoration: 'none', // supprime le souligné
+                            color: 'black',
+                            cursor: 'pointer',
+                            textDecoration: 'none',
                             '&:hover': { backgroundColor: '#f0f0f0' },
-                            '&.active': { color: 'black' } // ignore la couleur active du NavLink
+                            '&.active': { color: 'black' }
                         }}
                     >
                         <ListItemText primary="Se déconnecter" sx={{ py: 0.25, minHeight: '1px' }} />

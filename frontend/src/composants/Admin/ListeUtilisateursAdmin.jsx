@@ -277,15 +277,60 @@ const ListeUtilisateursAdmin = () => {
     });
 
     const handleActiver = async (id) => {
-        const action = await dispatch(activerCompteThunk(id));
-        dispatch(fetchUtilisateursParRole("TOUS"));
-        if (activerCompteThunk.fulfilled.match(action)) {
-            Swal.fire({ icon: 'success', title: 'Compte activé', text: 'Le compte a été activé avec succès.' });
-        } else {
-            Swal.fire({ icon: 'error', title: 'Erreur', text: action.payload || 'Echec de l\'activation.' });
+
+        Swal.fire({
+            title: 'Activation en cours...',
+            text: 'Veuillez patienter pendant que le compte est activé.',
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            background: '#f5f5f5',
+            customClass: {
+                popup: 'swal-popup-custom',
+                title: 'swal-title-custom',
+                content: 'swal-content-custom',
+            },
+        });
+
+        try {
+            const action = await dispatch(activerCompteThunk(id)).unwrap();
+
+            dispatch(fetchUtilisateursParRole("TOUS"));
+
+            Swal.close();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Activation réussie',
+                text: `Le compte de l'utilisateur a été activé avec succès.`,
+                confirmButtonText: 'OK',
+                background: '#f5f5f5',
+                customClass: {
+                    popup: 'swal-popup-custom',
+                    confirmButton: 'swal-confirm-button'
+                },
+            });
+        } catch (error) {
+            Swal.close();
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur d’activation',
+                text: error?.message || "Impossible d'activer le compte. Veuillez réessayer.",
+                confirmButtonText: 'OK',
+                background: '#f5f5f5',
+                customClass: {
+                    popup: 'swal-popup-custom',
+                    confirmButton: 'swal-confirm-button'
+                },
+            });
         }
+
         dispatch(clearUtilisateurState());
     };
+
 
     const handleDesactiver = (row) => {
         Swal.fire({
@@ -300,6 +345,21 @@ const ListeUtilisateursAdmin = () => {
             }
         }).then(async (result) => {
             if (result.isConfirmed && result.value) {
+                Swal.fire({
+                    title: 'Désactivation en cours...',
+                    text: 'Veuillez patienter pendant que le compte est désactivé.',
+                    didOpen: () => {
+                        Swal.showLoading();
+                    },
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    background: '#f5f5f5',
+                    customClass: {
+                        popup: 'swal-popup-custom',
+                        title: 'swal-title-custom',
+                        content: 'swal-content-custom',
+                    },
+                });
                 const action = await dispatch(desactiverCompteThunk({ id: row.original.id, raison: result.value }));
                 dispatch(fetchUtilisateursParRole("TOUS"));
                 if (desactiverCompteThunk.fulfilled.match(action)) {
@@ -385,7 +445,7 @@ const ListeUtilisateursAdmin = () => {
                             sx={{
                                 borderRadius: 2,
                                 fontWeight: 600,
-                                fontSize: '0.8rem',
+                                fontSize: '0.7rem',
                                 py: 0.5,
                                 px: 1.5,
                                 minWidth: 'auto',

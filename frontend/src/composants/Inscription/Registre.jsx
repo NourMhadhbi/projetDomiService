@@ -5,7 +5,7 @@ import '../../assets/css/register.css';
 import logo from '../../assets/img/logo.png';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate } from 'react-router-dom';
-import { Form, InputGroup, Button } from 'react-bootstrap';
+import { Form, InputGroup, Button, Modal } from 'react-bootstrap';
 import { register } from "../../features/AuthSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchServicesNA } from '../../features/ServiceSlice';
@@ -14,7 +14,8 @@ export default function Registre() {
     const dispatch = useDispatch();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [submittedRole, setSubmittedRole] = useState('');
 
     const toggleShowPassword = () => setShowPassword(prev => !prev);
     const toggleShowConfirmPassword = () => setShowConfirmPassword(prev => !prev);
@@ -58,9 +59,10 @@ export default function Registre() {
 
                 const response = await dispatch(register(payload)).unwrap();
 
+                setSubmittedRole(values.role);
+                setShowSuccessModal(true);
 
-
-                navigate('/login');
+                // navigate('/login');
             } catch (error) {
 
                 setErrorMessage(
@@ -82,53 +84,27 @@ export default function Registre() {
         }
     }, [formik.values.role]);
     console.log("Formik values en temps réel :", formik.values);
+    const handleCloseModal = () => {
+        setShowSuccessModal(false);
+        navigate('/login');
+    };
     return (
         <div className="registre-background">
             <div className="container py-5" >
-                <div className="card mx-auto p-4 shadow-lg" style={{ maxWidth: '600px', backgroundColor: "white" }}>
+                <div
+                    className="card mx-auto p-4 shadow-lg"
+                    style={{
+                        maxWidth: '600px',
+                        backgroundColor: 'white',
+                        maxHeight: '92vh',
+                        overflowY: 'auto',
+                    }}
+                >
                     <div className="text-center mb-4">
                         <img src={logo} alt="logo" />
                         <h3 className="mt-2 h3">Inscription à DomiService</h3>
                     </div>
                     <form onSubmit={formik.handleSubmit} noValidate >
-
-                        {/* Nom & Prénom dynamiques */}
-                        <div className="mb-3">
-                            <label htmlFor="nom" className="form-label">
-                                {formik.values.role === 'ENTREPRISE' ? 'Nom du responsable *' : 'Nom  *'}
-                            </label>
-                            <input
-                                id="nom"
-                                name="nom"
-                                type="text"
-                                className={`form-control ${formik.touched.nom && formik.errors.nom ? 'is-invalid' : ''}`}
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.nom}
-                            />
-                            {formik.touched.nom && formik.errors.nom && (
-                                <div className="invalid-feedback">{formik.errors.nom}</div>
-                            )}
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="prenom" className="form-label">
-                                {formik.values.role === 'ENTREPRISE' ? 'Prénom du responsable *' : 'Prénom *'}
-                            </label>
-                            <input
-                                id="prenom"
-                                name="prenom"
-                                type="text"
-                                className={`form-control ${formik.touched.prenom && formik.errors.prenom ? 'is-invalid' : ''}`}
-                                onChange={formik.handleChange}
-                                onBlur={formik.handleBlur}
-                                value={formik.values.prenom}
-                            />
-                            {formik.touched.prenom && formik.errors.prenom && (
-                                <div className="invalid-feedback">{formik.errors.prenom}</div>
-                            )}
-                        </div>
-
                         {/* Rôle */}
                         <fieldset className="mb-3">
                             <legend className="col-form-label pt-0">Statut *</legend>
@@ -154,6 +130,46 @@ export default function Registre() {
                                 <div className="text-danger small">{formik.errors.role}</div>
                             )}
                         </fieldset>
+                        {/* Nom & Prénom dynamiques */}
+                        <div className="mb-3">
+                            <label htmlFor="nom" className="form-label">
+                                {formik.values.role === 'ENTREPRISE' ? 'Nom du responsable *' : 'Nom  *'}
+                            </label>
+                            <input
+                                id="nom"
+                                name="nom"
+                                placeholder="Votre nom"
+                                type="text"
+                                className={`form-control ${formik.touched.nom && formik.errors.nom ? 'is-invalid' : ''}`}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                value={formik.values.nom}
+                            />
+                            {formik.touched.nom && formik.errors.nom && (
+                                <div className="invalid-feedback">{formik.errors.nom}</div>
+                            )}
+                        </div>
+
+                        <div className="mb-3">
+                            <label htmlFor="prenom" className="form-label">
+                                {formik.values.role === 'ENTREPRISE' ? 'Prénom du responsable *' : 'Prénom *'}
+                            </label>
+                            <input
+                                id="prenom"
+                                name="prenom"
+                                placeholder="Votre prénom"
+                                type="text"
+                                className={`form-control ${formik.touched.prenom && formik.errors.prenom ? 'is-invalid' : ''}`}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                value={formik.values.prenom}
+                            />
+                            {formik.touched.prenom && formik.errors.prenom && (
+                                <div className="invalid-feedback">{formik.errors.prenom}</div>
+                            )}
+                        </div>
+
+
                         {/* Champs dynamiques pour ENTREPRISE */}
                         {formik.values.role === 'ENTREPRISE' && (
                             <>
@@ -163,6 +179,7 @@ export default function Registre() {
                                         id="nomEntreprise"
                                         name="nomEntreprise"
                                         type="text"
+                                        placeholder="Nom de votre entreprise"
                                         className="form-control"
                                         onChange={formik.handleChange}
                                         onBlur={formik.handleBlur}
@@ -176,6 +193,7 @@ export default function Registre() {
                                         id="siteWeb"
                                         name="siteWeb"
                                         type="url"
+                                        placeholder="Site web de votre entreprise"
                                         className="form-control"
                                         onChange={formik.handleChange}
                                         onBlur={formik.handleBlur}
@@ -183,10 +201,11 @@ export default function Registre() {
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="identifiant" className="form-label">Identifiant unique *</label>
+                                    <label htmlFor="identifiant" className="form-label">Identifiant *</label>
                                     <input
                                         id="identifiant"
                                         name="identifiant"
+                                        placeholder=" identifiant de votre entreprise"
                                         type="text"
                                         className={`form-control ${formik.touched.identifiant && formik.errors.identifiant ? 'is-invalid' : ''}`}
                                         onChange={formik.handleChange}
@@ -206,6 +225,7 @@ export default function Registre() {
                                 id="email"
                                 name="email"
                                 type="email"
+                                placeholder="Ex: exemple@email.com"
                                 className={`form-control ${formik.touched.email && formik.errors.email ? 'is-invalid' : ''}`}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
@@ -223,6 +243,7 @@ export default function Registre() {
                                 id="numTel"
                                 name="numTel"
                                 type="tel"
+                                placeholder="Numéro de téléphone"
                                 className={`form-control ${formik.touched.numTel && formik.errors.numTel ? 'is-invalid' : ''}`}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
@@ -316,7 +337,7 @@ export default function Registre() {
                                 <div className="text-danger small">{formik.errors.genre}</div>
                             )}
                             {formik.values.role === 'ENTREPRISE' && (
-                                <small className="text-muted">Genre automatiquement mis sur "Autre" pour les entreprises</small>
+                                <small className="text-muted">Genre automatiquement mis sur "Entité" pour les entreprises</small>
                             )}
                         </fieldset>
                         {/* Select service pour PRESTATAIRE ou ENTREPRISE */}
@@ -373,6 +394,7 @@ export default function Registre() {
                                 id="adresse"
                                 name="adresse"
                                 type="text"
+                                placeholder="Adresse"
                                 className={`form-control ${formik.touched.adresse && formik.errors.adresse ? 'is-invalid' : ''}`}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
@@ -390,6 +412,7 @@ export default function Registre() {
                                 id="ville"
                                 name="ville"
                                 type="text"
+                                placeholder="Ville"
                                 className={`form-control ${formik.touched.ville && formik.errors.ville ? 'is-invalid' : ''}`}
                                 onChange={formik.handleChange}
                                 onBlur={formik.handleBlur}
@@ -408,6 +431,7 @@ export default function Registre() {
                                     <input
                                         id="Spécialite"
                                         name="Spécialite"
+                                        placeholder="Votre domaine de spécialité"
                                         type="text"
                                         className="form-control"
                                         onChange={formik.handleChange}
@@ -420,6 +444,7 @@ export default function Registre() {
                                     <input
                                         id="descriptionCourte"
                                         name="descriptionCourte"
+                                        placeholder="Description de vos services"
                                         type="text"
                                         className="form-control"
                                         onChange={formik.handleChange}
@@ -432,6 +457,7 @@ export default function Registre() {
                                     <input
                                         id="experience"
                                         name="experience"
+                                        placeholder="Votre expérience professionnelle"
                                         type="text"
                                         className="form-control"
                                         onChange={formik.handleChange}
@@ -444,6 +470,7 @@ export default function Registre() {
                                     <input
                                         id="competence"
                                         name="competence"
+                                        placeholder="Vos compétences principales"
                                         type="text"
                                         className="form-control"
                                         onChange={formik.handleChange}
@@ -476,6 +503,169 @@ export default function Registre() {
                     </form>
                 </div>
             </div>
+            {/* Modal de confirmation d'inscription */}
+            {/* <Modal
+                show={showSuccessModal}
+                onHide={handleCloseModal}
+                centered
+                className="success-modal"
+            >
+                <Modal.Header closeButton className="border-0">
+                    <Modal.Title className="w-100 text-center text-success fw-semibold">
+                        <i className="fas fa-check-circle me-2"></i>
+                        Inscription réussie
+                    </Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body className="text-center py-4 px-5">
+                    <div className="mb-4">
+                        <div className="success-animation">
+                            <svg width="100" height="100" viewBox="0 0 100 100" className="text-success">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="5"
+                                    strokeDasharray="283" strokeDashoffset="283" className="circle-animation" />
+                                <path fill="none" stroke="currentColor" strokeWidth="8" d="M25,55 l15,15 l35,-35"
+                                    strokeDasharray="70" strokeDashoffset="70" className="check-animation" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h4 className="modal-title mb-4 fw-bold text-dark">Félicitations ! Votre compte a été créé avec succès</h4>
+
+                    {submittedRole === 'CLIENT' ? (
+                        <div>
+                            <p className="mb-4 text-muted">Un email de confirmation a été envoyé à votre adresse. Veuillez cliquer sur le lien dans l'email pour activer votre compte.</p>
+                            <div className="alert alert-light border-primary text-primary">
+                                <p className="mb-0 small">
+                                    <i className="fas fa-envelope me-2"></i>
+                                    Si vous n'avez pas reçu l'email, vérifiez votre dossier spam ou contactez-nous à <strong>DomiService@gmail.com</strong>
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <p className="mb-4 text-muted">Votre compte est en cours de validation par l'administrateur. Cette procédure peut prendre jusqu'à 24 heures.</p>
+                            <div className="alert alert-light border-primary text-primary">
+                                <p className="mb-0 small">
+                                    <i className="fas fa-envelope me-2"></i>
+                                    Pour toute question, veuillez contacter DomiService à l'adresse : <strong>DomiService@gmail.com</strong>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </Modal.Body>
+
+                <Modal.Footer className="justify-content-center border-0 pb-4 pt-0">
+                    <Button
+                        variant="primary"
+                        onClick={handleCloseModal}
+                        className="px-4 py-2 rounded-pill fw-medium shadow-sm"
+                    >
+                        <i className="fas fa-sign-in-alt me-2"></i>Se connecter
+                    </Button>
+                </Modal.Footer>
+            </Modal> */}
+            {/* <Modal show={showSuccessModal} onHide={handleCloseModal} centered>
+  {/* Header épuré */}
+            <Modal.Header closeButton className="border-0">
+                <Modal.Title className="w-100 text-center text-success fw-semibold">
+                    <i className="fas fa-check-circle me-2"></i>
+                    Inscription réussie
+                </Modal.Title>
+            </Modal.Header>
+
+            {/* Corps de la modale *
+  <Modal.Body className="text-center py-3">
+    {/* Icône ronde stylisée *
+    <div className="d-flex justify-content-center mb-3">
+      <div className="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style={{ width: 70, height: 70 }}>
+        <i className="fas fa-check text-success fs-2"></i>
+      </div>
+    </div>
+
+    {/* Message principal *
+    <h5 className="fw-semibold mb-3">
+      Félicitations ! Votre compte a été créé avec succès
+    </h5>
+
+    {/* Texte conditionnel *
+    {submittedRole === "CLIENT" ? (
+      <div>
+        <p className="text-muted mb-3">
+          Un email de confirmation a été envoyé à votre adresse. Veuillez cliquer sur le lien pour activer votre compte.
+        </p>
+        <div className="alert alert-light border text-start small">
+          <i className="fas fa-envelope me-2 text-primary"></i>
+          Si vous n'avez pas reçu l'email, vérifiez vos spams ou contactez-nous à <strong>DomiService@gmail.com</strong>.
+        </div>
+      </div>
+    ) : (
+      <div>
+        <p className="text-muted mb-3">
+          Votre compte est en cours de validation par l’administrateur. Cette procédure peut prendre jusqu’à 24 heures.
+        </p>
+        <div className="alert alert-light border text-start small">
+          <i className="fas fa-envelope me-2 text-primary"></i>
+          Pour toute question, contactez DomiService à : <strong>DomiService@gmail.com</strong>.
+        </div>
+      </div>
+    )}
+  </Modal.Body>
+
+  {/* Footer épuré *
+  <Modal.Footer className="justify-content-center border-0">
+    <Button
+      variant="success"
+      onClick={handleCloseModal}
+      className="px-4 py-2 rounded-pill shadow-sm"
+    >
+      <i className="fas fa-sign-in-alt me-2"></i>
+      Se connecter
+    </Button>
+  </Modal.Footer>
+</Modal> */}
+            <Modal show={showSuccessModal} onHide={handleCloseModal} centered>
+                <Modal.Header closeButton className="bg-success text-white border-0 position-relative">
+                    <div className="position-absolute top-0 start-50 translate-middle mt-2">
+                        <div className="bg-white rounded-circle p-1 shadow">
+                            <i className="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                    <Modal.Title className="w-100 text-center pt-2">
+                        Inscription Réussie
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4">
+                    <h4 className="modal-title mb-4">Félicitations ! Votre compte a été créé avec succès</h4>
+
+                    {submittedRole === 'CLIENT' ? (
+                        <div>
+                            <p className="mb-4">Un email de confirmation a été envoyé à votre adresse. Veuillez cliquer sur le lien dans l'email pour activer votre compte.</p>
+                            <div className="alert alert-info">
+                                <p className="mb-0">
+                                    <i className="fas fa-envelope me-2 text-primary"></i>
+                                    Si vous n'avez pas reçu l'email, vérifiez votre dossier spam ou contactez-nous à <strong>DomiService@gmail.com</strong>
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <p className="mb-4">Votre compte est en cours de validation par l'administrateur.</p>
+                            <div className="alert alert-info">
+                                <p className="mb-0">
+                                    <i className="fas fa-envelope me-2 text-primary"></i>
+                                    Pour toute question, veuillez contacter DomiService à l'adresse : <strong>DomiService@gmail.com</strong>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0">
+                    <Button variant="success" onClick={handleCloseModal} className="px-4 py-2">
+                        <i className="fas fa-sign-in-alt me-2"></i>Se connecter
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     );
 }

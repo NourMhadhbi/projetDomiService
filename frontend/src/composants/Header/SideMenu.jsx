@@ -64,7 +64,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                     </>
                 )}
 
-                {user.utilisateur.role === 'CLIENT' && (
+                {user?.utilisateur?.role === 'CLIENT' && (
                     <>
                         <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />
@@ -85,7 +85,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                         </ListItem>
 
                         <ListItem button component={NavLink} to="/intervenants-bloques" onClick={toggleDrawer(false)}>
-                            <ListItemText primary="Intervenants bloqués" sx={{ color: 'white' }} />
+                            <ListItemText primary="Intervenants non favoris" sx={{ color: 'white' }} />
                         </ListItem>
 
                         <ListItem button component={NavLink} to="/intervenants-signales" onClick={toggleDrawer(false)}>
@@ -98,7 +98,7 @@ const SideMenu = ({ color = '#1a3a6c' }) => {
                     </>
                 )}
 
-                {(user.utilisateur.role === 'PRESTATAIRE' || user.utilisateur.role === 'ENTREPRISE') && (
+                {(user?.utilisateur?.role === 'PRESTATAIRE' || user?.utilisateur?.role === 'ENTREPRISE') && (
                     <>
                         <ListItem button component={NavLink} to="/mes-rendez-vous" onClick={toggleDrawer(false)}>
                             <ListItemText primary="Mes rendez-vous" sx={{ color: 'white', fontWeight: 'bold' }} />

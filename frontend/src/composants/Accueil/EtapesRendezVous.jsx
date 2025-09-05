@@ -1,52 +1,52 @@
 import React from 'react';
 
-import rechercheIcon from '../../assets/img/icon_recherche.jpg';
-import profilIcon from '../../assets/img/icon_profil.jpg';
+import rechercheIcon from '../../assets/img/icon_recherche1.jpg';
+import profilIcon from '../../assets/img/consultationprofil.png';
 import calendrierIcon from '../../assets/img/icon_calendrier.jpg';
 
 const EtapesRendezVous = () => {
-    return (
+  return (
 
-        <section className="etapes-rdv-section">
-            <div className="header-etapes">
-                <span className="etape-label"><i className="fas fa-wrench" style={{ marginRight: 5 }} /> Comment prendre un rendez-vous</span>
-                <h2 className="etape-title">Suivez ces <em>étapes simples</em> pour réserver un rendez-vous</h2>
-            </div>
+    <section className="etapes-rdv-section">
+      <div className="header-etapes">
+        <span className="etape-label"><i className="fas fa-wrench" style={{ marginRight: 5 }} /> Comment prendre un rendez-vous</span>
+        <h2 className="etape-title">Suivez ces <em>étapes simples</em> pour réserver un rendez-vous</h2>
+      </div>
 
-            <div className="etapes-container">
-                <div className="etape-item">
-                    <div className="etape-circle">
-                        <img src={rechercheIcon} alt="Recherche" />
-                    </div>
-                    <h3>Recherche du prestataire</h3>
-                    <p>Recherchez par service, nom, prénom ou spécialité, ou utilisez le bouton "Voir Tous Nos Prestataires & Entreprises" sur la page d’accueil.</p>
-                </div>
+      <div className="etapes-container">
+        <div className="etape-item">
+          <div className="etape-circle">
+            <img src={rechercheIcon} alt="Recherche" />
+          </div>
+          <h3>Recherche du prestataire</h3>
+          <p>Recherchez par service, nom, prénom ou spécialité, ou utilisez le bouton "Voir Tous Nos Prestataires & Entreprises" sur la page d’accueil.</p>
+        </div>
 
-                <div className="etape-arrow">
-                    <i className="fas fa-long-arrow-alt-right"></i>
-                </div>
-                <div className="etape-item">
-                    <div className="etape-circle">
-                        <img src={profilIcon} alt="Profil" />
-                    </div>
-                    <h3>Consulter le profil</h3>
-                    <p>Accédez au profil du prestataire pour voir ses infos, ses avis et cliquez sur le bouton "Obtenir un rendez-vous".</p>
-                </div>
+        <div className="etape-arrow">
+          <i className="fas fa-long-arrow-alt-right"></i>
+        </div>
+        <div className="etape-item">
+          <div className="etape-circle">
+            <img src={profilIcon} alt="Profil" />
+          </div>
+          <h3>Consulter le profil</h3>
+          <p>Accédez au profil du prestataire ou d'une entreprise pour voir ses infos, ses avis et cliquez sur le bouton "Obtenir un rendez-vous".</p>
+        </div>
 
-                <div className="etape-arrow">
-                    <i className="fas fa-long-arrow-alt-right"></i>
-                </div>
+        <div className="etape-arrow">
+          <i className="fas fa-long-arrow-alt-right"></i>
+        </div>
 
-                <div className="etape-item">
-                    <div className="etape-circle">
-                        <img src={calendrierIcon} alt="Calendrier" />
-                    </div>
-                    <h3>Choix de la date</h3>
-                    <p>Sélectionnez la date depuis le calendrier ou le bouton "Obtenir un rendez-vous" en haut. Vous pouvez modifier le rendez-vous ensuite si nécessaire.</p>
-                </div>
-            </div>
-            <style>
-                {`.etapes-rdv-section {
+        <div className="etape-item">
+          <div className="etape-circle">
+            <img src={calendrierIcon} alt="Calendrier" />
+          </div>
+          <h3>Choix de la date</h3>
+          <p>Sélectionnez la date depuis le calendrier ou le bouton "Obtenir un rendez-vous" en haut. Vous pouvez modifier le rendez-vous ensuite si nécessaire.</p>
+        </div>
+      </div>
+      <style>
+        {`.etapes-rdv-section {
   padding: 100px 5% 80px;
   text-align: center;
   background-color: #fff;
@@ -95,6 +95,7 @@ const EtapesRendezVous = () => {
   border-radius: 50%;
   border: 3px solid #ff5722;
   margin: 0 auto 20px;
+  overflow: hidden; /* important pour que l'image soit bien découpée en cercle */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -105,10 +106,10 @@ const EtapesRendezVous = () => {
 .etape-circle img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: 50%; 
-  
+  object-fit: cover;  /* remplit bien le cercle */
+  border-radius: 50%; /* pour s’assurer que l’image reste ronde */
 }
+
 .profil-img-fix {
   width: 100px;       /* plus large que normal */
   height: auto;       /* laisse la hauteur naturelle */
@@ -134,9 +135,9 @@ const EtapesRendezVous = () => {
   justify-content: center;
 }
 `}
-            </style>
-        </section>
-    );
+      </style>
+    </section>
+  );
 };
 
 export default EtapesRendezVous;

@@ -311,6 +311,7 @@ router.post('/register', async (req, res) => {
                 tarifDeplacement,
                 serviceId,
                 nomEntreprise,
+                competence, experience,
                 Spécialite, descriptionCourte,
                 siteWeb,
                 identifiant
@@ -348,7 +349,9 @@ router.post('/register', async (req, res) => {
             } else if (!emailCleaned) {
                 return res.status(400).send({ success: false, message: "Email ou numéro de téléphone requis." });
             }
-
+            const admin = await prisma.utilisateur.findFirst({
+                where: { role: 'ADMIN' }
+            });
             const getImageByRole = (role) => {
                 switch (role) {
                     case 'ADMIN':
@@ -440,16 +443,18 @@ router.post('/register', async (req, res) => {
                         numTel,
                         latitude: coords?.latitude ?? null,
                         longitude: coords?.longitude ?? null,
+                        competence, experience,
                         descriptionCourte, Spécialite,
                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
                         serviceId: Number(serviceId)
                     },
                     include: { utilisateur: true }
                 });
+
                 await prisma.notification.create({
                     data: {
                         contenu: `Nouveau compte PRESTATAIRE créé. Veuillez activer le compte de ${prestataire.utilisateur.nom} ${prestataire.utilisateur.prenom}.`,
-                        utilisateurId: prestataire.utilisateurIdPre
+                        utilisateurId: admin.id
                     }
                 });
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: prestataire });
@@ -462,7 +467,7 @@ router.post('/register', async (req, res) => {
                         ville,
                         numTel,
                         latitude: coords?.latitude ?? null,
-                        longitude: coords?.longitude ?? null,
+                        longitude: coords?.longitude ?? null, competence, experience,
                         tarifDeplacement: tarifDeplacement ? Number(tarifDeplacement) : 0.0,
                         serviceId: Number(serviceId),
                         isActive: false
@@ -482,7 +487,7 @@ router.post('/register', async (req, res) => {
                 await prisma.notification.create({
                     data: {
                         contenu: `Nouveau compte ENTREPRISE créé. Veuillez activer le compte de ${entreprise.nomEntreprise}.`,
-                        utilisateurId: prestataire.utilisateurIdPre
+                        utilisateurId: admin.id
                     }
                 });
                 return res.status(201).send({ success: true, message: "Compte created successfully", user: entreprise });
@@ -533,51 +538,176 @@ router.get('/activeClient/utilisateur', async (req, res) => {
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Confirmation d'activation du compte</title>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                 <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        background-color: #f4f4f4;
+                    * {
                         margin: 0;
                         padding: 0;
+                        box-sizing: border-box;
                     }
-                    .container {
-                        max-width: 600px;
-                        margin: 100px auto;
-                        background-color: #fff;
-                        border-radius: 8px;
+                    
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                        min-height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                    }
+                    
+                    .modal-container {
+                        max-width: 500px;
+                        width: 100%;
+                        background: #fff;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                        overflow: hidden;
+                        animation: fadeIn 0.5s ease-out;
+                    }
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    
+                    .modal-header {
+                        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+                        color: white;
+                        padding: 15px 20px;
+                        text-align: center;
+                        position: relative;
+                    }
+                    
+                    .icon-container {
+                        width: 80px;
+                        height: 80px;
+                        background-color: rgba(255, 255, 255, 0.2);
+                        border-radius: 50%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin: 0 auto 15px;
+                        animation: pulse 2s infinite;
+                    }
+                    
+                    @keyframes pulse {
+                        0% { transform: scale(1); }
+                        50% { transform: scale(1.05); }
+                        100% { transform: scale(1); }
+                    }
+                    
+                  .icon-container i {
+    font-size: 28px; 
+    color: white;
+}
+
+.modal-header h2 {
+    font-weight: 600;
+    font-size: 20px;
+    margin-bottom: 0; 
+    letter-spacing: 0.5px;
+}
+                    
+                    .modal-body {
                         padding: 30px;
-                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                    }
-                    h2 {
-                        color: #333;
-                    }
-                    .center {
                         text-align: center;
                     }
-                    p {
-                        color: #666;
-                        margin-bottom: 20px;
+                    
+                    .modal-body p {
+                        color: #636363;
+                        line-height: 1.6;
+                        margin-bottom: 25px;
+                        font-size: 16px;
                     }
-                    a {
+                    
+                    .btn {
                         display: inline-block;
-                        background-color: #007bff;
-                        color: #fff;
+                        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+                        color: white;
                         text-decoration: none;
-                        padding: 10px 20px;
-                        border-radius: 5px;
-                    }                     
-                    a:hover {
-                        background-color: #0056b3;
+                        padding: 14px 30px;
+                        border-radius: 50px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+                        position: relative;
+                        overflow: hidden;
+                        z-index: 1;
+                    }
+                    
+                    .btn:before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                        z-index: -1;
+                    }
+                    
+                    .btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 7px 20px rgba(106, 17, 203, 0.4);
+                    }
+                    
+                    .btn:hover:before {
+                        opacity: 1;
+                    }
+                    
+                    .btn:active {
+                        transform: translateY(0);
+                    }
+                    
+                    .modal-footer {
+                        padding: 20px 30px;
+                        text-align: center;
+                        background-color: #f9f9f9;
+                        border-top: 1px solid #eee;
+                        font-size: 14px;
+                        color: #888;
+                    }
+                    
+                    @media (max-width: 576px) {
+                        .modal-container {
+                            width: 95%;
+                            max-width: none;
+                        }
+                        
+                        .modal-header {
+                            padding: 20px;
+                        }
+                        
+                        .icon-container {
+                            width: 70px;
+                            height: 70px;
+                        }
+                        
+                        .modal-body {
+                            padding: 20px;
+                        }
                     }
                 </style>
             </head>
             <body>
-                <div class="container">
-                    <h2>Votre compte a été activé avec succès!</h2>
-                    <p>Vous pouvez maintenant vous connecter à votre compte.</p>
-                    <div class="center">
-                   <a href="http://localhost:5173/login">Se connecter</a>
-                </div>                
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <div class="icon-container">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <h2>Activation réussie</h2>
+                    </div>
+                    <div class="modal-body">
+                        <p>Votre compte a été activé avec succès! Vous pouvez maintenant vous connecter et profiter de toutes nos fonctionnalités.</p>
+                        <a href="http://localhost:5173/login" class="btn">Se connecter</a>
+                    </div>
+                    <div class="modal-footer">
+                        <p>Merci de nous rejoindre ! © 2025 Tous droits réservés.</p>
+                    </div>
                 </div>
             </body>
             </html>
@@ -839,9 +969,11 @@ router.get('/Allclients', async (req, res) => {
 router.get('/Allprestataires', async (req, res) => {
     try {
         const prestataires = await prisma.prestataire.findMany({
-
+            where: {
+                isActive: true
+            },
             include: {
-                utilisateur: true
+                utilisateur: true, entreprise: true, service: true
             }
         })
         res.status(200).json(prestataires);
@@ -850,18 +982,18 @@ router.get('/Allprestataires', async (req, res) => {
     }
 })
 
-// tous les entreprises
-router.get('/Allentreprises', async (req, res) => {
-    try {
-        const entreprises = await prisma.entreprise.findMany({
-            include: { prestataire: { include: { utilisateur: true } } }
-        }
-        )
-        res.status(200).json(entreprises);
-    } catch (error) {
-        res.status(404).json({ erreur: error.message })
-    }
-})
+// // tous les entreprises
+// router.get('/Allentreprises', async (req, res) => {
+//     try {
+//         const entreprises = await prisma.entreprise.findMany({
+//             include: { prestataire: { include: { utilisateur: true } } }
+//         }
+//         )
+//         res.status(200).json(entreprises);
+//     } catch (error) {
+//         res.status(404).json({ erreur: error.message })
+//     }
+// })
 
 
 
@@ -904,7 +1036,9 @@ router.put('/:id', async (req, res) => {
                 const salt = await bcrypt.genSalt(10);
                 motDePasse = await bcrypt.hash(motDePasse, salt);
             }
-
+            const admin = await prisma.utilisateur.findFirst({
+                where: { role: 'ADMIN' }
+            });
             const emailCleaned = email?.trim().toLowerCase();
             const emailChanged = email && email !== user.email;
             if (emailChanged) {
@@ -966,7 +1100,7 @@ router.put('/:id', async (req, res) => {
                     longitude: coords?.longitude ?? null,
                 };
 
-                if (emailChanged) {
+                if (emailChanged || numTelChanged) {
                     updateData.isActive = false;
                 }
 
@@ -1027,7 +1161,9 @@ router.put('/:id', async (req, res) => {
 
                 };
 
-                if (emailChanged) prestataireData.isActive = false;
+                if (emailChanged || numTelChanged) {
+                    prestataireData.isActive = false;
+                }
 
                 const prestataireUpdated = await prisma.prestataire.update({
                     where: { utilisateurIdPre: id },
@@ -1037,7 +1173,7 @@ router.put('/:id', async (req, res) => {
                 await prisma.notification.create({
                     data: {
                         contenu: `Le compte de ${prestataireUpdated.utilisateur.nom} ${prestataireUpdated.utilisateur.prenom} a été désactivé suite à la modification de l'email. Veuillez réactiver le compte pour le nouvel email.`,
-                        utilisateurId: id
+                        utilisateurId: admin.id
                     }
                 });
 
@@ -1053,15 +1189,16 @@ router.put('/:id', async (req, res) => {
                         siteWeb,
                     };
                     if (identifiant) entrepriseData.identifiant = identifiant;
-                    if (emailChanged || identifiantChanged) {
+                    if (emailChanged || identifiantChanged || numTelChanged) {
                         await prisma.prestataire.update({
                             where: { utilisateurIdPre: id },
                             data: { isActive: false },
                         });
+
                         await prisma.notification.create({
                             data: {
                                 contenu: `Le compte de ${prestataireUpdated.entreprise.nomEntreprise}  a été désactivé suite à la modification de l'email ou de l'identifiant. Veuillez réactiver le compte.`,
-                                utilisateurId: id
+                                utilisateurId: admin.id
                             }
                         });
                     }
@@ -1089,18 +1226,40 @@ router.put('/:id', async (req, res) => {
                 });
 
             } else {
-                let { email, nom, prenom, motDePasse, image, genre } = req.body
+                let { email, nom, prenom, motDePasse, image, genre } = req.body;
+
+
                 const admin = await prisma.admin.findUnique({
-                    where: {
-                        utilisateurIdAd: Number(id),
-                    },
-                    include: {
-                        utilisateur: true
+                    where: { utilisateurIdAd: Number(id) },
+                    include: { utilisateur: true }
+                });
+
+
+                const adminUpdatedUtilisateur = await prisma.utilisateur.update({
+                    where: { id: admin.utilisateur.id },
+                    data: {
+                        email: email ?? admin.utilisateur.email,
+                        nom: nom ?? admin.utilisateur.nom,
+                        prenom: prenom ?? admin.utilisateur.prenom,
+                        motDePasse: motDePasse ?? admin.utilisateur.motDePasse,
+                        image: image ?? admin.utilisateur.image,
+                        genre: genre ?? admin.utilisateur.genre
                     }
-                })
+                });
+
+
+                const adminUpdated = {
+                    ...admin,
+                    utilisateur: adminUpdatedUtilisateur
+                };
+
+
                 return res.status(201).send({
-                    success: true, message: "Compte update successfully", user: admin
-                })
+                    success: true,
+                    message: "Compte update successfully",
+                    user: adminUpdated
+                });
+
             }
         });
     } catch (error) {

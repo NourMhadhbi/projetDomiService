@@ -63,7 +63,7 @@ const ClientsContactPrestataire = () => {
                 paddingBottom: '60px'
             }}>
                 <Container>
-                    {/* En-tête amélioré */}
+
                     <div style={{
                         textAlign: 'center',
                         marginBottom: '3rem',
@@ -102,8 +102,8 @@ const ClientsContactPrestataire = () => {
                         </p>
                     </div>
 
-                    {/* Section des statistiques */}
-                    <Row className="mb-5">
+
+                    <Row className="mb-5 justify-content-center">
                         <Col md={3} sm={6} className="mb-3">
                             <div style={{
                                 display: 'flex',
@@ -131,7 +131,7 @@ const ClientsContactPrestataire = () => {
                                     <h3 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '700', color: '#1a3a6c' }}>
                                         {clients.length}
                                     </h3>
-                                    <p style={{ margin: 0, color: '#6c757d' }}>Clients total</p>
+                                    <p style={{ margin: 0, color: '#6c757d' }}>Clients totaux </p>
                                 </div>
                             </div>
                         </Col>
@@ -197,7 +197,7 @@ const ClientsContactPrestataire = () => {
                                 </div>
                             </div>
                         </Col>
-                        <Col md={3} sm={6} className="mb-3">
+                        {/* <Col md={3} sm={6} className="mb-3">
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -227,7 +227,7 @@ const ClientsContactPrestataire = () => {
                                     <p style={{ margin: 0, color: '#6c757d' }}>Avec localisation</p>
                                 </div>
                             </div>
-                        </Col>
+                        </Col> */}
                     </Row>
 
                     {loading && (

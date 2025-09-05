@@ -121,35 +121,41 @@ router.get('/inscriptions-par-mois', async (req, res) => {
         const prestatairesActifs = await prisma.prestataire.findMany({
             where: { isActive: true },
             select: {
-                utilisateur: { select: { createdAt: true } }
+                utilisateur: { select: { createdAt: true, role: true } }
             }
         });
+
         const moisClients = {};
+        const moisPrestas = {};
+        const moisEntreprises = {};
+
         for (const cl of clientsActifs) {
             const date = new Date(cl.utilisateur.createdAt);
             const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
             moisClients[key] = (moisClients[key] || 0) + 1;
         }
 
-        const moisPrestas = {};
         for (const pr of prestatairesActifs) {
             const date = new Date(pr.utilisateur.createdAt);
             const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
-            moisPrestas[key] = (moisPrestas[key] || 0) + 1;
+            if (pr.utilisateur.role === "ENTREPRISE") {
+                moisEntreprises[key] = (moisEntreprises[key] || 0) + 1;
+            } else {
+                moisPrestas[key] = (moisPrestas[key] || 0) + 1;
+            }
         }
 
         const currentYear = new Date().getFullYear();
-        const moisNoms = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ];
+        const moisNoms = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
         const result = [];
         for (let i = 0; i < 12; i++) {
             const key = `${currentYear}-${i + 1}`;
             result.push({
-                mois: `${moisNoms[i]}`,
+                mois: moisNoms[i],
                 clients: moisClients[key] || 0,
-                prestataires: moisPrestas[key] || 0
+                prestataires: moisPrestas[key] || 0,
+                entreprises: moisEntreprises[key] || 0
             });
         }
 
@@ -160,29 +166,25 @@ router.get('/inscriptions-par-mois', async (req, res) => {
     }
 });
 
+
 //nb de consultation utilisateur 
 router.get('/consultations-mensuelles', async (req, res) => {
   try {
     const visites = await prisma.historiqueApp.findMany({
       where: {
         dateVisite: {
-          gte: new Date(new Date().getFullYear(), 0, 1) // depuis janvier cette année
+          gte: new Date(new Date().getFullYear(), 0, 1) // depuis janvier
         }
       },
       select: {
         utilisateurId: true,
         dateVisite: true,
-        utilisateur: {
-          select: {
-            role: true
-          }
-        }
+        utilisateur: { select: { role: true } }
       }
     });
 
     const vuesUniques = new Map();
 
-    // Créer une map de vues uniques par minute et utilisateur
     visites.forEach(({ dateVisite, utilisateurId, utilisateur }) => {
       const date = new Date(dateVisite);
       const minuteKey = `${utilisateurId}-${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${date.getHours()}-${date.getMinutes()}`;
@@ -191,20 +193,19 @@ router.get('/consultations-mensuelles', async (req, res) => {
       }
     });
 
-    // Regrouper par mois
     const result = {};
 
     for (const { role, date } of vuesUniques.values()) {
       const key = `${date.getFullYear()}-${date.getMonth() + 1}`;
       if (!result[key]) {
-        result[key] = { CLIENT: 0, PRESTATAIRE: 0 };
+        result[key] = { CLIENT: 0, PRESTATAIRE: 0, ENTREPRISE: 0 };
       }
 
       if (role === 'CLIENT') result[key].CLIENT++;
-      if (role === 'PRESTATAIRE' || role === 'ENTREPRISE') result[key].PRESTATAIRE++;
+      if (role === 'PRESTATAIRE') result[key].PRESTATAIRE++;
+      if (role === 'ENTREPRISE') result[key].ENTREPRISE++;
     }
 
-    // Générer les 12 mois de l’année courante
     const moisNoms = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const anneeCourante = new Date().getFullYear();
 
@@ -213,7 +214,8 @@ router.get('/consultations-mensuelles', async (req, res) => {
       return {
         month: mois,
         clients: result[key]?.CLIENT || 0,
-        prestataires: result[key]?.PRESTATAIRE || 0
+        prestataires: result[key]?.PRESTATAIRE || 0,
+        entreprises: result[key]?.ENTREPRISE || 0
       };
     });
 
@@ -223,6 +225,7 @@ router.get('/consultations-mensuelles', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 
 module.exports = router;
