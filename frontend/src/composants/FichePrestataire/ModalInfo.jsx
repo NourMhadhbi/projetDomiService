@@ -28,11 +28,12 @@ export default function ModalInfo({
     utilisateur,
     onConfirmer,
     onAnnuler,
-    onTerminer
+    onTerminer, onOpenAnnulationModal
 }) {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const estPrestataire = (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE');
     const estClient = user?.utilisateur.role === 'CLIENT';
+    const canCancel = ['EN_ATTENTE', 'CONFIRME'].includes(rendezVousActuel?.statut);
     console.log("role", utilisateur)
     return (
         <Modal
@@ -101,10 +102,21 @@ export default function ModalInfo({
                                     >
                                         <DeleteIcon sx={{ color: grey[600] }} />
                                     </IconButton>
+                                    <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
+                                        <CancelIcon />
+                                    </IconButton>
 
                                 </>
                             )}
+                            {rendezVousActuel?.statut === 'CONFIRME' && (
+                                <>
 
+                                    <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
+                                        <CancelIcon />
+                                    </IconButton>
+
+                                </>
+                            )}
                         </Box>)}
 
                     {estPrestataire && (
@@ -114,15 +126,20 @@ export default function ModalInfo({
                                     <IconButton size="small" color="success" onClick={() => onConfirmer(rendezVousActuel.id)} title="Confirmer">
                                         <CheckCircleIcon />
                                     </IconButton>
-                                    <IconButton size="small" color="error" onClick={() => onAnnuler(rendezVousActuel.id)} title="Annuler">
+                                    <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
                                         <CancelIcon />
                                     </IconButton>
                                 </>
                             )}
                             {rendezVousActuel?.statut === 'CONFIRME' && (
-                                <IconButton size="small" color="primary" onClick={() => onTerminer(rendezVousActuel.id)} title="Terminer">
-                                    <DoneAllIcon />
-                                </IconButton>
+                                <>
+                                    <IconButton size="small" color="primary" onClick={() => onTerminer(rendezVousActuel.id)} title="Terminer">
+                                        <DoneAllIcon />
+                                    </IconButton>
+                                    <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
+                                        <CancelIcon />
+                                    </IconButton>
+                                </>
                             )}
                         </Box>
                     )}

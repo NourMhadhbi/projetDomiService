@@ -63,7 +63,7 @@ router.post("/ajoutRendezvous", async (req, res) => {
             lieuDintervention,
             statut: "EN_ATTENTE",
             client: { connect: { utilisateurIdCl: clientId } },
-            prestataire: { connect: { utilisateurIdPre: prestataireId } }, 
+            prestataire: { connect: { utilisateurIdPre: prestataireId } },
         };
 
         const rendezVous = await prisma.rendezVous.create({ data });
@@ -363,9 +363,119 @@ router.put("/confirmerRDV/:id", async (req, res) => {
     }
 });
 //Annuler rendezVous
+// router.put("/annulerRDV/:id", async (req, res) => {
+//     const id = Number(req.params.id);
+//     try {
+//         const annulerRDV = await prisma.rendezVous.update({
+//             where: { id },
+//             data: { statut: "ANNULE" },
+//             include: {
+//                 prestataire: {
+//                     include: {
+//                         utilisateur: true,
+//                         service: true,
+//                         entreprise: true,
+//                     },
+//                 },
+
+//                 client: {
+//                     include: {
+//                         utilisateur: true,
+//                     },
+//                 },
+//             },
+//         });
+
+//         const destinataireNotif = annulerRDV.clientId;
+//         const client = annulerRDV.client;
+//         const lieu = annulerRDV.lieuDintervention;
+
+//         let nomAuteur = "";
+//         let nomService = "";
+
+//         if (annulerRDV.prestataire?.entreprise) {
+
+//             nomAuteur = annulerRDV.prestataire.entreprise.nomEntreprise;
+//         } else if (annulerRDV.prestataire) {
+
+//             nomAuteur = annulerRDV.prestataire.utilisateur.nom;
+//         }
+
+//         nomService = annulerRDV.prestataire.service.nom;
+//         const dateRDV = new Date(annulerRDV.date).toLocaleDateString('fr-FR', {
+//             weekday: 'long',
+//             year: 'numeric',
+//             month: 'long',
+//             day: 'numeric',
+//             timeZone: 'UTC'
+//         });
+
+//         const heureFormattee = new Date(annulerRDV.date).toLocaleTimeString('fr-FR', {
+//             hour: '2-digit',
+//             minute: '2-digit',
+//             timeZone: 'UTC'
+//         });
+//         const message = `Votre rendez-vous prévu avec "${nomAuteur}" pour le service "${nomService}" le ${dateRDV} à ${heureFormattee}, au lieu : ${lieu}, a été annulé.`;
+
+//         if (destinataireNotif) {
+//             await prisma.notification.create({
+//                 data: {
+//                     contenu: message,
+//                     utilisateurId: destinataireNotif,
+
+//                 },
+//             });
+//         }
+//         if (client.utilisateur.email && client.utilisateur.email.trim() !== "") {
+//             const sujet = "Annulation de votre rendez-vous - DomiService";
+//             const messageHtml = `
+//             <p>Bonjour ${client.utilisateur.prenom},</p>
+//             <p>Nous vous informons que votre rendez-vous avec <strong>${nomAuteur}</strong> (service : <strong>${nomService}</strong>) prévu le ${dateRDV} à ${heureFormattee} a été <strong>annulé</strong>.</p>
+//             <p><strong>Lieu prévu :</strong> ${lieu}</p>
+//             <p>Nous restons à votre disposition pour toute nouvelle prise de rendez-vous.</p>
+//             <p>Merci de votre compréhension.<br>
+//             L’équipe DomiService</p>
+//         `;
+
+//             await sendMailToUser(client.utilisateur.email, sujet, messageHtml);
+//         }
+//         res.json({
+//             annulerRDV,
+//             message: "Rendez-vous annulé, notification interne et mail envoyés.",
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: error.message });
+//     }
+// });
 router.put("/annulerRDV/:id", async (req, res) => {
     const id = Number(req.params.id);
+    const { motif, messagePersonnalise, annulePar } = req.body;
+
     try {
+        const rdv = await prisma.rendezVous.findUnique({
+            where: { id },
+            include: {
+                prestataire: {
+                    include: {
+                        utilisateur: true,
+                        service: true,
+                        entreprise: true,
+                    },
+                },
+                client: {
+                    include: {
+                        utilisateur: true,
+                    },
+                },
+            },
+        });
+
+        if (!rdv) {
+            return res.status(404).json({ message: "Rendez-vous non trouvé" });
+        }
+
         const annulerRDV = await prisma.rendezVous.update({
             where: { id },
             data: { statut: "ANNULE" },
@@ -377,7 +487,6 @@ router.put("/annulerRDV/:id", async (req, res) => {
                         entreprise: true,
                     },
                 },
-
                 client: {
                     include: {
                         utilisateur: true,
@@ -386,69 +495,75 @@ router.put("/annulerRDV/:id", async (req, res) => {
             },
         });
 
-        const destinataireNotif = annulerRDV.clientId;
-        const client = annulerRDV.client;
+        const dateRDV = new Date(annulerRDV.date).toLocaleDateString("fr-FR", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+        });
+
+        const heureFormattee = new Date(annulerRDV.date).toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "UTC",
+        });
+
         const lieu = annulerRDV.lieuDintervention;
+        const nomAuteur = annulerRDV.prestataire?.entreprise
+            ? annulerRDV.prestataire.entreprise.nomEntreprise
+            : annulerRDV.prestataire?.utilisateur.nom;
 
-        let nomAuteur = "";
-        let nomService = "";
+        const nomService = annulerRDV.prestataire?.service?.nom;
 
-        if (annulerRDV.prestataire?.entreprise) {
+        let sujet, messageTexte, destinataireId, destinataireEmail, destinatairePrenom;
 
-            nomAuteur = annulerRDV.prestataire.entreprise.nomEntreprise;
-        } else if (annulerRDV.prestataire) {
+        if (annulePar === "prestataire") {
 
-            nomAuteur = annulerRDV.prestataire.utilisateur.nom;
+            sujet = "Annulation de votre rendez-vous - DomiService";
+            messageTexte =
+
+                `Votre rendez-vous prévu avec "${nomAuteur}" pour le service "${nomService}" le ${dateRDV} à ${heureFormattee}, au lieu : ${lieu}, a été annulé pour le motif suivant : ${motif}.`;
+            destinataireId = annulerRDV.clientId;
+            destinataireEmail = annulerRDV.client.utilisateur.email;
+            destinatairePrenom = annulerRDV.client.utilisateur.prenom;
+        } else {
+
+            sujet = "Annulation d'un rendez-vous - DomiService";
+            messageTexte = `Votre rendez-vous prévu avec ${annulerRDV.client.utilisateur.prenom} ${annulerRDV.client.utilisateur.nom} pour le service "${nomService}" le ${dateRDV} à ${heureFormattee}, au lieu : ${lieu}, a été annulé  pour le motif suivant : ${motif}.`;
+            destinataireId = annulerRDV.prestataire.utilisateur.id;
+            destinataireEmail = annulerRDV.prestataire.utilisateur.email;
+            destinatairePrenom = annulerRDV.prestataire.utilisateur.prenom;
         }
 
-        nomService = annulerRDV.prestataire.service.nom;
-        const dateRDV = new Date(annulerRDV.date).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC'
+        await prisma.notification.create({
+            data: {
+                contenu: messageTexte,
+                utilisateurId: destinataireId,
+            },
         });
 
-        const heureFormattee = new Date(annulerRDV.date).toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'UTC'
-        });
-        const message = `Votre rendez-vous prévu avec "${nomAuteur}" pour le service "${nomService}" le ${dateRDV} à ${heureFormattee}, au lieu : ${lieu}, a été annulé.`;
 
-        if (destinataireNotif) {
-            await prisma.notification.create({
-                data: {
-                    contenu: message,
-                    utilisateurId: destinataireNotif,
-
-                },
-            });
-        }
-        if (client.utilisateur.email && client.utilisateur.email.trim() !== "") {
-            const sujet = "Annulation de votre rendez-vous - DomiService";
+        if (destinataireEmail && destinataireEmail.trim() !== "") {
             const messageHtml = `
-            <p>Bonjour ${client.utilisateur.prenom},</p>
-            <p>Nous vous informons que votre rendez-vous avec <strong>${nomAuteur}</strong> (service : <strong>${nomService}</strong>) prévu le ${dateRDV} à ${heureFormattee} a été <strong>annulé</strong>.</p>
-            <p><strong>Lieu prévu :</strong> ${lieu}</p>
-            <p>Nous restons à votre disposition pour toute nouvelle prise de rendez-vous.</p>
-            <p>Merci de votre compréhension.<br>
-            L’équipe DomiService</p>
-        `;
-
-            await sendMailToUser(client.utilisateur.email, sujet, messageHtml);
+        <p>Bonjour ${destinatairePrenom},</p>
+        <p>${messageTexte}</p>
+        <p>Lieu prévu : ${lieu}</p>
+        <p>Cordialement,<br>L'équipe DomiService</p>
+      `;
+            await sendMailToUser(destinataireEmail, sujet, messageHtml);
         }
+
         res.json({
             annulerRDV,
-            message: "Rendez-vous annulé, notification interne et mail envoyés.",
+            message: "Rendez-vous annulé, notification + email envoyés  au destinataire concerné.",
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
     }
 });
+
 //  TERMINE rendez Vous 
 router.put("/terminerRDV/:id", async (req, res) => {
     const id = Number(req.params.id);
@@ -758,7 +873,7 @@ router.get('/rendezVousByintervenant/:idIntervenant', async (req, res) => {
                 prestataire: {
                     include: {
                         utilisateur: true,
-                        entreprise: true,   
+                        entreprise: true,
                         service: true
                     }
                 },
@@ -771,7 +886,7 @@ router.get('/rendezVousByintervenant/:idIntervenant', async (req, res) => {
         });
 
         if (rendezVous.length > 0) {
-           
+
             const role = rendezVous[0].prestataire.entreprise ? 'ENTREPRISE' : 'PRESTATAIRE';
 
             return res.json({ role, rendezVous });

@@ -288,16 +288,31 @@ import domiServe from '../../assets/img/domiserivice.jpg';
 import { fetchPopulaireP } from '../../features/HistoriqueSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-
-const PrestatairesPopulaires = ({ isClientConnected ,user }) => {
+import { fetchMesSignales } from "../../features/SignalementSlice";
+const PrestatairesPopulaires = ({ isClientConnected, user }) => {
   const navigate = useNavigate();
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [activeCard, setActiveCard] = useState(null);
   const dispatch = useDispatch();
   const { data: prestataires } = useSelector(state => state.historique || {});
+  const { mesSignales } = useSelector(state => state.signalement);
+  const [isSignaled, setIsSignaled] = useState(false);
+  useEffect(() => {
+    if (user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+      dispatch(fetchMesSignales(user.utilisateur.id));
+    }
+  }, [dispatch, user]);
 
+ 
+  useEffect(() => {
+    if (user?.utilisateur?.role === "CLIENT" && mesSignales) {
+      const signal = mesSignales.some(s => s.prestataireId === user.utilisateurIdPre);
+      setIsSignaled(signal);
+    }
+  }, [mesSignales,  user]);
   useEffect(() => {
     dispatch(fetchPopulaireP());
+ 
   }, [dispatch]);
 
   const handleRendezVousClick = (prestataireId, e) => {
@@ -305,7 +320,11 @@ const PrestatairesPopulaires = ({ isClientConnected ,user }) => {
     window.open(`/calendrier/${prestataireId}`, "_blank");
   };
 
-
+  const isPrestataireSignaled = (prestataireId) => {
+    return mesSignales?.some(
+      s => s.prestataireId === prestataireId
+    );
+  };
 
 
   if (!Array.isArray(prestataires)) return null;
@@ -396,15 +415,30 @@ const PrestatairesPopulaires = ({ isClientConnected ,user }) => {
                           </div>
                         )}
                       </div>
-  {user?.utilisateur?.role === "CLIENT" && (
-                      <button
-                        className="rdv-button"
-                        onClick={(e) => handleRendezVousClick(p.utilisateurIdPre, e)}
-                        
-                      >
-                        <i className="fas fa-calendar-check"></i>
-                       Prendre Rendez-vous
-                      </button>)}
+                      {user?.utilisateur?.role === "CLIENT" && (
+                        !isPrestataireSignaled(p.utilisateurIdPre) ? (
+                          <button
+                            className="rdv-button"
+                            onClick={(e) => handleRendezVousClick(p.utilisateurIdPre, e)}
+                          >
+                            <i className="fas fa-calendar-check"></i> Prendre Rendez-vous
+                          </button>
+                        ) : (
+                          <div style={{
+                            color: '#fff',
+                            backgroundColor: '#d9534f',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            fontSize: '12px'
+                          }}>
+                            Ce prestataire a été signalé
+                          </div>
+                        )
+                      )}
+
                     </div>
                   </div>
                 </div>

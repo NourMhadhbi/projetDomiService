@@ -19,3 +19,7 @@ export const checkSignale = async () => {
     const response = await Api.get(`${Signale_API}/checkSignalements`);
     return response.data;
 };
+export const archiverSignale = async (signalId) => {
+    const response = await Api.post(`${Signale_API}/ArchiveSignale`, { signalId });
+    return response.data;
+};

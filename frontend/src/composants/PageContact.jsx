@@ -234,9 +234,14 @@ const PageContact = () => {
                       style={{ backgroundColor: 'white', border: 'none', boxShadow: '0 0 4px rgba(0,0,0,0.05)' }}
                     >
                       <option value="">Sélectionner un sujet</option>
-                      <option value="Plomberie">Plomberie</option>
-                      <option value="Installation">Installation</option>
-                      <option value="Maintenance">Maintenance</option>
+                      <option value="Problème de connexion">Problème de connexion</option>
+                      <option value="Erreur sur mon compte">Erreur sur mon compte</option>
+                      <option value="Demande d’information">Demande d’information</option>
+                      <option value="Suggestion ou amélioration">Suggestion ou amélioration</option>
+                      <option value="Signalement d’un prestataire">Signalement d’un prestataire</option>
+                      <option value="Problème technique">Problème technique</option>
+                      <option value="Question sur les fonctionnalités">Question sur les fonctionnalités</option>
+                      <option value="Autre">Autre</option>
                     </Form.Select>
                   </Col>
                 </Row>

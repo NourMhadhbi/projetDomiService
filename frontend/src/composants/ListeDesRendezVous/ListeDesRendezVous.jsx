@@ -439,7 +439,9 @@
 // export default ListeRendezVous;
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-    Box, Paper, IconButton, Tooltip, Typography, Chip, Button, useTheme
+    Box, Paper, IconButton, Tooltip, Typography, Chip, Button, useTheme,
+    Snackbar,
+    Alert
 } from '@mui/material';
 import { Link, NavLink } from 'react-router-dom';
 import { MaterialReactTable } from 'material-react-table';
@@ -455,6 +457,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt, faUser, faBuilding, faMapMarkerAlt, faEnvelope, faComment, faPhone, faCheckCircle, faCheckDouble, faTimesCircle, faHourglassHalf } from '@fortawesome/free-solid-svg-icons';
 import { useSelector, useDispatch } from 'react-redux';
+import { fetchMesSignales } from '../../features/SignalementSlice';
 import {
     fetchByClient,
     fetchByIntervenant,
@@ -464,7 +467,9 @@ import {
     cancelRendezVous,
     finishRendezVous
 } from '../../features/RendezVousSlice';
+import RaisonModal from './raisonModal';
 
+import AnnulationModal from '../FichePrestataire/AnnulationModal';
 const STATUTS = {
     EN_ATTENTE: {
         label: 'En attente',
@@ -487,9 +492,36 @@ const STATUTS = {
         icon: <FontAwesomeIcon icon={faCheckDouble} />,
     },
 };
+
 const ListeRendezVous = () => {
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
+    const [heureError, setHeureError] = useState("");
+    const [errors, setErrors] = useState({});
     const dispatch = useDispatch();
     const theme = useTheme();
+    const [selectedRaison, setSelectedRaison] = useState(null);
+    const [raisonModalOpen, setRaisonModalOpen] = useState(false);
+
+    const [annulationModalOpen, setAnnulationModalOpen] = useState(false);
+    const [rdvToCancel, setRdvToCancel] = useState(null);
+    const [isMultipleAnnulation, setIsMultipleAnnulation] = useState(false);
+    const handleRaisonClick = (raison) => {
+        setSelectedRaison(raison);
+        setRaisonModalOpen(true);
+    };
+    const handleOpenAnnulationModal = (rdv, isMultiple = false) => {
+        setRdvToCancel(rdv);
+        setIsMultipleAnnulation(isMultiple);
+        setAnnulationModalOpen(true);
+    };
 
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { listeRendezVous } = useSelector((state) => state.rendezVous);
@@ -508,7 +540,7 @@ const ListeRendezVous = () => {
             if (user?.utilisateur.role === 'CLIENT') dispatch(fetchByClient(user.utilisateurIdCl));
             else if (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE') dispatch(fetchByIntervenant(user.utilisateurIdPre));
         }
-    }, [isLoggedIn, user, listeRendezVous, dispatch]);
+    }, [isLoggedIn, user, dispatch]);
     const rows = useMemo(() => listeRendezVous?.map((rdv) => {
         const client = rdv.client?.utilisateur;
         return {
@@ -519,7 +551,8 @@ const ListeRendezVous = () => {
                 month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone: 'UTC'
             }),
             lieu: rdv.lieuDintervention,
             prestataire: rdv.prestataire?.entreprise?.nomEntreprise || `${rdv.prestataire?.utilisateur?.prenom ?? ''} ${rdv.prestataire?.utilisateur?.nom ?? ''}`,
@@ -531,13 +564,64 @@ const ListeRendezVous = () => {
             rdv,
         }
     }) || [], [listeRendezVous]);
-    // Extraire les IDs sélectionnés
+
     const selectedIds = useMemo(
         () => Object.keys(rowSelection).map((key) => rows[Number(key)]?.id),
         [rowSelection, rows]
     );
-
+    const estHeureDisponible = (date, heure) => {
+        const dateToCheck = `${date}T${heure}:00`;
+        return !listeRendezVous.some(rdv => {
+            const rdvDateHeure = rdv.date ? rdv.date.slice(0, 16) : '';
+            return (
+                rdv.prestataireId === formData.prestataireId &&
+                rdvDateHeure === dateToCheck.slice(0, 16) &&
+                rdv.id !== formData.id &&
+                rdv.statut === "CONFIRME"
+            );
+        });
+    };
     const onSave = async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        setHeureError("");
+        setErrors({});
+        const selectedDate = new Date(formData.date);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        const oneHourLater = new Date();
+        oneHourLater.setHours(oneHourLater.getHours() + 1);
+        const minTime = `${String(oneHourLater.getHours()).padStart(2, '0')}:${String(oneHourLater.getMinutes()).padStart(2, '0')}`;
+
+        let newErrors = {};
+
+        if (!formData.date) {
+            newErrors.date = 'Veuillez sélectionner une date.';
+        } else if (selectedDate < today) {
+            newErrors.date = `La date doit être aujourd'hui ou ultérieure.`;
+
+        }
+
+        if (!formData.heure) {
+            newErrors.heure = 'Veuillez sélectionner une heure.';
+        } else if (selectedDate.getTime() === today.getTime() && formData.heure < minTime) {
+            newErrors.heure = `L'heure doit être après ${minTime}.`;
+        }
+        if (!formData.raison) {
+            newErrors.raison = 'Veuillez indiquer la raison du rendez-vous.';
+        }
+
+        if (!formData.lieuDintervention) {
+            newErrors.lieuDintervention = 'Veuillez indiquer le lieu d’intervention.';
+        }
+        if (!estHeureDisponible(formData.date, formData.heure)) {
+            setHeureError("Cet intervenant a déjà un rendez-vous à cette heure.");
+            return;
+        }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
         const dateTime = `${formData.date}T${formData.heure}:00`;
         Swal.fire({
             title: 'Mise à jour en cours...',
@@ -550,7 +634,7 @@ const ListeRendezVous = () => {
             await dispatch(updateRendezVous({ ...formData, date: dateTime })).unwrap();
 
             Swal.fire({
-                title: 'Rendez-vous modifié ✅',
+                title: 'Rendez-vous modifié',
                 html: `
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                     <p style="margin:0; text-align: center;">
@@ -632,7 +716,54 @@ const ListeRendezVous = () => {
             else dispatch(fetchByClient(user.utilisateurIdCl));
         }
     };
+    // Fonction pour confirmer l'annulation
+    const handleConfirmAnnulation = async (motif, messagePersonnalise) => {
+        setAnnulationModalOpen(false);
 
+        const annulePar = user?.utilisateur.role === 'CLIENT' ? 'client' : 'prestataire';
+
+        try {
+            if (isMultipleAnnulation) {
+
+                for (const rdv of rdvToCancel) {
+                    await dispatch(cancelRendezVous({
+                        id: rdv.id,
+                        motif,
+                        messagePersonnalise,
+                        annulePar
+                    })).unwrap();
+                }
+            } else {
+
+                await dispatch(cancelRendezVous({
+                    id: rdvToCancel.id,
+                    motif,
+                    messagePersonnalise,
+                    annulePar
+                })).unwrap();
+            }
+
+            // Recharger les rendez-vous
+            if (isIntervenant) {
+                dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            } else {
+                dispatch(fetchByClient(user.utilisateurIdCl));
+            }
+
+            setSnackbar({
+                open: true,
+                message: 'Rendez-vous annulé avec succès',
+                severity: 'success',
+            });
+        } catch (error) {
+
+            setSnackbar({
+                open: true,
+                message: "Erreur lors de l'annulation",
+                severity: 'error',
+            });
+        }
+    };
     const handleDeleteSelection = async () => {
         const toDelete = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
         if (toDelete.length === 0) return Swal.fire('Info', 'Aucun rendez-vous en attente sélectionné', 'info');
@@ -739,38 +870,41 @@ const ListeRendezVous = () => {
     };
 
 
-    const handleCancelSelection = async () => {
-        const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
+    // const handleCancelSelection = async () => {
+    //     const toCancel = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
 
-        Swal.fire({
-            title: 'Annulation en cours...',
-            text: 'Merci de patienter, vos actions sont en cours de traitement.',
-            didOpen: () => Swal.showLoading(),
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-        });
+    //     Swal.fire({
+    //         title: 'Annulation en cours...',
+    //         text: 'Merci de patienter, vos actions sont en cours de traitement.',
+    //         didOpen: () => Swal.showLoading(),
+    //         allowOutsideClick: false,
+    //         allowEscapeKey: false,
+    //     });
 
-        for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
-        Swal.close();
+    //     for (const r of toCancel) await dispatch(cancelRendezVous(r.rdv)).unwrap();
+    //     Swal.close();
 
-        Swal.fire({
-            title: 'Rendez-vous annulés',
-            html: `<div style="text-align:center;">
-                <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
-                    ${toCancel.length} rendez-vous ont été annulés avec succès.
-                </p>
-               </div>`,
-            confirmButtonText: 'Terminé',
-            confirmButtonColor: '#a90616'
-        });
+    //     Swal.fire({
+    //         title: 'Rendez-vous annulés',
+    //         html: `<div style="text-align:center;">
+    //             <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
+    //                 <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    //             </svg>
+    //             <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+    //                 ${toCancel.length} rendez-vous ont été annulés avec succès.
+    //             </p>
+    //            </div>`,
+    //         confirmButtonText: 'Terminé',
+    //         confirmButtonColor: '#a90616'
+    //     });
 
-        setRowSelection({});
+    //     setRowSelection({});
+    // };
+
+    const handleCancelSelection = () => {
+        const toCancel = rows.filter(row => selectedIds.includes(row.id) && (row.statut === 'EN_ATTENTE' || row.statut === 'CONFIRME'));
+        handleOpenAnnulationModal(toCancel, true);
     };
-
-
     const handleFinishSelection = async () => {
         const toFinish = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'CONFIRME');
 
@@ -834,35 +968,37 @@ const ListeRendezVous = () => {
     };
 
 
-    const handleCancelSingle = async (rdv) => {
-        Swal.fire({
-            title: 'Annulation en cours...',
-            text: 'Merci de patienter pendant l’annulation du rendez-vous.',
-            didOpen: () => Swal.showLoading(),
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-        });
+    // const handleCancelSingle = async (rdv) => {
+    //     Swal.fire({
+    //         title: 'Annulation en cours...',
+    //         text: 'Merci de patienter pendant l’annulation du rendez-vous.',
+    //         didOpen: () => Swal.showLoading(),
+    //         allowOutsideClick: false,
+    //         allowEscapeKey: false,
+    //     });
 
-        await dispatch(cancelRendezVous(rdv)).unwrap();
-        Swal.close();
+    //     await dispatch(cancelRendezVous(rdv)).unwrap();
+    //     Swal.close();
 
-        Swal.fire({
-            title: 'Rendez-vous annulé',
-            html: `<div style="text-align:center;">
-                <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
-                    Le rendez-vous a été annulé avec succès.
-                </p>
-               </div>`,
-            confirmButtonText: 'Terminé',
-            confirmButtonColor: '#a90616'
-        });
+    //     Swal.fire({
+    //         title: 'Rendez-vous annulé',
+    //         html: `<div style="text-align:center;">
+    //             <svg width="60" height="60" fill="#a90616" viewBox="0 0 24 24">
+    //                 <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    //             </svg>
+    //             <p style="margin-top:12px; color:#616161; font-size:0.95rem;">
+    //                 Le rendez-vous a été annulé avec succès.
+    //             </p>
+    //            </div>`,
+    //         confirmButtonText: 'Terminé',
+    //         confirmButtonColor: '#a90616'
+    //     });
 
-        dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    //     dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    // };
+    const handleCancelSingle = (rdv) => {
+        handleOpenAnnulationModal(rdv, false);
     };
-
 
     const handleFinishSingle = async (rdv) => {
         Swal.fire({
@@ -907,60 +1043,13 @@ const ListeRendezVous = () => {
             }}
         >
             {rdv.statut === 'EN_ATTENTE' && (
-                <>
-                    <Button
-                        size="small"
-                        variant="contained"
-                        startIcon={<CheckCircleIcon />}
-                        onClick={() => handleConfirmSingle(rdv)}
-                        sx={{
-                            backgroundColor: '#2e7d32',
-                            fontWeight: 'bold',
-                            textTransform: 'none',
-                            px: 1.5,
-                            py: 0.4,
-                            fontSize: '0.75rem',
-                            lineHeight: 1.4,
-                            minHeight: '32px',
-                            width: { xs: '100%', sm: 'auto' },
-                            maxWidth: 140,
-                            whiteSpace: 'nowrap',
-                            '& .MuiButton-startIcon': { marginRight: '4px' },
-                            '&:hover': { backgroundColor: '#1b5e20' },
-                        }}
-                    >
-                        Confirmer
-                    </Button>
-                    <Button
-                        size="small"
-                        variant="contained"
-                        startIcon={<CancelIcon />}
-                        onClick={() => handleCancelSingle(rdv)}
-                        sx={{
-                            backgroundColor: '#ef6c00',
-                            fontWeight: 'bold',
-                            textTransform: 'none',
-                            px: 1.5,
-                            py: 0.7,
-                            fontSize: '0.75rem',
-                            width: { xs: '100%', sm: 'auto' },
-                            maxWidth: 140,
-                            '&:hover': { backgroundColor: '#e65100' },
-                        }}
-                    >
-                        Annuler
-                    </Button>
-                </>
-            )}
-
-            {rdv.statut === 'CONFIRME' && (
                 <Button
                     size="small"
                     variant="contained"
-                    startIcon={<DoneAllIcon />}
-                    onClick={() => handleFinishSingle(rdv)}
+                    startIcon={<CheckCircleIcon />}
+                    onClick={() => handleConfirmSingle(rdv)}
                     sx={{
-                        backgroundColor: '#787877',
+                        backgroundColor: '#2e7d32',
                         fontWeight: 'bold',
                         textTransform: 'none',
                         px: 1.5,
@@ -972,12 +1061,83 @@ const ListeRendezVous = () => {
                         maxWidth: 140,
                         whiteSpace: 'nowrap',
                         '& .MuiButton-startIcon': { marginRight: '4px' },
-                        '&:hover': { backgroundColor: '#616161' },
+                        '&:hover': { backgroundColor: '#1b5e20' },
                     }}
                 >
-                    Terminer
+                    Confirmer
                 </Button>
             )}
+
+            {rdv.statut === "ANNULE" ? (
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontStyle: "italic" }}
+                >
+                    Aucune action disponible
+                </Typography>
+            ) : (
+                <>
+                    {(rdv.statut === "EN_ATTENTE" || rdv.statut === "CONFIRME") && (
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<CancelIcon />}
+                            onClick={() => handleCancelSingle(rdv)}
+                            sx={{
+                                backgroundColor: "#ef6c00",
+                                fontWeight: "bold",
+                                textTransform: "none",
+                                px: 1.5,
+                                py: 0.7,
+                                fontSize: "0.75rem",
+                                width: { xs: "100%", sm: "auto" },
+                                maxWidth: 140,
+                                "&:hover": { backgroundColor: "#e65100" },
+                            }}
+                        >
+                            Annuler
+                        </Button>
+                    )}
+
+                    {rdv.statut === "CONFIRME" && (
+                        <Tooltip
+                            title={
+                                new Date(rdv.date) > new Date() ? "Le rendez-vous n'est pas encore arrivé" : ""
+                            }
+                            arrow
+                        >
+                            <span>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<DoneAllIcon />}
+                                    onClick={() => handleFinishSingle(rdv)}
+                                    disabled={new Date(rdv.date) > new Date()}
+                                    sx={{
+                                        backgroundColor: "#787877",
+                                        fontWeight: "bold",
+                                        textTransform: "none",
+                                        px: 1.5,
+                                        py: 0.4,
+                                        fontSize: "0.75rem",
+                                        lineHeight: 1.4,
+                                        minHeight: "32px",
+                                        width: { xs: "100%", sm: "auto" },
+                                        maxWidth: 140,
+                                        whiteSpace: "nowrap",
+                                        "& .MuiButton-startIcon": { marginRight: "4px" },
+                                        "&:hover": { backgroundColor: "#616161" },
+                                    }}
+                                >
+                                    Terminer
+                                </Button>
+                            </span>
+                        </Tooltip>
+                    )}
+                </>
+            )}
+
         </Box>
     );
 
@@ -1036,10 +1196,18 @@ const ListeRendezVous = () => {
                         backgroundColor: '#f5f5f5',
                         borderRadius: 1,
                         borderLeft: '3px solid',
-                        borderLeftColor: theme.palette.primary.main
+                        borderLeftColor: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: '#e8e8e8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
                     }}
+                    onClick={() => handleRaisonClick(cell.getValue())}
                 >
-                    <Tooltip title={cell.getValue()} arrow>
+                    <Tooltip title="Cliquez pour voir la raison complète" arrow>
                         <Typography
                             variant="body2"
                             sx={{
@@ -1058,6 +1226,7 @@ const ListeRendezVous = () => {
                 </Box>
             ),
         },
+
         {
             accessorKey: 'date',
             header: 'Date',
@@ -1108,7 +1277,7 @@ const ListeRendezVous = () => {
                     <Link
                         to={`/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`}
                         onClick={(e) => {
-                            e.preventDefault(); // empêche la navigation interne
+                            e.preventDefault();
                             window.open(
                                 `/MapAdresse?adresse=${encodeURIComponent(cell.getValue())}`,
                                 "_blank",
@@ -1135,7 +1304,7 @@ const ListeRendezVous = () => {
                 const statut = STATUTS[cell.getValue()];
                 return (
                     <Chip
-                        icon={statut?.icon}   // ✅ direct, sans <span>
+                        icon={statut?.icon}
                         label={statut?.label || cell.getValue()}
                         sx={{
                             backgroundColor: statut?.color,
@@ -1158,16 +1327,56 @@ const ListeRendezVous = () => {
             accessorKey: 'prestataire',
             header: 'Prestataire',
             size: 200,
-            Cell: ({ cell }) => (
-                <Box display="flex" alignItems="center" gap={1}>
-                    <FontAwesomeIcon
-                        icon={user?.utilisateur?.role === 'ENTREPRISE' ? faBuilding : faUser}
-                        style={{ color: '#757575', fontSize: '14px' }}
-                    />
-                    <Typography variant="body2" fontWeight="medium">{cell.getValue()}</Typography>
-                </Box>
-            ),
-        },
+            Cell: ({ row }) => {
+                const { rdv } = row.original;
+                const prestataireId = rdv.prestataireId;
+                const prestataireName = rdv.prestataire?.entreprise?.nomEntreprise
+                    || `${rdv.prestataire?.utilisateur?.prenom ?? ''} ${rdv.prestataire?.utilisateur?.nom ?? ''}`;
+                const dispatch = useDispatch();
+                const { mesSignales } = useSelector(state => state.signalement);
+                const [isSignaled, setIsSignaled] = useState(false);
+
+                useEffect(() => {
+                    if (mesSignales && prestataireId) {
+                        setIsSignaled(mesSignales.some(s => s.prestataireId === prestataireId));
+                    }
+                }, [mesSignales, prestataireId]);
+
+                useEffect(() => {
+                    if (user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+                        dispatch(fetchMesSignales(user.utilisateur.id));
+                    }
+                }, [dispatch, user]);
+
+                return (
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <FontAwesomeIcon icon={faUser} style={{ color: '#757575', fontSize: '14px' }} />
+                        {user?.utilisateur?.role === 'CLIENT' && !isSignaled ? (
+                            <Typography
+                                variant="body2"
+                                fontWeight="medium"
+                                sx={{ "&:hover": { textDecoration: "underline" }, cursor: 'pointer', color: '#1976d2' }}
+                                onClick={() => {
+                                    dispatch({ type: 'prestataire/clicked', payload: { prestataireId } });
+                                    window.open(`/calendrier/${prestataireId}`, "_blank", "noopener,noreferrer");
+                                }}
+                            >
+                                {prestataireName}
+                            </Typography>
+                        ) : (
+                            <Typography
+                                variant="body2"
+                                fontWeight="medium"
+                                color={isSignaled ? 'textSecondary' : 'textPrimary'}
+                            >
+                                {prestataireName}
+                            </Typography>
+                        )}
+                    </Box>
+                );
+            }
+        }
+        ,
         {
             accessorKey: 'contactPrestataire',
             header: 'Contact',
@@ -1195,10 +1404,18 @@ const ListeRendezVous = () => {
                         backgroundColor: '#f5f5f5',
                         borderRadius: 1,
                         borderLeft: '3px solid',
-                        borderLeftColor: theme.palette.primary.main
+                        borderLeftColor: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: '#e8e8e8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
                     }}
+                    onClick={() => handleRaisonClick(cell.getValue())}
                 >
-                    <Tooltip title={cell.getValue()} arrow>
+                    <Tooltip title="Cliquez pour voir la raison complète" arrow>
                         <Typography
                             variant="body2"
                             sx={{
@@ -1217,6 +1434,7 @@ const ListeRendezVous = () => {
                 </Box>
             ),
         },
+
         {
             accessorKey: 'date',
             header: 'Date',
@@ -1284,6 +1502,7 @@ const ListeRendezVous = () => {
             Cell: ({ row }) => {
                 const { rdv } = row.original;
                 const isEditable = rdv.statut === 'EN_ATTENTE';
+                const isAnnule = rdv.statut === 'CONFIRME';
                 let datePart = '', timePart = '';
                 if (rdv.date.includes('T')) [datePart, timePart] = rdv.date.split('T');
 
@@ -1333,6 +1552,22 @@ const ListeRendezVous = () => {
                                 </IconButton>
                             </span>
                         </Tooltip>
+                        <Tooltip title="Annuler">
+                            <span>
+                                <IconButton
+                                    onClick={() => handleCancelSingle(rdv)}
+                                    color="warning"
+                                    disabled={!(isEditable || isAnnule)}
+                                    size="small"
+                                    sx={{
+                                        backgroundColor: '#fff3e0',
+                                        '&:hover': { backgroundColor: '#ffe0b2' }
+                                    }}
+                                >
+                                    <CancelIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
                     </Box>
                 );
             }
@@ -1342,6 +1577,22 @@ const ListeRendezVous = () => {
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+
             <Box
                 sx={{
                     minHeight: '80vh',
@@ -1428,10 +1679,37 @@ const ListeRendezVous = () => {
                                     </>
                                 )}
                                 {allConfirme && (
-                                    <Button onClick={handleFinishSelection} variant="contained" startIcon={<DoneAllIcon />} color="primary" sx={{ textTransform: 'none', fontWeight: 'bold' }}>
-                                        Terminer ({selectedIds.length})
-                                    </Button>
+                                    <>
+                                        <Tooltip
+                                            title={selectedIds.some(id => {
+                                                const rdv = listeRendezVous.find(r => r.id === id);
+                                                return new Date(rdv.date) > new Date();
+                                            }) ? "Certains rendez-vous ne sont pas encore arrivés" : ""}
+                                            arrow
+                                        >
+                                            <span>
+                                                <Button
+                                                    onClick={handleFinishSelection}
+                                                    variant="contained"
+                                                    startIcon={<DoneAllIcon />}
+                                                    color="primary"
+                                                    disabled={selectedIds.some(id => {
+                                                        const rdv = listeRendezVous.find(r => r.id === id);
+                                                        return new Date(rdv.date) > new Date();
+                                                    })}
+                                                    sx={{ textTransform: 'none', fontWeight: 'bold' }}
+                                                >
+                                                    Terminer ({selectedIds.length})
+                                                </Button>
+
+                                            </span>
+                                        </Tooltip>
+                                        <Button onClick={handleCancelSelection} variant="contained" startIcon={<CancelIcon />} color="warning" sx={{ textTransform: 'none', fontWeight: 'bold' }}>
+                                            Annuler ({selectedIds.length})
+                                        </Button></>
                                 )}
+
+
                                 {mixedStatuts && (
                                     <Box
                                         sx={{
@@ -1468,6 +1746,16 @@ const ListeRendezVous = () => {
                                     >
                                         Supprimer ({selectedIds.length})
                                     </Button>
+                                ) : (allConfirme || allEnAttente) ? (
+                                    <Button
+                                        onClick={handleCancelSelection}
+                                        variant="contained"
+                                        color="warning"
+                                        startIcon={<CancelIcon />}
+                                        sx={{ textTransform: 'none', fontWeight: 'bold' }}
+                                    >
+                                        Annuler ({selectedIds.length})
+                                    </Button>
                                 ) : (
                                     <Box
                                         sx={{
@@ -1486,10 +1774,11 @@ const ListeRendezVous = () => {
                                     >
                                         <CancelIcon fontSize="small" />
                                         <span>
-                                            Sélection invalide : tous les rendez-vous sélectionnés doivent avoir le statut "En attente".
+                                            Sélection invalide : tous les rendez-vous sélectionnés doivent avoir le même statut ("En attente" ou "Confirmé").
                                         </span>
                                     </Box>
                                 )}
+
                             </Box>
                         )}
 
@@ -1559,7 +1848,29 @@ const ListeRendezVous = () => {
             </Box>
             <Footer />
             {panelOpen && (
-                <RendezVousModal open={panelOpen} onClose={() => setPanelOpen(false)} onSave={onSave} eventData={formData} intervenant={intervenantModal} setEventData={setFormData} />
+                <RendezVousModal open={panelOpen} onClose={() => setPanelOpen(false)} onSave={onSave} eventData={formData} intervenant={intervenantModal} setEventData={setFormData} errors={errors} heureError={heureError}
+                    setHeureError={setHeureError} />
+            )}
+            <RaisonModal
+                open={raisonModalOpen}
+                onClose={() => setRaisonModalOpen(false)}
+                raisonData={selectedRaison}
+            />
+            {annulationModalOpen && (
+                <AnnulationModal
+                    open={annulationModalOpen}
+                    onClose={() => setAnnulationModalOpen(false)}
+                    onConfirm={handleConfirmAnnulation}
+                    dateRendezVous={rdvToCancel ? new Date(rdvToCancel.date).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : ''}
+                    isMultiple={isMultipleAnnulation}
+                    userRole={user?.utilisateur?.role}
+                />
             )}
         </>
     );

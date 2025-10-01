@@ -9,6 +9,7 @@ import { Form, InputGroup, Button, Modal } from 'react-bootstrap';
 import { register } from "../../features/AuthSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchServicesNA } from '../../features/ServiceSlice';
+import { NavLink } from "react-router-dom";
 export default function Registre() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -500,9 +501,22 @@ export default function Registre() {
                                 Annuler
                             </button>
                         </div>
+                        <div className="text-center mt-3">
+                            <p className="mb-0 text-muted fst-italic " style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
+                                Vous avez déjà un compte ?{" "}
+                              
+                                <a href="#" onClick={e => {
+                                    e.preventDefault();
+                                    navigate('/login');
+                                }}>
+                                    Se connecter
+                                </a>
+                            </p>
+                        </div>
+
                     </form>
                 </div>
-            </div>
+            </div >
             {/* Modal de confirmation d'inscription */}
             {/* <Modal
                 show={showSuccessModal}
@@ -566,12 +580,12 @@ export default function Registre() {
             </Modal> */}
             {/* <Modal show={showSuccessModal} onHide={handleCloseModal} centered>
   {/* Header épuré */}
-            <Modal.Header closeButton className="border-0">
+            {/* <Modal.Header closeButton className="border-0">
                 <Modal.Title className="w-100 text-center text-success fw-semibold">
                     <i className="fas fa-check-circle me-2"></i>
                     Inscription réussie
                 </Modal.Title>
-            </Modal.Header>
+            </Modal.Header> */}
 
             {/* Corps de la modale *
   <Modal.Body className="text-center py-3">
@@ -666,6 +680,6 @@ export default function Registre() {
                 </Modal.Footer>
             </Modal>
 
-        </div>
+        </div >
     );
 }

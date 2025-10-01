@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchIntervenant } from '../../features/UtilisateurSlice'; 
+import { fetchIntervenant } from '../../features/UtilisateurSlice';
 import { useNavigate } from 'react-router-dom';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
@@ -20,8 +20,8 @@ const HomePage = () => {
     const { intervenants, loading, error } = useSelector(state => state.utilisateur);
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     useEffect(() => {
-        if (user && user.utilisateurIdCl) {
-            dispatch(enregistrerHistoriqueApp(user.utilisateurIdCl));
+        if (user && user.utilisateur.id) {
+            dispatch(enregistrerHistoriqueApp(user.utilisateur.id));
         }
     }, [dispatch, user]);
     useEffect(() => {
@@ -41,7 +41,7 @@ const HomePage = () => {
         <><Header isClientConnected={isLoggedIn} />
             <AProposSection />
             <ServiceSecion />
-            <PrestatairesPopulaires  isClientConnected={isLoggedIn} user={user} />
+            <PrestatairesPopulaires isClientConnected={isLoggedIn} user={user} />
             {user?.utilisateur?.role === 'CLIENT' ? (
                 <PrestatairesProche />
             ) : (
@@ -51,7 +51,7 @@ const HomePage = () => {
             )}
             <EtapesRendezVous />
             <StatistiquesSection />
-            <ContactForm  isClientConnected={isLoggedIn} user={user} />
+            <ContactForm isClientConnected={isLoggedIn} user={user} />
 
             <MapAccueil />
             <Footer />

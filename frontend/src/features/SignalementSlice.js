@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getSignales, ajouterSignale, checkSignale, getMesSignales } from '../services/SignalementService';
+import { getSignales, ajouterSignale, checkSignale, getMesSignales, archiverSignale } from '../services/SignalementService';
 
 
 export const fetchSignales = createAsyncThunk(
@@ -30,7 +30,13 @@ export const ajouterSignaleThunk = createAsyncThunk(
     return res;
   }
 );
-
+export const archiverSignaleThunk = createAsyncThunk(
+  'signalement/archiverSignale',
+  async (signalId) => {
+    const res = await archiverSignale(signalId);
+    return res.archivedSignal; // retourne le signalement archivé
+  }
+);
 // Slice
 const signalementSlice = createSlice({
   name: 'signalement',
@@ -87,7 +93,24 @@ const signalementSlice = createSlice({
       .addCase(checkSignales.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
-      });
+      })
+      .addCase(archiverSignaleThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(archiverSignaleThunk.fulfilled, (state, action) => {
+        state.loading = false;
+      
+        const index = state.signales.findIndex(s => s.id === action.payload.id);
+        if (index !== -1) {
+          state.signales[index].etatArchive = true;
+        }
+      })
+      .addCase(archiverSignaleThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      ;
 
     ;
   },

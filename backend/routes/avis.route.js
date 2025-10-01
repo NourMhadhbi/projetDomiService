@@ -72,6 +72,9 @@ router.post("/Ajouteravis", async (req, res) => {
 
 
         destinataireUser = nouvelAvis.prestataire.utilisateur;
+        const commentairePreview = nouvelAvis.commentaire
+            ? nouvelAvis.commentaire.split('.')[0] + '...' 
+            : '';
         if (destinataireUser?.email && destinataireUser?.email.trim() !== "") {
             const sujet = "Nouvel avis reçu - DomiService";
             const messageHtml = `
@@ -95,7 +98,7 @@ router.post("/Ajouteravis", async (req, res) => {
                 Vous avez reçu un nouvel avis de ${nouvelAvis.client.utilisateur.nom} ${nouvelAvis.client.utilisateur.prenom}.
                 Note: ${nouvelAvis.note ?? 'Non spécifiée'}.
                 ${nouvelAvis.aime ? "Ils aiment votre service." : ""}
-                ${nouvelAvis.commentaire ? `Commentaire: ${nouvelAvis.commentaire}` : ""}
+              ${commentairePreview ? `Commentaire: ${commentairePreview}` : ""}
             `;
 
         await prisma.notification.create({

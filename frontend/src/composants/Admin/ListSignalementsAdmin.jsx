@@ -44,16 +44,7 @@ const ListeSignaleAdmin = () => {
     // Colonnes MRT avec des largeurs proportionnelles
     const columns = useMemo(
         () => [
-            {
-                accessorKey: 'id',
-                header: 'ID',
-                size: 70,
-                Cell: ({ cell }) => (
-                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                        #{cell.getValue()}
-                    </Box>
-                ),
-            },
+          
             {
                 accessorKey: 'clientName',
                 header: 'Client',

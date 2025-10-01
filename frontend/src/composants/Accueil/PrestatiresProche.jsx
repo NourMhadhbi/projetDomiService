@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import domiServe from '../../assets/img/domiserivice.jpg';
 import { fetchIntervenant, fetchPrestatairesProches, fetchIntervenantbyId } from '../../features/UtilisateurSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchMesSignales } from '../../features/SignalementSlice';
 
 const PrestatairesProche = () => {
   const { isLoggedIn, user } = useSelector((state) => state.auth);
@@ -20,13 +21,30 @@ const PrestatairesProche = () => {
   const intervenants = useSelector((state) => state.utilisateur.intervenants);
   const intervenantsFetched = useSelector((state) => state.utilisateur.intervenantsFetched);
   const navigate = useNavigate();
+  const { mesSignales } = useSelector(state => state.signalement);
+  const [isSignaled, setIsSignaled] = useState(false);
+  const hasFetched = useRef(false);
+  useEffect(() => {
+    if (user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+      dispatch(fetchMesSignales(user.utilisateur.id));
+    }
+  }, [dispatch, user]);
+
 
   useEffect(() => {
-    if (!intervenantsFetched) {
-      if (!user || user.utilisateur?.role !== 'CLIENT' || !user.utilisateurIdCl) return;
+    if (user?.utilisateur?.role === "CLIENT" && mesSignales) {
+      const signal = mesSignales.some(s => s.prestataireId === user.utilisateurIdPre);
+      setIsSignaled(signal);
+    }
+  }, [mesSignales, user.utilisateurIdPre, user]);
+  useEffect(() => {
+    if (!user || !user.utilisateur) return;
+    console.log("intervenant fetched", intervenantsFetched)
+    if (user.utilisateur.role === 'CLIENT' /*&& user.utilisateurIdCl*/ && !intervenantsFetched) {
       dispatch(fetchPrestatairesProches(userId));
     }
-  }, [dispatch, userId, intervenantsFetched]);
+
+  }, [dispatch, user, userId, intervenantsFetched]);
 
   const prestataires = intervenants;
 
@@ -34,7 +52,11 @@ const PrestatairesProche = () => {
     e.stopPropagation();
     window.open(`/calendrier/${prestataireId}`, "_blank");
   };
-
+  const isPrestataireSignaled = (prestataireId) => {
+    return mesSignales?.some(
+      s => s.prestataireId === prestataireId
+    );
+  };
   return (
     <section className="prestataires-proches-section">
       <div className="background-overlay"></div>
@@ -119,14 +141,36 @@ const PrestatairesProche = () => {
                           </div>
                         )}
                       </div>
-
-                      <button
+                      {user?.utilisateur?.role === "CLIENT" && (
+                        !isPrestataireSignaled(p.utilisateurIdPre) ? (
+                          <button
+                            className="rdv-button"
+                            onClick={(e) => handleRendezVousClick(p.utilisateurIdPre, e)}
+                          >
+                            <i className="fas fa-calendar-check"></i> Prendre Rendez-vous
+                          </button>
+                        ) : (
+                          <div style={{
+                            color: '#fff',
+                            backgroundColor: '#d9534f',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            fontSize: '12px'
+                          }}>
+                            Ce prestataire a été signalé
+                          </div>
+                        )
+                      )}
+                      {/* <button
                         className="rdv-button"
                         onClick={(e) => handleRendezVousClick(p.utilisateurIdPre, e)}
                       >
                         <i className="fas fa-calendar-check"></i>
                         Prendre Rendez-vous
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

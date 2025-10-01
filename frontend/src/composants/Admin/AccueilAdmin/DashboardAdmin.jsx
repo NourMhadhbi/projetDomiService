@@ -16,7 +16,7 @@ import {
     fetchConsultationsMensuelles
 } from '../../../features/statistiquesAdminSlice';
 import { useDispatch, useSelector } from "react-redux";
-
+import { PieChart, Pie, Tooltip, Cell, Legend } from "recharts";
 const DashboardAdmin = () => {
     const dispatch = useDispatch();
 
@@ -92,7 +92,7 @@ const DashboardAdmin = () => {
                         <PieChartRepartition data={dataRepartition} />
                     </Grid>
 
-                    <Grid item xs={12} sm={1} md={4}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <Typography
                             variant="h6"
                             align="center"
@@ -109,7 +109,7 @@ const DashboardAdmin = () => {
                             align="center"
                             sx={{ fontWeight: 600, color: "#1a3a6c", marginBottom: "15px" }}
                         >
-                            Clients Interactions(Favoris & signalements)
+                            Répartition des Interactions Clients
                         </Typography>
                         <PieChartClientInteractions data={clientinteractionData} />
                     </Grid>

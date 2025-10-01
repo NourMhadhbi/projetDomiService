@@ -9,6 +9,7 @@ import Footer from '../Footer/Footer';
 import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
 import { fetchPrestatairesProches, fetchTousPrestataires } from '../../features/UtilisateurSlice';
+import { fetchMesSignales } from "../../features/SignalementSlice";
 import {
     Box,
     MenuItem,
@@ -133,7 +134,8 @@ import {
 //     );
 // };
 
-const PrestataireCard = ({ prestataire, search, service, proche, consultes, user }) => {
+const PrestataireCard = ({ prestataire, search, service, proche, consultes, user, signales }) => {
+    const [isSignaled, setIsSignaled] = useState(false);
     let utilisateur = null;
     let nomAffiche = '';
     let contact = '';
@@ -185,7 +187,14 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes, user
         image = prestataire.utilisateur?.image;
         prestataireId = prestataire?.utilisateur?.id;
     }
-
+    useEffect(() => {
+        if (user?.utilisateur?.role === "CLIENT" && signales) {
+            const signal = signales.some(s =>
+                s.prestataireId === prestataireId
+            );
+            setIsSignaled(signal);
+        }
+    }, [prestataireId, signales, user]);
     const handleRendezVousClick = () => {
         window.location.href = `/calendrier/${prestataireId}`;
     };
@@ -318,29 +327,43 @@ const PrestataireCard = ({ prestataire, search, service, proche, consultes, user
                         </div>
                     )}
                     {user?.utilisateur?.role === "CLIENT" && (
-
                         <div className="mt-3 pt-2 border-top">
-                            <button
-                                style={{
-                                    backgroundColor: '#f15a24',
-                                    color: 'white',
+                            {!isSignaled ? (
+                                <button
+                                    style={{
+                                        backgroundColor: '#f15a24',
+                                        color: 'white',
+                                        fontWeight: '600',
+                                        borderRadius: '12px',
+                                        padding: '14px',
+                                        width: '100%',
+                                        border: 'none',
+                                        fontSize: '16px',
+                                        transition: 'background 0.3s ease'
+                                    }}
+                                    onMouseOver={(e) => e.target.style.backgroundColor = '#e14a1c'}
+                                    onMouseOut={(e) => e.target.style.backgroundColor = '#f15a24'}
+                                    onClick={handleRendezVousClick}
+                                >
+                                    <i className="fas fa-calendar-check me-2"></i>
+                                    Prendre Rendez-vous
+                                </button>
+                            ) : (
+                                <div style={{
+                                    color: '#fff',
+                                    backgroundColor: '#d9534f',
                                     fontWeight: '600',
-                                    borderRadius: '12px',
-                                    padding: '14px',
-                                    width: '100%',
-                                    border: 'none',
-                                    fontSize: '16px',
-                                    transition: 'background 0.3s ease'
-                                }}
-                                onMouseOver={(e) => e.target.style.backgroundColor = '#e14a1c'}
-                                onMouseOut={(e) => e.target.style.backgroundColor = '#f15a24'}
-                                onClick={handleRendezVousClick}
-
-                            >
-                                <i className="fas fa-calendar-check me-2"></i>
-                                Prendre Rendez-vous
-                            </button>
-                        </div>)}
+                                    textAlign: 'center',
+                                    padding: '12px 16px',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                                    fontSize: '14px'
+                                }}>
+                                    Ce prestataire a été signalé
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -361,7 +384,7 @@ const ListePrestataires = () => {
     const service = searchParams.get('service');
     const proche = searchParams.get('proche');
     const consultes = searchParams.get('consultes');
-
+    const { mesSignales } = useSelector(state => state.signalement);
     const prestatairesProches = useSelector((state) => state.utilisateur.intervenants);
     const prestatairesC = useSelector((state) => state.utilisateur.intervenants);
     // const { data } = useSelector(state => state.historique || {});
@@ -390,7 +413,10 @@ const ListePrestataires = () => {
         } else if (consultes) {
             dispatch(fetchTousPrestataires());
         }
-    }, [dispatch, search, service, proche, consultes, user?.utilisateurIdCl]);
+        if (user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+            dispatch(fetchMesSignales(user.utilisateur.id));
+        }
+    }, [dispatch, search, service, proche, consultes, user?.utilisateurIdCl, user]);
     useEffect(() => {
         const uniqueVilles = Array.from(
             new Set(prestataires.map(p =>
@@ -599,7 +625,7 @@ const ListePrestataires = () => {
                         gap={2}
                     >
                         {/* Type */}
-                        <FormControl size="small" className="filter-select">
+                        <FormControl size="small" className="filter-select" style={{ width: "10%" }}>
                             <InputLabel id="type-select-label">Type</InputLabel>
                             <Select
                                 labelId="type-select-label"
@@ -616,7 +642,7 @@ const ListePrestataires = () => {
                         </FormControl>
 
                         {/* Trier */}
-                        <FormControl size="small" className="filter-select">
+                        <FormControl size="small" className="filter-select" style={{ width: "10%" }}>
                             <InputLabel id="sort-select-label">Trier par</InputLabel>
                             <Select
                                 labelId="sort-select-label"
@@ -668,7 +694,7 @@ const ListePrestataires = () => {
                     {currentFiltres.length > 0 ? (
                         currentFiltres.map((p) => (
                             <div className="col-md-6 col-lg-4 mb-4" key={p.utilisateurIdPre} onClick={() => navigate(`/ficheintervenant/${search ? p.id : p.utilisateurIdPre}`)} style={{ cursor: "pointer" }}>
-                                <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} user={user} />
+                                <PrestataireCard prestataire={p} search={search} service={service} proche={proche} consultes={consultes} user={user} signales={mesSignales} />
                             </div>
                         ))
                     ) : (

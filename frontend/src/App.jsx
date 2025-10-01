@@ -96,7 +96,7 @@ function App() {
         <Route path="/MapAdresse" element={<PrivateRoute><MapPres /></PrivateRoute>} />
         <Route path="/prestataires" element={<ListePrestataires />} />
         <Route path="/prestataires/contact/:prestataireId" element={<PrivateRoute><ClientsContactPrestataire /></PrivateRoute>} />
-        <Route path="/Contact" element={<PrivateRoute><PageContact /></PrivateRoute>} />
+        <Route path="/Contact" element={<PageContact />} />
         <Route path="/Profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
         <Route path="/about" element={<About />} />
         <Route

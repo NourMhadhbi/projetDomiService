@@ -92,7 +92,7 @@ router.get("/servicePres", async (req, res) => {
     try {
         const prestataires = await prisma.prestataire.findMany({
             where: {
-                serviceId: Number(id),
+                serviceId: Number(id),isActive:true
             },
             include: { utilisateur: true, entreprise: true }
         });

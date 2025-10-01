@@ -169,10 +169,15 @@ const ContactForm = ({ isClientConnected, user }) => {
               onChange={handleChange}
               required
             >
-              <option value="">Sélectionnez le sujet</option>
-              <option value="Demande générale">Demande générale</option>
-              <option value="Service technique">Service technique</option>
-              <option value="Support">Support</option>
+              <option value="">Sélectionner un sujet</option>
+              <option value="Problème de connexion">Problème de connexion</option>
+              <option value="Erreur sur mon compte">Erreur sur mon compte</option>
+              <option value="Demande d’information">Demande d’information</option>
+              <option value="Suggestion ou amélioration">Suggestion ou amélioration</option>
+              <option value="Signalement d’un prestataire">Signalement d’un prestataire</option>
+              <option value="Problème technique">Problème technique</option>
+              <option value="Question sur les fonctionnalités">Question sur les fonctionnalités</option>
+              <option value="Autre">Autre</option>
             </select>
           </div>
           <textarea

@@ -630,7 +630,8 @@ import {
     CircularProgress,
     Chip,
     Avatar,
-    useTheme
+    useTheme,
+    Tooltip, Snackbar, Alert
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -647,11 +648,12 @@ import {
     fetchServices,
     ajouterServiceThunk,
     modifierServiceThunk,
-    archiverServiceThunk
+    archiverServiceThunk, activerServiceThunk
 } from "../../features/ServiceSlice";
 import Swal from "sweetalert2";
 import ImageService from "./ImageService";
 import { MaterialReactTable } from 'material-react-table';
+import DescriptionModal from "./DescriptionModal";
 
 // Register FilePond plugins
 registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview);
@@ -665,13 +667,22 @@ const ListeServicesAdmin = () => {
     const [filesAdd, setFilesAdd] = useState([]);
     const [filesEdit, setFilesEdit] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
-
+    const [selectedDescription, setSelectedDescription] = useState(null);
+    const [DescriptionModalOpen, setDescriptionModalOpen] = useState(false);
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
     const { services, loading } = useSelector((state) => state.service);
     const theme = useTheme();
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'info',
+    });
+    const handleDescriptionClick = (Description) => {
+        setSelectedDescription(Description);
+        setDescriptionModalOpen(true);
+    };
 
-    // Configuration Cloudinary pour FilePond
     const serverOptions = {
         process: {
             url: 'https://api.cloudinary.com/v1_1/dkhjej8yx/image/upload',
@@ -730,23 +741,65 @@ const ListeServicesAdmin = () => {
 
     const handleArchiver = async (row) => {
         const confirm = await Swal.fire({
-            title: "Archiver ?",
-            text: `Archiver le service "${row.original.nom}" ?`,
+            title: "Confirmer l’archivage",
+            text: `Êtes-vous sûr de vouloir archiver le service "${row.original.nom}" ?`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
-            confirmButtonText: "Oui, archiver"
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Oui, archiver",
+            cancelButtonText: "Annuler"
         });
 
         if (confirm.isConfirmed) {
-            await dispatch(archiverServiceThunk(row.original.id));
-            Swal.fire("Archivé", "Le service a été archivé.", "success");
+            try {
+
+                await dispatch(archiverServiceThunk(row.original.id)).unwrap();
+
+                Swal.fire(
+                    "Service archivé",
+                    `Le service "${row.original.nom}" a été archivé avec succès.`,
+                    "success"
+                );
+            } catch (error) {
+                const message =
+                    error?.message || "Impossible d'archiver ce service en raison d'une erreur inattendue.";
+
+                Swal.fire(
+                    "Erreur d'archivage",
+                    message,
+                    "error"
+                );
+            }
+        }
+    };
+
+
+    const handleReactiver = async (row) => {
+        const confirm = await Swal.fire({
+            title: "Confirmer la réactivation",
+            text: `Voulez-vous réactiver le service "${row.original.nom}" ? Il sera de nouveau disponible.`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#28a745",
+            cancelButtonColor: "#6c757d",
+            confirmButtonText: "Oui, réactiver",
+            cancelButtonText: "Annuler"
+        });
+
+        if (confirm.isConfirmed) {
+            await dispatch(activerServiceThunk(row.original.id));
+            Swal.fire(
+                "Service réactivé",
+                `Le service "${row.original.nom}" est maintenant actif.`,
+                "success"
+            );
         }
     };
 
     const handleAddService = async () => {
         if (!newService.nom) {
-            Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+            setSnackbar({ open: true, message: "Le nom du service est obligatoire", severity: "error" });
             return;
         }
 
@@ -756,28 +809,37 @@ const ListeServicesAdmin = () => {
             image: newService.image
         };
 
-        await dispatch(ajouterServiceThunk(data));
-        Swal.fire("Ajouté", "Le service a été ajouté.", "success");
-        setOpenAddDialog(false);
-        setNewService({ nom: "", description: "", image: null });
-        setFilesAdd([]);
+        try {
+            await dispatch(ajouterServiceThunk(data)).unwrap();
+            setSnackbar({ open: true, message: "Le service a été ajouté.", severity: "success" });
+            setOpenAddDialog(false);
+            setNewService({ nom: "", description: "", image: null });
+            setFilesAdd([]);
+        } catch (err) {
+            setSnackbar({ open: true, message: err, severity: "error" });
+        }
     };
 
     const handleUpdateService = async () => {
         if (!serviceToEdit.nom) {
-            Swal.fire("Erreur", "Le nom du service est obligatoire", "error");
+            setSnackbar({ open: true, message: "Le nom du service est obligatoire", severity: "error" });
             return;
         }
 
         const { id, nom, description, image } = serviceToEdit;
         const data = { nom, description, image };
 
-        await dispatch(modifierServiceThunk({ id, data }));
-        setEditDialogOpen(false);
-        setServiceToEdit(null);
-        setFilesEdit([]);
-        Swal.fire("Modifié", "Le service a été mis à jour.", "success");
+        try {
+            await dispatch(modifierServiceThunk({ id, data })).unwrap();
+            setSnackbar({ open: true, message: "Le service a été mis à jour.", severity: "success" });
+            setEditDialogOpen(false);
+            setServiceToEdit(null);
+            setFilesEdit([]);
+        } catch (err) {
+            setSnackbar({ open: true, message: err, severity: "error" });
+        }
     };
+
 
     const rowsFiltres = services.filter((s) =>
         filtreEtat === "TOUS" ? true : filtreEtat === "Archive" ? s.etatArchive : !s.etatArchive
@@ -786,16 +848,7 @@ const ListeServicesAdmin = () => {
     // Configuration des colonnes pour MaterialReactTable
     const columns = useMemo(
         () => [
-            {
-                accessorKey: 'id',
-                header: 'ID',
-                size: 70,
-                Cell: ({ cell }) => (
-                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                        #{cell.getValue()}
-                    </Box>
-                ),
-            },
+        
             {
                 accessorKey: 'image',
                 header: 'Image',
@@ -848,18 +901,26 @@ const ListeServicesAdmin = () => {
                 accessorKey: 'description',
                 header: 'Description',
                 size: 400,
-                Cell: ({ cell }) => (
-                    <Typography variant="body2" sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                    }}>
-                        {cell.getValue()}
-                    </Typography>
+                Cell: ({ row, cell }) => (
+                    <Tooltip title="Cliquez pour voir la description complet" arrow>
+                        <Typography
+                            variant="body2"
+                            onClick={() => handleDescriptionClick(row.original)}
+                            sx={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {cell.getValue()}
+                        </Typography>
+                    </Tooltip>
                 )
-            },
+            }
+            ,
             {
                 accessorKey: 'etatArchive',
                 header: 'État',
@@ -879,31 +940,54 @@ const ListeServicesAdmin = () => {
                 size: 120,
                 Cell: ({ row }) => (
                     <Box display="flex" gap={1}>
-                        <IconButton
-                            color="primary"
-                            onClick={() => handleEdit(row)}
-                            size="small"
-                            sx={{
-                                backgroundColor: theme.palette.primary.light,
-                                '&:hover': { backgroundColor: theme.palette.primary.main }
-                            }}
-                        >
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            color="warning"
-                            onClick={() => handleArchiver(row)}
-                            size="small"
-                            sx={{
-                                backgroundColor: theme.palette.warning.light,
-                                '&:hover': { backgroundColor: theme.palette.warning.main }
-                            }}
-                        >
-                            <ArchiveIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title={row.original.etatArchive ? "Service archivé" : "Modifier le service"}>
+                            <span> {/* Wrapper <span> pour que Tooltip fonctionne avec un bouton désactivé */}
+                                <IconButton
+                                    color="primary"
+                                    onClick={() => handleEdit(row)}
+                                    size="small"
+                                    disabled={row.original.etatArchive} // Désactive si archivé
+                                    sx={{
+                                        backgroundColor: row.original.etatArchive ? 'grey.300' : theme.palette.primary.light,
+                                        '&:hover': {
+                                            backgroundColor: row.original.etatArchive ? 'grey.300' : theme.palette.primary.main
+                                        }
+                                    }}
+                                >
+                                    <EditIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+
+                        {row.original.etatArchive ? (
+                            <IconButton
+                                color="success"
+                                onClick={() => handleReactiver(row)}
+                                size="small"
+                                sx={{
+                                    backgroundColor: theme.palette.success.light,
+                                    '&:hover': { backgroundColor: theme.palette.success.main }
+                                }}
+                            >
+                                <ArchiveIcon fontSize="small" />
+                            </IconButton>
+                        ) : (
+                            <IconButton
+                                color="warning"
+                                onClick={() => handleArchiver(row)}
+                                size="small"
+                                sx={{
+                                    backgroundColor: theme.palette.warning.light,
+                                    '&:hover': { backgroundColor: theme.palette.warning.main }
+                                }}
+                            >
+                                <ArchiveIcon fontSize="small" />
+                            </IconButton>
+                        )}
                     </Box>
                 ),
             }
+
         ],
         [services]
     );
@@ -911,6 +995,20 @@ const ListeServicesAdmin = () => {
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                    severity={snackbar.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
             <Box sx={{
                 minHeight: '80vh',
                 width: "100%",
@@ -1209,22 +1307,7 @@ const ListeServicesAdmin = () => {
                     borderColor: 'divider',
                     background: 'rgba(0,0,0,0.02)'
                 }}>
-                    <Button
-                        onClick={() => {
-                            setEditDialogOpen(false);
-                        }}
-                        variant="outlined"
-                        color="inherit"
-                        sx={{
-                            borderRadius: '8px',
-                            textTransform: 'none',
-                            px: 3,
-                            py: 1,
-                            fontWeight: '500'
-                        }}
-                    >
-                        Annuler
-                    </Button>
+
 
                     <Button
                         onClick={handleUpdateService}
@@ -1248,7 +1331,23 @@ const ListeServicesAdmin = () => {
                                 <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
                                 Enregistrement...
                             </Box>
-                        ) : "Enregistrer"}
+                        ) : "Modifier"}
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setEditDialogOpen(false);
+                        }}
+                        variant="outlined"
+                        color="inherit"
+                        sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            fontWeight: '500'
+                        }}
+                    >
+                        Annuler
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1357,23 +1456,7 @@ const ListeServicesAdmin = () => {
                     borderColor: 'divider',
                     background: 'rgba(0,0,0,0.02)'
                 }}>
-                    <Button
-                        onClick={() => {
-                            setOpenAddDialog(false);
-                            setFilesAdd([]);
-                        }}
-                        variant="outlined"
-                        color="inherit"
-                        sx={{
-                            borderRadius: '8px',
-                            textTransform: 'none',
-                            px: 3,
-                            py: 1,
-                            fontWeight: '500'
-                        }}
-                    >
-                        Annuler
-                    </Button>
+
 
                     <Button
                         onClick={handleAddService}
@@ -1399,10 +1482,34 @@ const ListeServicesAdmin = () => {
                             </Box>
                         ) : "Enregistrer"}
                     </Button>
+                    <Button
+                        onClick={() => {
+                            setOpenAddDialog(false);
+                            setFilesAdd([]);
+                        }}
+                        variant="outlined"
+                        color="inherit"
+                        sx={{
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            px: 3,
+                            py: 1,
+                            fontWeight: '500'
+                        }}
+                    >
+                        Annuler
+                    </Button>
                 </DialogActions>
             </Dialog>
 
             <Footer />
+            {DescriptionModalOpen && (
+                <DescriptionModal
+                    open={DescriptionModalOpen}
+                    onClose={() => setDescriptionModalOpen(false)}
+                    DescriptionData={selectedDescription}
+                />
+            )}
         </>
     );
 };

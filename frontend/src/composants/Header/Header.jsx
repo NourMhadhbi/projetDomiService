@@ -22,22 +22,22 @@ import {
     faChevronDown,
     faTimes
 } from '@fortawesome/free-solid-svg-icons';
-
+import { fetchMesSignales } from '../../features/SignalementSlice';
 
 const Header = ({ isClientConnected, intervenant }) => {
     const { isLoggedIn, user } = useSelector((state) => state.auth);
     const { id } = useParams();
     const dispatch = useDispatch();
     const [filteredServices, setFilteredServices] = useState([]);
+    const { mesSignales } = useSelector(state => state.signalement);
+    const [isSignaled, setIsSignaled] = useState(false);
     const {
         services,
         service,
         loading: servicesLoading,
         error: servicesError
     } = useSelector((state) => state.service);
-    useEffect(() => {
-        dispatch(fetchServicesNA());
-    }, [dispatch]);
+
 
     const ongletActif = useSelector((state) => state.onglet.actif);
 
@@ -51,7 +51,10 @@ const Header = ({ isClientConnected, intervenant }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     const serviceId = intervenant?.prestataire?.serviceId;
-    console.log("service", serviceId)
+    useEffect(() => {
+
+        dispatch(fetchServicesNA());
+    }, [dispatch]);
     useEffect(() => {
         if (serviceId && location.pathname.startsWith('/ficheintervenant/')) {
             dispatch(fetchService(serviceId));
@@ -98,7 +101,18 @@ const Header = ({ isClientConnected, intervenant }) => {
             setFilteredServices([]);
         }
     }, [searchQuery, services, ongletActif]);
+    useEffect(() => {
+        if (isClientConnected && user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+            dispatch(fetchMesSignales(user.utilisateur.id));
+        }
+    }, [dispatch, isClientConnected, user]);
 
+    // Vérifier si l’intervenant est signalé
+    useEffect(() => {
+        if (!intervenant || !mesSignales || !isClientConnected || !user?.utilisateur?.role === "CLIENT") return;
+        const signaled = mesSignales.some(s => s.prestataireId === intervenant.id);
+        setIsSignaled(signaled);
+    }, [mesSignales, intervenant, isClientConnected, user]);
     /*  Effet pour fermer la recherche au clic hors  */
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -160,12 +174,16 @@ const Header = ({ isClientConnected, intervenant }) => {
     else if (location.pathname.startsWith("/prestataires")) {
         title = "Prestataires & Entreprises";
 
+
         const params = new URLSearchParams(location.search);
+        const serviceIdParam = params.get('service');
 
-
-        if (params.get('service')) {
-
-            breadcrumbItems.push({ label: "service", to: null });
+        if (serviceIdParam && services) {
+            const selectedService = services.find(s => s.id.toString() === serviceIdParam.toString());
+            breadcrumbItems.push({
+                label: selectedService ? selectedService.nom : "Service",
+                to: `/prestataires?service=${serviceIdParam}`
+            });
         } else if (params.get('proche')) {
 
             breadcrumbItems.push({ label: "Prestataires et entreprises proches de vous", to: null });
@@ -207,14 +225,30 @@ const Header = ({ isClientConnected, intervenant }) => {
         breadcrumbItems.push({ label: "carnet-de-contacts", to: null });
     }
     else if (location.pathname === "/intervenants-bloques") {
-        title = "intervenants-bloques";
-        breadcrumbItems.push({ label: "intervenants-bloques", to: null });
+        title = "intervenants-nonFavoris";
+        breadcrumbItems.push({ label: "intervenants-nonFavoris", to: null });
     }
     else if (location.pathname === "/intervenants-signales") {
         title = "intervenants-signales";
         breadcrumbItems.push({ label: "intervenants-signales", to: null });
     }
 
+    else if (location.pathname === "/admin/utilisateurs") {
+        title = "Utilisateurs";
+        breadcrumbItems.push({ label: "Utilisateurs", to: null });
+    }
+    else if (location.pathname === "/admin/signales") {
+        title = "Signalements";
+        breadcrumbItems.push({ label: "Signalements", to: null });
+    }
+    else if (location.pathname === "/admin/services") {
+        title = "Services";
+        breadcrumbItems.push({ label: "Services", to: null });
+    }
+    else if (location.pathname === "/admin/searchC") {
+        title = "Clients";
+        breadcrumbItems.push({ label: "Clients", to: null });
+    }
     if (servicesLoading) return <p>Chargement...</p>;
     if (servicesError) return <p>Erreur Services: {servicesError}</p>;
     return (
@@ -234,14 +268,33 @@ const Header = ({ isClientConnected, intervenant }) => {
                                 <FontAwesomeIcon icon={faMapMarkerAlt} className="me-2" /> Route L'afrane km1.5
                             </span>
                         </div>
-                        {(isClientConnected && location.pathname === `/ficheintervenant/${intervenant?.id}` && user?.utilisateur?.role === 'CLIENT') && (
-                            <button
-                                className="btn btn-warning btn-obtenir-rdv-top ms-auto me-2"
-                                onClick={() => navigate(`/calendrier/${intervenant.id}`)}
-                            >
-                                OBTENIR UN RENDEZ-VOUS
-                            </button>
-                        )}
+                        {/* Bouton Obtenir un rendez-vous uniquement si pas signalé */}
+
+                        {isClientConnected &&
+                            location.pathname === `/ficheintervenant/${intervenant?.id}` &&
+                            user?.utilisateur?.role === 'CLIENT' &&
+                            (!isSignaled ? (
+                                <button
+                                    className="btn btn-warning btn-obtenir-rdv-top ms-auto me-2"
+                                    onClick={() => navigate(`/calendrier/${intervenant.id}`)}
+                                >
+                                    OBTENIR UN RENDEZ-VOUS
+                                </button>
+                            ) : (
+                                <div style={{
+                                    color: '#fff',
+                                    backgroundColor: '#d9534f',
+                                    fontWeight: '600',
+                                    textAlign: 'center',
+                                    padding: '12px 16px',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                                    fontSize: '14px',
+                                    marginTop: '10px'
+                                }}>
+                                    Ce prestataire a été signalé et n’est pas disponible pour la prise de rendez-vous
+                                </div>
+                            ))}
 
                     </div>
                 </div>
@@ -520,7 +573,7 @@ const Header = ({ isClientConnected, intervenant }) => {
                                             key={s.id}
                                             to={`/prestataires?service=${s.id}`}
                                             className="d-flex justify-content-between align-items-center border-bottom py-2 text-decoration-none"
-                                          style={{ cursor: 'pointer', color: 'black' }} 
+                                            style={{ cursor: 'pointer', color: 'black' }}
                                             onClick={() => {
                                                 setIsSearchOpen(false);
                                                 setSearchQuery('');

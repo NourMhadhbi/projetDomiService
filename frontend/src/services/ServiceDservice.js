@@ -36,6 +36,15 @@ export const modifierService = async ({ id, data }) => {
 
 //  Archiver service
 export const archiverService = async (id) => {
-    const response = await Api.put(`${Service_API}/archive/${id}`);
+    try {
+        const response = await Api.put(`${Service_API}/archive/${id}`);
+        return response.data;
+    } catch (error) {
+        // On rejette uniquement le message du backend
+        throw error.response?.data || { message: error.message };
+    }
+};
+export const activerService = async (id) => {
+    const response = await Api.put(`${Service_API}/activer/${id}`);
     return response.data;
 };

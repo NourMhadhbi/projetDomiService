@@ -1,10 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import FavorisSection from './FavorisSection';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMesSignales } from '../../features/SignalementSlice';
 
 
 const ProfileSection = ({ isClientConnected, user, intervenant }) => {
-
+    const { mesSignales } = useSelector(state => state.signalement);
+    const [isSignaled, setIsSignaled] = useState(false);
+       const dispatch = useDispatch();
     useEffect(() => {
         // Animation pour les barres de compétences
         const skillBars = document.querySelectorAll('.skill-level');
@@ -17,7 +20,18 @@ const ProfileSection = ({ isClientConnected, user, intervenant }) => {
             }, 300);
         });
     }, []);
+    useEffect(() => {
+        if (isClientConnected && user?.utilisateur?.role === "CLIENT" && user?.utilisateur?.id) {
+            dispatch(fetchMesSignales(user.utilisateur.id));
+        }
+    }, [dispatch, isClientConnected, user]);
 
+  
+    useEffect(() => {
+        if (!intervenant || !mesSignales || !isClientConnected || user?.utilisateur?.role !== "CLIENT") return;
+        const signaled = mesSignales.some(s => s.prestataireId === intervenant.id);
+        setIsSignaled(signaled);
+    }, [mesSignales, intervenant, isClientConnected, user]);
     return (
         <div className="section profile-container">
             <div className="profile-section">
@@ -103,7 +117,7 @@ const ProfileSection = ({ isClientConnected, user, intervenant }) => {
                                 )}
                             </div>
                         ))}
-                        {user?.utilisateur?.role === "CLIENT" && (
+                        {user?.utilisateur?.role === "CLIENT" && !isSignaled && (
                             <FavorisSection prestataireId={intervenant?.id} />
                         )}
 

@@ -64,16 +64,7 @@ const ListNonFavorisPrestataires = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => [
-        {
-            accessorKey: 'id',
-            header: 'ID',
-            size: 30,
-            Cell: ({ cell }) => (
-                <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                    #{cell.getValue()}
-                </Box>
-            ),
-        },
+
         {
             accessorKey: 'nom',
             header: 'Nom / Responsable',

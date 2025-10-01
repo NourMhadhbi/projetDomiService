@@ -314,6 +314,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
 import AvisModal from './AvisModal';
+import CommentModal from './CommentModal';
 import {
     updateAvis,
     archiverAvis,
@@ -332,7 +333,13 @@ const ListeAvis = () => {
     const [selectionModel, setSelectionModel] = useState([]);
     const isIntervenant = user?.utilisateur?.role === 'PRESTATAIRE' || user?.utilisateur?.role === 'ENTREPRISE';
     const theme = useTheme();
+    const [selectedComment, setSelectedComment] = useState(null);
+    const [commentModalOpen, setCommentModalOpen] = useState(false);
 
+    const handleCommentClick = (comment) => {
+        setSelectedComment(comment);
+        setCommentModalOpen(true);
+    };
     const [intervenantModal, setIntervenantModal] = useState(null);
 
     const [formData, setFormData] = useState({
@@ -489,22 +496,7 @@ const ListeAvis = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => isIntervenant ? [
-        {
-            accessorKey: 'id',
-            header: 'ID',
-            size: 50,
-            Cell: ({ cell }) => (
-                <Chip
-                    label={`#${cell.getValue()}`}
-                    size="small"
-                    sx={{
-                        fontWeight: 'bold',
-                        backgroundColor: '#e0e0e0',
-                        color: '#424242'
-                    }}
-                />
-            ),
-        },
+       
         {
             accessorKey: 'nomClient',
             header: 'Client',
@@ -529,17 +521,25 @@ const ListeAvis = () => {
         {
             accessorKey: 'commentaire',
             header: 'Commentaire',
-            Cell: ({ cell }) => (
+            Cell: ({ cell, row }) => (
                 <Box
                     sx={{
                         p: 1,
                         backgroundColor: '#f5f5f5',
                         borderRadius: 1,
                         borderLeft: '3px solid',
-                        borderLeftColor: theme.palette.primary.main
+                        borderLeftColor: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: '#e8e8e8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
                     }}
+                    onClick={() => handleCommentClick(row.original)}
                 >
-                    <Tooltip title={cell.getValue()} arrow>
+                    <Tooltip title="Cliquez pour voir le commentaire complet" arrow>
                         <Typography
                             variant="body2"
                             sx={{
@@ -635,22 +635,7 @@ const ListeAvis = () => {
             size: 200
         },
     ] : [
-        {
-            accessorKey: 'id',
-            header: 'ID',
-            size: 50,
-            Cell: ({ cell }) => (
-                <Chip
-                    label={`#${cell.getValue()}`}
-                    size="small"
-                    sx={{
-                        fontWeight: 'bold',
-                        backgroundColor: '#e0e0e0',
-                        color: '#424242'
-                    }}
-                />
-            ),
-        },
+    
         {
             accessorKey: 'prestataire',
             header: 'Prestataire/Entreprise',
@@ -668,17 +653,25 @@ const ListeAvis = () => {
         {
             accessorKey: 'commentaire',
             header: 'Commentaire',
-            Cell: ({ cell }) => (
+            Cell: ({ cell, row }) => (
                 <Box
                     sx={{
                         p: 1,
                         backgroundColor: '#f5f5f5',
                         borderRadius: 1,
                         borderLeft: '3px solid',
-                        borderLeftColor: theme.palette.primary.main
+                        borderLeftColor: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: '#e8e8e8',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
                     }}
+                    onClick={() => handleCommentClick(row.original)}
                 >
-                    <Tooltip title={cell.getValue()} arrow>
+                    <Tooltip title="Cliquez pour voir le commentaire complet" arrow>
                         <Typography
                             variant="body2"
                             sx={{
@@ -964,6 +957,13 @@ const ListeAvis = () => {
                 reaction={reaction}
                 setReaction={setReaction}
             />
+            {commentModalOpen && (
+                <CommentModal
+                    open={commentModalOpen}
+                    onClose={() => setCommentModalOpen(false)}
+                    commentData={selectedComment}
+                />
+            )}
         </>
     );
 };

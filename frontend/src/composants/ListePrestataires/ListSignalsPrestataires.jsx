@@ -1,18 +1,26 @@
 import React, { useEffect, useMemo } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
-import { Box, Typography, Paper, CircularProgress, useTheme, Chip } from "@mui/material";
+import {
+    Box, Typography, Paper, CircularProgress, useTheme, Chip, Snackbar, Alert, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button,
+    Zoom
+} from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faList,
     faBuilding,
     faCalendar,
     faUser,
-    faExclamationTriangle
+    faExclamationTriangle,
+    faTrashAlt
 } from "@fortawesome/free-solid-svg-icons";
+
+import { archiverSignaleThunk } from "../../features/SignalementSlice";
+import { Archive } from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchMesSignales } from "../../features/SignalementSlice";
 import { MaterialReactTable } from 'material-react-table';
+import { useState } from "react";
 
 const ListSignalsPrestataires = () => {
     const dispatch = useDispatch();
@@ -28,7 +36,8 @@ const ListSignalsPrestataires = () => {
                 .catch((err) => console.error("Erreur fetchMesSignales:", err));
         }
     }, [dispatch, user]);
-
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
+    const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
     // Transformer les données pour MRT
     const rows = useMemo(
         () =>
@@ -60,19 +69,30 @@ const ListSignalsPrestataires = () => {
         [mesSignales]
     );
 
+
+    const handleArchive = (id) => {
+        dispatch(archiverSignaleThunk(id))
+            .unwrap()
+            .then(() => {
+                setSnackbar({
+                    open: true,
+                    message: 'Signalement archivé avec succès',
+                    severity: 'success'
+                });
+            })
+            .catch(() => {
+                setSnackbar({
+                    open: true,
+                    message: 'Erreur lors de l’archivage',
+                    severity: 'error'
+                });
+            });
+    };
+
     // Colonnes MRT avec des largeurs proportionnelles
     const columns = useMemo(
         () => [
-            {
-                accessorKey: 'id',
-                header: 'ID',
-                size: 70,
-                Cell: ({ cell }) => (
-                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                        #{cell.getValue()}
-                    </Box>
-                ),
-            },
+
 
             {
                 accessorKey: 'responsable',
@@ -147,13 +167,109 @@ const ListSignalsPrestataires = () => {
                     </Box>
                 ),
             },
+            {
+                accessorKey: 'actions',
+                header: 'Actions',
+                size: 100,
+                Cell: ({ row }) => (
+                    <IconButton
+                        color="primary"
+                        onClick={() => setConfirmDialog({ open: true, id: row.original.id })}
+                    >
+                        <FontAwesomeIcon icon={faTrashAlt} style={{ color: '#da0606ff' }} />
+                    </IconButton>
+                ),
+            },
         ],
         []
     );
 
+    const handleConfirmArchive = () => {
+        const id = confirmDialog.id;
+        dispatch(archiverSignaleThunk(id))
+            .unwrap()
+            .then(() => {
+                setSnackbar({ open: true, message: "Signalement archivé avec succès", severity: "success" });
+
+                if (user?.utilisateur?.id) {
+                    dispatch(fetchMesSignales(user.utilisateur.id));
+                }
+            })
+            .catch(() => {
+                setSnackbar({ open: true, message: "Erreur lors de l'archivage", severity: "error" });
+            })
+            .finally(() => setConfirmDialog({ open: false, id: null }));
+    };
+
     return (
         <>
             <Header isClientConnected={isLoggedIn} />
+            <Dialog
+                open={confirmDialog.open}
+                onClose={() => setConfirmDialog({ open: false, id: null })}
+                TransitionComponent={Zoom}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 3,
+                        p: 2,
+                        maxWidth: 400,
+                    },
+                }}
+            >
+                <DialogTitle sx={{ textAlign: "center", fontWeight: "bold", color: "black" }}>
+                    <Box display="flex" justifyContent="center" mb={1}>
+                        <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: 40, color: "#d81908ff" }} />
+                    </Box>
+                    Confirmation
+                </DialogTitle>
+
+                <DialogContent>
+                    <Typography align="center" variant="body1" sx={{ mb: 2 }}>
+                        Voulez-vous vraiment <strong>supprimer</strong> ce signalement ? <br />
+                        Cette action peut être annulée plus tard.
+                    </Typography>
+                </DialogContent>
+
+                <DialogActions sx={{ justifyContent: "center", gap: 2, pb: 2 }}>
+                    <Button
+                        variant="outlined"
+                        color="inherit"
+                        onClick={() => setConfirmDialog({ open: false, id: null })}
+                        sx={{ borderRadius: 2, px: 3 }}
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleConfirmArchive}
+                        sx={{ borderRadius: 2, px: 3 }}
+                    >
+                        Supprimer
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+            >
+                <Alert
+                    severity={snackbar.severity}
+                    sx={{
+                        width: '100%',
+                        ...(snackbar.severity === "success" && {
+                            backgroundColor: "#2e7d32",
+                            color: "#fff",
+                            "& .MuiAlert-icon": { color: "#fff" }
+                        })
+                    }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+
             <Box
                 sx={{
                     minHeight: '80vh',

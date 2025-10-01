@@ -1,7 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getTop5, getServicesNonArchive, getService, getServices, ajouterService,
+import {
+    getTop5, getServicesNonArchive, getService, getServices, ajouterService,
     modifierService,
-    archiverService, } from '../services/ServiceDservice';
+    archiverService, activerService
+} from '../services/ServiceDservice';
 //  Récupérer les statistiques
 export const getTop5Thunk = createAsyncThunk(
     'service/getTop5',
@@ -37,24 +39,46 @@ export const fetchServices = createAsyncThunk(
 );
 export const ajouterServiceThunk = createAsyncThunk(
     'service/ajouter',
-    async (data) => {
-        const res = await ajouterService(data);
-        return res;
+    async (data, { rejectWithValue }) => {
+        try {
+            const res = await ajouterService(data);
+            return res;
+        } catch (error) {
+
+            const message =
+                error.response?.data?.message || error.message || "Erreur lors de l'ajout du service";
+            return rejectWithValue(message);
+        }
     }
 );
 
+
 export const modifierServiceThunk = createAsyncThunk(
     'service/modifier',
-    async ({ id, data }) => {
-        const res = await modifierService({ id, data });
-        return res;
+    async ({ id, data }, { rejectWithValue }) => {
+        try {
+            const res = await modifierService({ id, data });
+            return res;
+        } catch (error) {
+            const message =
+                error.response?.data?.message || error.message || "Erreur lors de la modification du service";
+            return rejectWithValue(message);
+        }
     }
 );
+
 
 export const archiverServiceThunk = createAsyncThunk(
     'service/archiver',
     async (id) => {
         const res = await archiverService(id);
+        return res;
+    }
+);
+export const activerServiceThunk = createAsyncThunk(
+    'service/activer',
+    async (id) => {
+        const res = await activerService(id);
         return res;
     }
 );
@@ -126,6 +150,10 @@ const serviceSlice = createSlice({
                 if (index !== -1) state.services[index] = action.payload;
             })
             .addCase(archiverServiceThunk.fulfilled, (state, action) => {
+                const index = state.services.findIndex(s => s.id === action.payload.id);
+                if (index !== -1) state.services[index] = action.payload;
+            })
+            .addCase(activerServiceThunk.fulfilled, (state, action) => {
                 const index = state.services.findIndex(s => s.id === action.payload.id);
                 if (index !== -1) state.services[index] = action.payload;
             })

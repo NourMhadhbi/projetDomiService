@@ -6,7 +6,15 @@ const router = express.Router();
 router.post("/ajoutS", async (req, res) => {
     const { nom, description, image } = req.body;
 
+
     try {
+        const existing = await prisma.service.findUnique({
+            where: { nom }
+        });
+
+        if (existing) {
+            return res.status(400).json({ message: "Un service avec ce nom existe déjà." });
+        }
         const service = await prisma.service.create({
             data: {
                 nom,
@@ -27,6 +35,13 @@ router.put("/modifierS/:id", async (req, res) => {
     const id = req.params.id;
 
     try {
+        const existing = await prisma.service.findUnique({
+            where: { nom }
+        });
+
+        if (existing && existing.id !== id) {
+            return res.status(400).json({ message: "Un autre service utilise déjà ce nom." });
+        }
         const service = await prisma.service.update({
             where: { id: Number(id) },
             data: {
@@ -48,10 +63,10 @@ router.put("/archive/:id", async (req, res) => {
         where: { id: Number(id) },
         include: {
             prestataires: true,
-          
+
         },
     });
-    if (service.prestataires.length > 0 ) {
+    if (service.prestataires.length > 0) {
         return res.status(400).json({
             message: "Impossible d'archiver ce service car il est utilisé par un ou plusieurs prestataires ou entreprises.",
         });
@@ -60,6 +75,29 @@ router.put("/archive/:id", async (req, res) => {
         const updatedService = await prisma.service.update({
             data: {
                 etatArchive: true,
+            },
+            where: { id: Number(id) },
+        });
+
+        res.json(updatedService);
+    } catch (error) {
+        res.status(404).json({ message: error.message });
+    }
+});
+router.put("/activer/:id", async (req, res) => {
+    const id = req.params.id;
+    const service = await prisma.service.findUnique({
+        where: { id: Number(id) },
+        include: {
+            prestataires: true,
+
+        },
+    });
+
+    try {
+        const updatedService = await prisma.service.update({
+            data: {
+                etatArchive: false,
             },
             where: { id: Number(id) },
         });

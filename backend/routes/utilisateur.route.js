@@ -41,19 +41,54 @@ const generateRefreshToken = (user) => {
 //     });
 // }
 
-async function geocodeAdresse(adresse) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`;
-    const response = await fetch(url);
-    const data = await response.json();
+// async function geocodeAdresse(adresse) {
+//     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(adresse)}`;
+//     const response = await fetch(url);
+//     const data = await response.json();
 
-    if (!data || data.length === 0) return null;
+//     if (!data || data.length === 0) return null;
 
-    const { lat, lon } = data[0];
-    return {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lon),
-    };
+//     const { lat, lon } = data[0];
+//     return {
+//         latitude: parseFloat(lat),
+//         longitude: parseFloat(lon),
+//     };
+// }
+async function geocodeAdresse(adresse, ville) {
+    // Nettoyer les caractères spéciaux
+    let adresseClean = adresse.replace(/[،]/g, ',').trim();
+    let villeClean = ville ? ville.replace(/[،]/g, ',').trim() : '';
+
+    // Créer la requête finale
+    const query = villeClean ? `${adresseClean}, ${villeClean}` : adresseClean;
+
+    // Log pour debug
+    console.log("Recherche géocodage:", query);
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+            console.log("Aucune coordonnée trouvée pour:", query);
+            return null;
+        }
+
+        const { lat, lon } = data[0];
+        console.log("Coordonnées récupérées :", lat, lon);
+
+        return {
+            latitude: parseFloat(lat),
+            longitude: parseFloat(lon),
+        };
+    } catch (err) {
+        console.error("Erreur géocodage :", err);
+        return null;
+    }
 }
+
 // router.post('/register', async (req, res) => {
 
 //     try {
@@ -369,7 +404,7 @@ router.post('/register', async (req, res) => {
 
             const salt = await bcrypt.genSalt(10);
             const motDePasseCrypte = await bcrypt.hash(motDePasse, salt);
-            const coords = await geocodeAdresse(`${adresse}, ${ville}`);
+            const coords = await geocodeAdresse(adresse, ville);
 
             const userCreate = await prisma.utilisateur.create({
                 data: {
@@ -717,26 +752,57 @@ router.get('/activeClient/utilisateur', async (req, res) => {
     }
 })
 //activer compte Prestataire et entrprise 
-router.put('/activePrestataire', async (req, res) => {
+router.put('/activeUtilisateur', async (req, res) => {
     try {
         const { id } = req.query;
         const user = await prisma.utilisateur.findUnique({
-            where: { id: Number(id) }
+            where: { id: Number(id) },
+            include: {
+                client: true,
+                prestataire: true
+            }
         });
 
         if (!user) {
             return res.status(404).send("Utilisateur non trouvé.");
         }
+        let utilisateur;
+        if (user.role === "CLIENT") {
+            if (!user.client) {
+                return res.status(404).json({ success: false, message: "Client introuvable." });
+            }
 
-        const utilisateur = await prisma.prestataire.update({
-            data: { isActive: true },
-            where: { utilisateurIdPre: user.id },
-            include: { utilisateur: true, entreprise: true }
+            utilisateur = await prisma.client.update({
+                where: { utilisateurIdCl: user.id },
+                data: { isActive: true },
+                include: { utilisateur: true }
+            });
+        } else if ((user.role === "PRESTATAIRE" || user.role === "ENTREPRISE") && user.prestataire) {
+            utilisateur = await prisma.prestataire.update({
+                data: { isActive: true },
+                where: { utilisateurIdPre: user.id },
+                include: { utilisateur: true, entreprise: true }
+            });
+        }
+
+        const mailOption = {
+            from: '"DomiService" <domiservicesm@gmail.com>',
+            to: user.email,
+            subject: 'Activation du compte',
+            html: `
+        <h2>Bonjour ${user.nom + '  ' + user.prenom},</h2>
+        <p>Votre compte a été activé avec succès.</p>
+        <p>Si vous avez des questions, contactez-nous à domiservicesm@gmail.com.</p>
+        <p>Cordialement,<br>DomiService</p>
+    `
+        };
+
+        transporter.sendMail(mailOption, (error) => {
+            if (error) console.log("Erreur envoi email:", error);
         });
-
         return res.status(200).json({
             success: true,
-            message: "Compte prestataire activé avec succès",
+            message: "Compte utilisateur activé avec succès",
             data: utilisateur
         });
 
@@ -955,6 +1021,9 @@ router.post('/login', async (req, res) => {
 router.get('/Allclients', async (req, res) => {
     try {
         const clients = await prisma.client.findMany({
+            where: {
+                isActive: true
+            },
             include: {
                 utilisateur: true
             }
@@ -1443,7 +1512,7 @@ router.get('/intervenant/:id', async (req, res) => {
         const intervenant = await prisma.utilisateur.findUnique({
             where: { id: Number(id) },
             include: {
-                prestataire: { include: { entreprise: true } }
+                prestataire: { where: { isActive: true }, include: { entreprise: true } }
             }
         })
         res.status(200).json(intervenant);
@@ -1471,7 +1540,7 @@ function calculerDistance(lat1, lon1, lat2, lon2) {
 router.get('/prestataires-proches/:clientId', async (req, res) => {
     try {
         const client = await prisma.client.findUnique({
-            where: { utilisateurIdCl: parseInt(req.params.clientId) },
+            where: { utilisateurIdCl: parseInt(req.params.clientId), isActive: true },
             include: { utilisateur: true }
         });
 
@@ -1480,6 +1549,7 @@ router.get('/prestataires-proches/:clientId', async (req, res) => {
         }
 
         const prestataires = await prisma.prestataire.findMany({
+            where: { isActive: true },
             include: { utilisateur: true, entreprise: true }
         });
 
@@ -1513,7 +1583,9 @@ router.get('/prestataires', async (req, res) => {
         const take = parseInt(limit);
         const skip = (parseInt(page) - 1) * take;
 
-        const whereClause = {};
+        const whereClause = {
+            isActive: true,
+        };
 
         // Filtrer par type (PRESTATAIRE ou ENTREPRISE)
         if (type) {
@@ -1594,6 +1666,7 @@ router.get('/utilisateursA', async (req, res) => {
         const utilisateursFormates = utilisateurs.map(u => {
             const base = {
                 id: u.id,
+                image: u.image,
                 nom: u.nom,
                 prenom: u.prenom,
                 email: u.email,
@@ -1617,6 +1690,10 @@ router.get('/utilisateursA', async (req, res) => {
                     adresse: u.prestataire.adresse,
                     numTel: u.prestataire.numTel,
                     specialite: u.prestataire.Spécialite,
+                    tarifDeplacement: u.prestataire.tarifDeplacement,
+                    competence: u.prestataire.competence,
+                    experience: u.prestataire.experience,
+                    description: u.prestataire.descriptionCourte,
                     service: u.prestataire.service?.nom || null
                 };
 

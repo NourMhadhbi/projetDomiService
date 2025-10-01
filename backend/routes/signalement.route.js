@@ -7,6 +7,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
     try {
         const signales = await prisma.signalement.findMany({
+            where: { etatArchive: false },
             include: {
                 client: {
                     include: {
@@ -72,7 +73,7 @@ router.get("/mesSignalements/:clientId", async (req, res) => {
         }
 
         const signales = await prisma.signalement.findMany({
-            where: { clientId },
+            where: { clientId, etatArchive: false },
             include: {
                 client: {
                     include: { utilisateur: true }
@@ -141,6 +142,28 @@ router.post("/AjoutSignale", async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+// Route pour archiver un signalement
+router.post("/ArchiveSignale", async (req, res) => {
+    try {
+        const { signalId } = req.body;
+
+        if (!signalId) {
+            return res.status(400).json({ message: "L'id du signalement est requis" });
+        }
+
+        // Met à jour le signalement en le marquant comme archivé
+        const archivedSignal = await prisma.signalement.update({
+            where: { id: Number(signalId) },
+            data: { etatArchive: true, updatedAt: new Date() },
+        });
+
+        res.json({ message: "Signalement supprimé avec succès", archivedSignal });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 //detecte nombre signalement 
 router.get("/checkSignalements", async (req, res) => {
     try {
@@ -149,6 +172,7 @@ router.get("/checkSignalements", async (req, res) => {
                 role: {
                     in: ["CLIENT", "PRESTATAIRE", "ENTREPRISE"]
                 }
+
             },
             include: {
                 client: true,
@@ -173,7 +197,7 @@ router.get("/checkSignalements", async (req, res) => {
 
             if ((user.role === "PRESTATAIRE" || user.role === "ENTREPRISE") && user.prestataire) {
                 nbSignalements = await prisma.signalement.count({
-                    where: { prestataireId: user.prestataire.utilisateurIdPre }
+                    where: { prestataireId: user.prestataire.utilisateurIdPre, etatArchive: false }
                 });
             }
 

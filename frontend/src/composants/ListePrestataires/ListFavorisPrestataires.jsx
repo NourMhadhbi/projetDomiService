@@ -41,7 +41,7 @@ const ListFavorisPrestataires = () => {
                         : "—",
                 entrepriseNom: entreprise ? entreprise.nomEntreprise : "—",
                 service: service ? service.nom : "—",
-                telephone: utilisateur?.numTel || "—",
+                telephone: prestataire?.numTel || "—",
                 email: utilisateur?.email || "—",
                 dateAjout: favori.dateAjout
                     ? new Date(favori.dateAjout).toLocaleDateString("fr-FR", {
@@ -57,16 +57,7 @@ const ListFavorisPrestataires = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => [
-        {
-            accessorKey: 'id',
-            header: 'ID',
-            size: 30,
-            Cell: ({ cell }) => (
-                <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                    #{cell.getValue()}
-                </Box>
-            ),
-        },
+
         {
             accessorKey: 'nom',
             header: 'Nom / Responsable',

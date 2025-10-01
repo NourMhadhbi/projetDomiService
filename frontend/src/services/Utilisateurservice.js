@@ -2,7 +2,7 @@ import Api from '../axios/Api';
 const UTILISATEUR_API = '/utilisateur';
 export const getIntervenant = async () => {
     const response = await Api.get(`${UTILISATEUR_API}/getintervenant`);
-    return response.data; 
+    return response.data;
 };
 export const getTousPrestataires = async () => {
     const response = await Api.get(`${UTILISATEUR_API}/Allprestataires`);
@@ -25,7 +25,7 @@ export const getPrestatairesProches = async (clientId) => {
 
 
 export const activerCompte = async (id) => {
-    const response = await Api.put(`${UTILISATEUR_API}/activePrestataire?id=${id}`);
+    const response = await Api.put(`${UTILISATEUR_API}/activeUtilisateur?id=${id}`);
     return response.data;
 };
 export const desactiverCompte = async (id, raison) => {

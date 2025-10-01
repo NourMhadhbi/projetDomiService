@@ -238,12 +238,21 @@ import {
     Paper,
     Button,
     Chip,
-    useTheme
+    useTheme, Avatar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton
 } from "@mui/material";
 import BlockIcon from '@mui/icons-material/Block';
+import Grid from "@mui/material/Grid";
+import Divider from "@mui/material/Divider";
+import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import InfoIcon from '@mui/icons-material/Info';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faList, faUser, faEnvelope, faPhone, faMapMarkerAlt, faBuilding, faGlobe, faIdCard } from '@fortawesome/free-solid-svg-icons';
+import { faList, faUser, faEnvelope, faPhone, faMapMarkerAlt, faBuilding, faGlobe, faIdCard, faMoneyBill, faStar, faCertificate, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import {
     fetchUtilisateursParRole,
@@ -251,11 +260,14 @@ import {
     desactiverCompteThunk,
     clearUtilisateurState,
 } from "../../features/UtilisateurSlice";
+
 import { checkSignales } from "../../features/SignalementSlice";
 import Swal from 'sweetalert2';
 import { MaterialReactTable } from 'material-react-table';
 
 const ListeUtilisateursAdmin = () => {
+    const [openDialog, setOpenDialog] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [filtreRole, setFiltreRole] = useState("TOUS");
     const dispatch = useDispatch();
     const { isLoggedIn } = useSelector((state) => state.auth);
@@ -275,7 +287,15 @@ const ListeUtilisateursAdmin = () => {
             nbSignalements: match?.nbSignalements || 0
         };
     });
+    const handleOpenDialog = (user) => {
+        setSelectedUser(user);
+        setOpenDialog(true);
+    };
 
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedUser(null);
+    };
     const handleActiver = async (id) => {
 
         Swal.fire({
@@ -373,18 +393,51 @@ const ListeUtilisateursAdmin = () => {
     };
 
     // Configuration des colonnes pour MaterialReactTable
-
     const getColumns = (role) => {
         const baseColumns = [
+
             {
-                accessorKey: 'id',
-                header: 'ID',
-                size: 70,
-                Cell: ({ cell }) => (
-                    <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-                        #{cell.getValue()}
+                accessorKey: 'image',
+                header: 'Image',
+                size: 100,
+                Cell: ({ cell, row }) => (
+                    <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        height="100%"
+                        sx={{ p: 1 }}
+                    >
+                        {cell.getValue() ? (
+                            <Avatar
+                                src={cell.row.original.image}
+                                alt={cell.row.original.nom}
+                                sx={{
+                                    width: 60,
+                                    height: 60,
+                                    borderRadius: 2,
+                                    boxShadow: theme.shadows[2]
+                                }}
+                            />
+                        ) : (
+                            <Box
+                                sx={{
+                                    width: 60,
+                                    height: 60,
+                                    bgcolor: "grey.100",
+                                    borderRadius: 2,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center"
+                                }}
+                            >
+                                <Typography variant="caption" color="textSecondary">
+                                    Aucune image
+                                </Typography>
+                            </Box>
+                        )}
                     </Box>
-                ),
+                )
             },
             {
                 accessorKey: 'nom',
@@ -425,6 +478,22 @@ const ListeUtilisateursAdmin = () => {
                         size="small"
                     />
                 ),
+            },
+            {
+                id: 'details',
+                header: 'Plus de détails',
+                size: 150,
+                Cell: ({ row }) => (
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleOpenDialog(row.original)}
+                        startIcon={<InfoIcon />}
+                        size="small"
+                    >
+                        Détails
+                    </Button>
+                ),
             }
         ];
 
@@ -434,39 +503,6 @@ const ListeUtilisateursAdmin = () => {
             size: 150,
             position: 'last',
             Cell: ({ row }) => {
-
-                if (row.original.role === "CLIENT") {
-                    return row.original.isActive ? (
-                        <Button
-                            variant="contained"
-                            color="warning"
-                            onClick={() => handleDesactiver(row)}
-                            startIcon={<BlockIcon />}
-                            sx={{
-                                borderRadius: 2,
-                                fontWeight: 600,
-                                fontSize: '0.7rem',
-                                py: 0.5,
-                                px: 1.5,
-                                minWidth: 'auto',
-                                size: "small"
-
-                            }}
-                        >
-                            Désactiver
-                        </Button>
-                    ) : (
-                        // Pour les clients désactivés, on n'affiche aucun bouton
-                        <Chip
-                            label="Compte désactivé"
-                            color="default"
-                            variant="outlined"
-                            size="small"
-                        />
-                    );
-                }
-
-
                 return row.original.isActive ? (
                     <Button
                         variant="contained"
@@ -476,7 +512,7 @@ const ListeUtilisateursAdmin = () => {
                         sx={{
                             borderRadius: 2,
                             fontWeight: 600,
-                            fontSize: '0.7rem',
+                            fontSize: '0.8rem',
                             py: 0.5,
                             px: 1.5,
                             minWidth: 'auto',
@@ -506,155 +542,9 @@ const ListeUtilisateursAdmin = () => {
             }
         };
 
-
         let roleSpecificColumns = [];
 
-        if (role === "CLIENT") {
-            roleSpecificColumns = [
-                {
-                    accessorKey: 'ville',
-                    header: 'Ville',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'adresse',
-                    header: 'Adresse',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'numTel',
-                    header: 'Téléphone',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                }
-            ];
-        } else if (role === "PRESTATAIRE") {
-            roleSpecificColumns = [
-                {
-                    accessorKey: 'specialite',
-                    header: 'Spécialité',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'service',
-                    header: 'Service',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'ville',
-                    header: 'Ville',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'adresse',
-                    header: 'Adresse',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'numTel',
-                    header: 'Téléphone',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                }
-            ];
-        } else if (role === "ENTREPRISE") {
-            roleSpecificColumns = [
-                {
-                    accessorKey: 'specialite',
-                    header: 'Spécialité',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'nomEntreprise',
-                    header: 'Entreprise',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faBuilding} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'siteWeb',
-                    header: 'Site Web',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faGlobe} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'identifiant',
-                    header: 'Identifiant',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faIdCard} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'service',
-                    header: 'Service',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'ville',
-                    header: 'Ville',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                },
-                {
-                    accessorKey: 'adresse',
-                    header: 'Adresse',
-                    size: 200,
-                },
-                {
-                    accessorKey: 'numTel',
-                    header: 'Téléphone',
-                    size: 200,
-                    Cell: ({ cell }) => (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8, color: '#6c757d' }} />
-                            <span>{cell.getValue()}</span>
-                        </Box>
-                    ),
-                }
-            ];
-        }
-        else {
-
+        if (role === "TOUS") {
             roleSpecificColumns = [
                 {
                     accessorKey: 'role',
@@ -852,10 +742,10 @@ const ListeUtilisateursAdmin = () => {
                                     '&:hover': {
                                         backgroundColor: 'grey.50',
                                     },
-                                    opacity: row.original.isActive ? 1 : 0.6,
+                                    opacity: 1,
                                     backgroundColor: row.original.nbSignalements >= 10 ?
                                         'rgba(255, 0, 0, 0.05)' : 'inherit',
-                                },
+                                }
                             })}
                             muiBottomToolbarProps={{
                                 sx: {
@@ -872,7 +762,418 @@ const ListeUtilisateursAdmin = () => {
                         />
                     )}
                 </Paper>
-            </Box>
+                {/* Dialog pour afficher les détails de l'utilisateur */}
+                {/* Dialog pour afficher les détails de l'utilisateur */}
+                <Dialog
+                    open={openDialog}
+                    onClose={handleCloseDialog}
+                    maxWidth="lg"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 2,
+                            boxShadow: theme.shadows[10],
+                        },
+                    }}
+                >
+                    <DialogTitle
+                        sx={{
+                            m: 0,
+                            p: 2,
+                            backgroundColor: theme.palette.primary.main,
+                            color: 'white',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Typography variant="h6">Détails de l'utilisateur</Typography>
+                        <IconButton
+                            aria-label="close"
+                            onClick={handleCloseDialog}
+                            sx={{
+                                color: 'white',
+                            }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            p: 3,
+
+                            maxHeight: '70vh',
+                            overflowY: 'auto',
+                        }}
+                    >
+                        {selectedUser && (
+                            <Grid container spacing={3} >
+                                {/* Partie gauche - Informations personnelles */}
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        mb: 3,
+                                        p: 2,
+                                        borderRight: { md: '1px solid', xs: 'none' },
+                                        borderColor: 'divider',
+                                        height: '100%'
+                                    }}>
+                                        <Avatar
+                                            src={selectedUser.image}
+                                            sx={{
+                                                width: 120,
+                                                height: 120,
+                                                mb: 2,
+                                                boxShadow: theme.shadows[4]
+                                            }}
+                                        />
+                                        <Chip
+                                            label={selectedUser.role}
+                                            color={
+                                                selectedUser.role === "CLIENT" ? "primary" :
+                                                    selectedUser.role === "PRESTATAIRE" ? "secondary" : "info"
+                                            }
+                                            sx={{ mb: 2 }}
+                                        />
+                                        <Chip
+                                            label={selectedUser.isActive ? "Compte actif" : "Compte désactivé"}
+                                            color={selectedUser.isActive ? "success" : "error"}
+                                            variant="outlined"
+                                            sx={{ mb: 3 }}
+                                        />
+
+
+
+                                        <Divider sx={{ my: 2, width: '100%' }} />
+
+                                        {/* Section signalements */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                            <Chip
+                                                label={`${selectedUser.nbSignalements} signalement(s)`}
+                                                color={selectedUser.nbSignalements >= 10 ? "error" : "default"}
+                                                variant={selectedUser.nbSignalements >= 10 ? "filled" : "outlined"}
+                                                sx={{ mr: 1 }}
+                                            />
+                                            <Typography variant="body2" color="text.secondary">
+                                                {selectedUser.nbSignalements >= 10 ?
+                                                    "Ce compte a un nombre élevé de signalements" :
+                                                    "Nombre de signalements reçus"
+                                                }
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Grid>
+
+                                {/* Partie droite - Informations professionnelles */}
+                                <Grid item xs={12} md={6} sx={{ height: "100%" }}>
+                                    {selectedUser.role === "CLIENT" && (
+                                        <>
+                                            <Typography variant="h6" gutterBottom sx={{
+                                                color: theme.palette.primary.main,
+                                                alignSelf: 'flex-start',
+                                                mt: 2
+                                            }}>
+                                                Informations personnelles
+                                            </Typography>
+
+                                            <Box sx={{ width: '150%' }}>
+                                                <Grid container spacing={2}>
+
+                                                    <Grid item xs={12} sm={4}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faUser} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Nom complet</Typography>
+                                                                <Typography variant="body1">{selectedUser.prenom} {selectedUser.nom}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+
+                                                </Grid>
+                                                <Grid container spacing={2} sx={{ mt: 3 }}>
+                                                    <Grid item xs={12} sm={4}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faEnvelope} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Email</Typography>
+                                                                <Typography variant="body1">{selectedUser.email}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                </Grid>
+
+                                                <Grid container spacing={2} sx={{ mt: 3 }}>
+                                                    <Grid item xs={12} sm={4}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Téléphone</Typography>
+                                                                <Typography variant="body1">{selectedUser.numTel || "Non renseigné"}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                </Grid>
+
+                                                <Grid container spacing={2} sx={{ mt: 3 }}>
+
+                                                    <Grid item xs={12} sm={6}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Ville</Typography>
+                                                                <Typography variant="body1">{selectedUser.ville || "Non renseignée"}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                </Grid>
+
+                                                <Grid container spacing={2} sx={{ mt: 3 }}>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                            <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Adresse</Typography>
+                                                                <Typography variant="body1">{selectedUser.adresse || "Non renseignée"}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                </Grid>
+
+                                            </Box>
+
+                                        </>
+                                    )}
+
+                                    <Box sx={{ p: 2, height: '100%', width: '100%' }}>
+                                        {/* Informations spécifiques au rôle */}
+                                        {(selectedUser.role === "PRESTATAIRE" || selectedUser.role === "ENTREPRISE") && (
+                                            <>
+                                                <Typography variant="h6" gutterBottom sx={{
+                                                    color: theme.palette.primary.main,
+                                                    alignSelf: 'flex-start',
+                                                    mt: 2
+                                                }}>
+                                                    Informations personnelles
+                                                </Typography>
+
+                                                <Box sx={{ width: '150%' }}>
+                                                    <Grid container spacing={2}>
+
+                                                        <Grid item xs={12} sm={4}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FontAwesomeIcon icon={faUser} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                                <Box>
+                                                                    <Typography variant="body2" color="text.secondary">Nom complet</Typography>
+                                                                    <Typography variant="body1">{selectedUser.prenom} {selectedUser.nom}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+
+
+                                                        <Grid item xs={12} sm={4}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FontAwesomeIcon icon={faEnvelope} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                                <Box>
+                                                                    <Typography variant="body2" color="text.secondary">Email</Typography>
+                                                                    <Typography variant="body1">{selectedUser.email}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+
+
+                                                        <Grid item xs={12} sm={4}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <FontAwesomeIcon icon={faPhone} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                                <Box>
+                                                                    <Typography variant="body2" color="text.secondary">Téléphone</Typography>
+                                                                    <Typography variant="body1">{selectedUser.numTel || "Non renseigné"}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+                                                    </Grid>
+
+                                                    <Grid container spacing={2} sx={{ mt: 3 }}>
+
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                                <Box>
+                                                                    <Typography variant="body2" color="text.secondary">Ville</Typography>
+                                                                    <Typography variant="body1">{selectedUser.ville || "Non renseignée"}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+
+
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: 8, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                                <Box>
+                                                                    <Typography variant="body2" color="text.secondary">Adresse</Typography>
+                                                                    <Typography variant="body1">{selectedUser.adresse || "Non renseignée"}</Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+                                                    </Grid>
+
+                                                </Box>
+                                                <Box sx={{ p: 2, height: '100%' }}></Box>
+                                                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main }}>
+                                                    Informations professionnelles
+                                                </Typography>
+                                                <Grid container spacing={3}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 4 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faCertificate} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Spécialité</Typography>
+                                                                <Typography variant="body1">{selectedUser.specialite || "Non renseignée"}</Typography>
+                                                            </Box>
+                                                        </Box>
+
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faList} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Service</Typography>
+                                                                <Typography variant="body1">{selectedUser.service || "Non renseigné"}</Typography>
+                                                            </Box>
+                                                        </Box>
+
+
+
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faMoneyBill} style={{ marginRight: 12, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">
+                                                                    Tarif de déplacement
+                                                                </Typography>
+                                                                <Typography variant="body1">
+                                                                    {selectedUser.tarifDeplacement ? `${selectedUser.tarifDeplacement} €` : "Non renseigné"}
+                                                                </Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                </Grid>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 600 }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                                        <FontAwesomeIcon icon={faStar} style={{ marginRight: 12, color: '#6c757d', minWidth: 20 }} />
+                                                        <Box>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Expérience
+                                                            </Typography>
+                                                            <Typography variant="body1">
+                                                                {selectedUser.experience || "Non renseignée"}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                                                        <FontAwesomeIcon icon={faInfoCircle} style={{ marginRight: 12, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                        <Box>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Description
+                                                            </Typography>
+                                                            <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                                                                {selectedUser.description || "Non renseignée"}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                                                        <FontAwesomeIcon icon={faCertificate} style={{ marginRight: 12, color: '#6c757d', minWidth: 20, marginTop: 4 }} />
+                                                        <Box>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Compétence
+                                                            </Typography>
+                                                            <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                                                                {selectedUser.competence || "Non renseignée"}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+                                                </Box>
+                                            </>
+                                        )}
+
+                                        {selectedUser.role === "ENTREPRISE" && (
+                                            <>
+                                                <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main }}>
+                                                    Informations de l'entreprise
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 4 }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faBuilding} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Nom de l'entreprise</Typography>
+                                                                <Typography variant="body1">{selectedUser.nomEntreprise || "Non renseigné"}</Typography>
+                                                            </Box>
+                                                        </Box>
+
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faGlobe} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Site web</Typography>
+                                                                <Typography variant="body1">{selectedUser.siteWeb || "Non renseigné"}</Typography>
+                                                            </Box>
+                                                        </Box>
+
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                            <FontAwesomeIcon icon={faIdCard} style={{ marginRight: 8, color: '#6c757d', minWidth: 20 }} />
+                                                            <Box>
+                                                                <Typography variant="body2" color="text.secondary">Identifiant</Typography>
+                                                                <Typography variant="body1">{selectedUser.identifiant || "Non renseigné"}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                </Grid>
+
+
+                                            </>
+                                        )}
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        )}
+                    </DialogContent>
+
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={handleCloseDialog} color="primary" variant="outlined">
+                            Fermer
+                        </Button>
+                        {selectedUser && (
+                            selectedUser.isActive ? (
+                                <Button
+                                    onClick={() => {
+                                        handleCloseDialog();
+                                        handleDesactiver({ original: selectedUser });
+                                    }}
+                                    color="warning"
+                                    variant="contained"
+                                    startIcon={<BlockIcon />}
+                                >
+                                    Désactiver le compte
+                                </Button>
+                            ) : (
+                                <Button
+                                    onClick={() => {
+                                        handleCloseDialog();
+                                        handleActiver(selectedUser.id);
+                                    }}
+                                    color="success"
+                                    variant="contained"
+                                    startIcon={<CheckCircleOutlineIcon />}
+                                >
+                                    Activer le compte
+                                </Button>
+                            )
+                        )}
+                    </DialogActions>
+                </Dialog>
+
+            </Box >
             <Footer />
         </>
     );

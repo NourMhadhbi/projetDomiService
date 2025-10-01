@@ -170,6 +170,7 @@ const PageProfil = () => {
                 return error;
             },
             ondata: (formData) => {
+                setIsUploading(true);
                 formData.append('upload_preset', 'DomiService');
                 formData.append('cloud_name', 'dkhjej8yx');
                 return formData;
@@ -313,7 +314,7 @@ const PageProfil = () => {
 
         try {
 
-          const updateResponse=  await dispatch(updateCompte(dataToSend)).unwrap();
+            const updateResponse = await dispatch(updateCompte(dataToSend)).unwrap();
             if (updateResponse.user?.isActive === false) {
                 await Swal.fire({
                     icon: "info",
@@ -327,7 +328,7 @@ const PageProfil = () => {
                 dispatch(reset());
                 dispatch(logout());
                 navigate("/accueil");
-                return; 
+                return;
             }
 
             Swal.fire({
@@ -389,14 +390,18 @@ const PageProfil = () => {
         <>
             <Header isClientConnected={isLoggedIn} />
 
-            <ProfileContainer maxWidth="lg">
+            <ProfileContainer maxWidth="lg" >
                 <Box>
                     <ProfileCard>
-                        <CardContent sx={{ p: 4 }}>
+                        <CardContent sx={{
+                            p: 4, maxHeight: '75vh',
+                            overflowY: 'auto',
+                            pr: 2
+                        }}   >
                             <Grid container spacing={4}>
 
                                 <Grid item xs={12} md={4}>
-                                    <Box display="flex" flexDirection="column" alignItems="center">
+                                    <Box display="flex" flexDirection="column" alignItems="center" >
                                         <Box position="relative" mb={3}>
                                             <StyledAvatar
                                                 src={avatarUrl}
@@ -481,6 +486,7 @@ const PageProfil = () => {
 
                                 <Grid item xs={12} md={8}>
                                     {/* Informations personnelles */}
+
                                     <Box mb={4}>
                                         <SectionTitle variant="h6">
                                             <Person sx={{ mr: 1 }} />
@@ -524,19 +530,19 @@ const PageProfil = () => {
                                                 Coordonnées
                                             </SectionTitle>
                                             <Box sx={{ pl: 2 }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                     <Home sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
                                                     <Typography variant="body1">
                                                         <strong>Adresse:</strong> {user.adresse || "-"}
                                                     </Typography>
                                                 </Box>
-                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                     <LocationCity sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
                                                     <Typography variant="body1">
                                                         <strong>Ville:</strong> {user.ville || "-"}
                                                     </Typography>
                                                 </Box>
-                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                     <Phone sx={{ mr: 1, mt: 0.5, fontSize: '20px' }} />
                                                     <Typography variant="body1">
                                                         <strong>Téléphone:</strong> {user.numTel || "-"}
@@ -569,7 +575,7 @@ const PageProfil = () => {
                                                     </Box>
                                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 600 }}>
                                                         {/* Compétences */}
-                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                             <School sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
                                                             <Box sx={{ flex: 1 }}>
                                                                 <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
@@ -593,7 +599,7 @@ const PageProfil = () => {
                                                         </Box>
 
                                                         {/* Expérience */}
-                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                             <History sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
                                                             <Box sx={{ flex: 1 }}>
                                                                 <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
@@ -617,7 +623,7 @@ const PageProfil = () => {
                                                         </Box>
 
                                                         {/* Description */}
-                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                                             <Description sx={{ mr: 1, mt: 0.5, fontSize: 20 }} />
                                                             <Box sx={{ flex: 1 }}>
                                                                 <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
@@ -677,15 +683,17 @@ const PageProfil = () => {
                                             </Box>
                                         </>
                                     )}
+
                                 </Grid>
+
                             </Grid>
                         </CardContent>
                     </ProfileCard>
                 </Box>
-            </ProfileContainer>
+            </ProfileContainer >
 
             {/* Modal d'édition */}
-            <Dialog
+            < Dialog
                 open={editModalOpen}
                 onClose={() => setEditModalOpen(false)}
                 maxWidth="md"
@@ -775,6 +783,20 @@ const PageProfil = () => {
                                                 }}>
                                                     {u.prenom?.charAt(0)}{u.nom?.charAt(0)}
                                                 </Avatar>
+                                            )}
+                                            {isUploading && (
+                                                <Box
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        inset: 0, // top:0, right:0, bottom:0, left:0
+                                                        bgcolor: 'rgba(0,0,0,0.4)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <CircularProgress size={40} sx={{ color: 'white' }} />
+                                                </Box>
                                             )}
                                         </Paper>
 
@@ -1397,7 +1419,7 @@ const PageProfil = () => {
                         </DialogActions>
                     </form>
                 </DialogContent>
-            </Dialog>
+            </Dialog >
 
             <Footer />
 

@@ -16,7 +16,7 @@ import Footer from '../Footer/Footer';
 import { FaEdit, FaTrash, FaClock, FaInfoCircle, FaMapMarkerAlt } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import RendezVousModal from './RendezVousModal';
-
+import AnnulationModal from './AnnulationModal';
 import { Modal, Button } from 'react-bootstrap';
 import {
     fetchByIntervenant,
@@ -50,12 +50,14 @@ const CalendrierRendezVous = () => {
     };
     const { id } = useParams();
 
-
+    const [errors, setErrors] = useState({});
     const dispatch = useDispatch();
     const calendarRef = useRef(null);
     const [showPopoverModal, setShowPopoverModal] = useState(false);
 
     const closePopover = () => setShowPopoverModal(false);
+    const [annulationModalOpen, setAnnulationModalOpen] = useState(false);
+    const [rdvToCancel, setRdvToCancel] = useState(null);
     const { listeRendezVous, rendezVousActuel, loading } = useSelector(state => state.rendezVous);
     const client = useSelector(state => state.auth?.user || null);
     console.log("client connecter calendrie", client)
@@ -73,7 +75,11 @@ const CalendrierRendezVous = () => {
     const {
         intervenant
     } = useSelector((state) => state.utilisateur);
-
+    const handleOpenAnnulationModal = (rdv, isMultiple = false) => {
+        setRdvToCancel(rdv);
+       
+        setAnnulationModalOpen(true);
+    };
     useEffect(() => {
         if (isLoggedIn) {
             if (user?.utilisateur.role === 'CLIENT') dispatch(fetchByIntervenant(id));
@@ -152,24 +158,59 @@ const CalendrierRendezVous = () => {
             return (
                 rdv.prestataireId === formData.prestataireId &&
                 rdvDateHeure === dateToCheck.slice(0, 16) &&
-                rdv.id !== formData.id
+                rdv.id !== formData.id &&
+                rdv.statut === "CONFIRME"
             );
         });
     };
 
     const onSave = async () => {
         setHeureError("");
+        setErrors({});
+        const newErrors = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const selectedDate = new Date(formData.date);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        const oneHourLater = new Date();
+        oneHourLater.setHours(oneHourLater.getHours() + 1);
+        const minTime = `${String(oneHourLater.getHours()).padStart(2, '0')}:${String(oneHourLater.getMinutes()).padStart(2, '0')}`;
+
+        if (!formData.date) {
+            newErrors.date = 'Veuillez sélectionner une date.';
+        } else if (selectedDate < today) {
+            newErrors.date = `La date doit être aujourd'hui ou ultérieure.`;
+        }
+
+        if (!formData.heure) {
+            newErrors.heure = 'Veuillez sélectionner une heure.';
+        } else if (selectedDate.getTime() === today.getTime() && formData.heure < minTime) {
+            newErrors.heure = `L'heure doit être après ${minTime}.`;
+        }
+
 
         if (!estHeureDisponible(formData.date, formData.heure)) {
             setHeureError("Cet intervenant a déjà un rendez-vous à cette heure.");
             return;
         }
+        if (!formData.raison) {
+            newErrors.raison = 'Veuillez indiquer la raison du rendez-vous.';
+        }
 
+        if (!formData.lieuDintervention) {
+            newErrors.lieuDintervention = 'Veuillez indiquer le lieu d’intervention.';
+        }
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
         const dateTime = `${formData.date}T${formData.heure}:00`;
         const payload = { ...formData, date: dateTime };
 
         try {
-            // Afficher le loader
+
             Swal.fire({
                 title: viewMode ? 'Modification en cours...' : 'Ajout en cours...',
                 html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant le traitement de votre demande.</p>',
@@ -278,7 +319,52 @@ const CalendrierRendezVous = () => {
         }
     };
 
+    const handleConfirmAnnulation = async (motif, messagePersonnalise) => {
+        setAnnulationModalOpen(false);
 
+        const annulePar = user?.utilisateur.role === 'CLIENT' ? 'client' : 'prestataire';
+
+        try {
+            await dispatch(cancelRendezVous({
+                id: rdvToCancel.id,
+                motif,
+                messagePersonnalise,
+                annulePar
+            })).unwrap();
+
+            // Recharger les rendez-vous
+            if (user?.utilisateur.role === 'PRESTATAIRE' || user?.utilisateur.role === 'ENTREPRISE') {
+                dispatch(fetchByIntervenant(user.utilisateurIdPre));
+            } else {
+                dispatch(fetchByIntervenant(id));
+            }
+
+            // Message de succès
+            Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous annulé !',
+                html: `<div style="text-align:center;">
+                <svg width="60" height="60" fill="#a90616ff" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <p style="color:#616161; margin-top:12px; font-size:0.95rem;">
+                    Le rendez-vous a été annulé avec succès.
+                </p>
+              </div>`,
+                confirmButtonColor: '#a90616ff',
+                confirmButtonText: 'OK'
+            });
+
+            setShowPopoverModal(false);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: err.message || "Erreur lors de l'annulation",
+                confirmButtonText: 'Fermer'
+            });
+        }
+    };
     const onConfirmer = async (idRdv) => {
         try {
             Swal.fire({
@@ -308,51 +394,12 @@ const CalendrierRendezVous = () => {
     };
 
 
-    const onAnnuler = async (idRdv) => {
-        const { isConfirmed } = await Swal.fire({
-            icon: 'warning',
-            title: 'Confirmer l\'annulation',
-            text: 'Souhaitez-vous vraiment annuler ce rendez-vous ?',
-            showCancelButton: true,
-            confirmButtonText: 'Oui, annuler',
-            cancelButtonText: 'Non',
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            reverseButtons: false,
-            customClass: {
-                popup: 'rounded-4 shadow',
-                title: 'fs-5 fw-semibold',
-                confirmButton: 'px-4 py-2',
-                cancelButton: 'px-4 py-2'
-            }
-        });
-
-        if (!isConfirmed) return;
-
-        try {
-            Swal.fire({
-                title: 'Annulation en cours...',
-                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Merci de patienter pendant l\'annulation du rendez-vous.</p>',
-                didOpen: () => Swal.showLoading(),
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-            });
-
-            await dispatch(cancelRendezVous({ id: idRdv })).unwrap();
-            Swal.close();
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Rendez-vous annulé !',
-                html: '<p style="color:#616161; font-size:0.95rem; margin-top:8px;">Le rendez-vous a été annulé avec succès.</p>',
-                confirmButtonColor: '#FF9800',
-                confirmButtonText: 'OK'
-            });
-
-            dispatch(fetchByIntervenant(user.utilisateurIdPre));
+    const onAnnuler = (idRdv) => {
+        const rdv = listeRendezVous.find(r => r.id === idRdv);
+        if (rdv) {
+            setRdvToCancel(rdv);
+            setAnnulationModalOpen(true);
             setShowPopoverModal(false);
-        } catch (err) {
-            Swal.fire('Erreur', 'Impossible d\'annuler le rendez-vous.', 'error');
         }
     };
 
@@ -546,6 +593,7 @@ const CalendrierRendezVous = () => {
                             onConfirmer={onConfirmer}
                             onAnnuler={onAnnuler}
                             onTerminer={onTerminer}
+                             onOpenAnnulationModal={handleOpenAnnulationModal} 
                         />
                     </div>
                 </div>
@@ -563,8 +611,25 @@ const CalendrierRendezVous = () => {
                     dateReadonly={dateReadonly}
                     heureError={heureError}
                     setHeureError={setHeureError}
+                    errors={errors}
                 />
             </div>
+            {annulationModalOpen && (
+                <AnnulationModal
+                    open={annulationModalOpen}
+                    onClose={() => setAnnulationModalOpen(false)}
+                    onConfirm={handleConfirmAnnulation}
+                    dateRendezVous={rdvToCancel ? new Date(rdvToCancel.date).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : ''}
+                    isMultiple={false}
+                    userRole={user?.utilisateur?.role}
+                />
+            )}
             <Footer />
         </>
     );

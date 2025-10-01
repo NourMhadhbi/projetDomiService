@@ -114,23 +114,28 @@ router.get('/dernier', async (req, res) => {
                 },
             },
         });
-        const uniquePrestataires = new Map();
 
-        historiques.forEach((item) => {
-            const prestataireId = item.prestataireId;
-            if (!uniquePrestataires.has(prestataireId)) {
-                uniquePrestataires.set(prestataireId, item);
+        const uniquePerMinute = new Map();
+
+        historiques.forEach(item => {
+            // Formater la date jusqu'à la minute : "YYYY-MM-DD HH:MM"
+            const dateMinute = new Date(item.dateVisite);
+            const key = `${item.prestataireId}-${dateMinute.getFullYear()}-${(dateMinute.getMonth() + 1)
+                .toString().padStart(2, '0')}-${dateMinute.getDate().toString().padStart(2, '0')} ${dateMinute.getHours().toString().padStart(2, '0')}:${dateMinute.getMinutes().toString().padStart(2, '0')}`;
+
+            if (!uniquePerMinute.has(key)) {
+                uniquePerMinute.set(key, item);
             }
         });
 
-        // Convertir en tableau
-        const dernieresVisites = Array.from(uniquePrestataires.values());
+        const result = Array.from(uniquePerMinute.values());
 
-        res.status(200).json(dernieresVisites);
+        res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
+
 router.get('/all', async (req, res) => {
     const result = await prisma.historiquePrestataire.findMany();
     res.json(result);
@@ -172,72 +177,72 @@ router.post('/trouver', async (req, res) => {
 
 
 router.get('/populaires-semaine', async (req, res) => {
-  try {
-    const now = new Date();
-    const start = startOfWeek(now, { weekStartsOn: 1 }); // lundi
-    const end = endOfWeek(now, { weekStartsOn: 1 });     // dimanche
+    try {
+        const now = new Date();
+        const start = startOfWeek(now, { weekStartsOn: 1 }); // lundi
+        const end = endOfWeek(now, { weekStartsOn: 1 });     // dimanche
 
-    const historiques = await prisma.historiquePrestataire.findMany({
-      where: {
-        dateVisite: {
-          gte: start,
-          lte: end,
-        },
-      },
-      select: {
-        clientId: true,
-        prestataireId: true,
-        dateVisite: true,
-      },
-    });
-
-  
-    const vuesUniques = new Set();
-
-    historiques.forEach(({ clientId, prestataireId, dateVisite }) => {
-      const d = new Date(dateVisite);
-      const cle = `${clientId}-${prestataireId}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
-      vuesUniques.add(cle);
-    });
-
-    // 3. Compter par prestataire
-    const compteur = new Map();
-
-    for (const cle of vuesUniques) {
-      const [, prestataireId] = cle.split('-'); // clientId est ignoré ici
-      const id = parseInt(prestataireId);
-      compteur.set(id, (compteur.get(id) || 0) + 1);
-    }
-
-    // 4. Top 10 prestataires
-    const topPrestataires = [...compteur.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
-
-    // 5. Récupérer leurs données
-    const result = await Promise.all(
-      topPrestataires.map(async ([id, consultations]) => {
-        const prestataire = await prisma.prestataire.findUnique({
-          where: { utilisateurIdPre: id },
-          include: {
-            utilisateur: true,
-            entreprise: true,
-            service: true,
-          },
+        const historiques = await prisma.historiquePrestataire.findMany({
+            where: {
+                dateVisite: {
+                    gte: start,
+                    lte: end,
+                },
+            },
+            select: {
+                clientId: true,
+                prestataireId: true,
+                dateVisite: true,
+            },
         });
 
-        return {
-          consultations,
-          ...prestataire,
-        };
-      })
-    );
 
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Erreur /populaires-semaine :', error);
-    res.status(500).json({ error: 'Erreur interne serveur' });
-  }
+        const vuesUniques = new Set();
+
+        historiques.forEach(({ clientId, prestataireId, dateVisite }) => {
+            const d = new Date(dateVisite);
+            const cle = `${clientId}-${prestataireId}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
+            vuesUniques.add(cle);
+        });
+
+        // 3. Compter par prestataire
+        const compteur = new Map();
+
+        for (const cle of vuesUniques) {
+            const [, prestataireId] = cle.split('-'); // clientId est ignoré ici
+            const id = parseInt(prestataireId);
+            compteur.set(id, (compteur.get(id) || 0) + 1);
+        }
+
+        // 4. Top 10 prestataires
+        const topPrestataires = [...compteur.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        // 5. Récupérer leurs données
+        const result = await Promise.all(
+            topPrestataires.map(async ([id, consultations]) => {
+                const prestataire = await prisma.prestataire.findUnique({
+                    where: { utilisateurIdPre: id },
+                    include: {
+                        utilisateur: true,
+                        entreprise: true,
+                        service: true,
+                    },
+                });
+
+                return {
+                    consultations,
+                    ...prestataire,
+                };
+            })
+        );
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Erreur /populaires-semaine :', error);
+        res.status(500).json({ error: 'Erreur interne serveur' });
+    }
 });
 
 module.exports = router;

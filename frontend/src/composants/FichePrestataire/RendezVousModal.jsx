@@ -23,7 +23,7 @@ export default function RendezVousModal({
     setEventData,
     dateReadonly,
     mode, // 'ajout' ou 'modification'
-    setHeureError, heureError,
+    setHeureError, heureError, errors
 }) {
     const isModification = mode === 'modification';
 
@@ -67,7 +67,8 @@ export default function RendezVousModal({
                     value={eventData?.raison || ''}
                     onChange={e => handleChange('raison', e.target.value)}
                     margin="normal"
-
+                    error={!!errors.raison}
+                    helperText={errors.raison}
                 />
 
                 <TextField
@@ -76,7 +77,8 @@ export default function RendezVousModal({
                     value={eventData?.lieuDintervention || ''}
                     onChange={e => handleChange('lieuDintervention', e.target.value)}
                     margin="normal"
-
+                    error={!!errors.lieuDintervention}
+                    helperText={errors.lieuDintervention}
                 />
 
                 <Grid container spacing={2}>
@@ -92,6 +94,8 @@ export default function RendezVousModal({
                             InputProps={{ readOnly: dateReadonly }}
                             InputLabelProps={{ shrink: true }}
                             inputProps={{ min: today }}
+                            error={!!errors.date}
+                            helperText={errors.date}
                         />
                     </Grid>
                     <Grid item xs={6}>
@@ -103,10 +107,10 @@ export default function RendezVousModal({
                             onChange={e => handleHeureChange(e.target.value)}
                             margin="normal"
                             InputLabelProps={{ shrink: true }}
-                            error={!!heureError}
-                            helperText={heureError}
+                            error={!!errors.heure || !!heureError}
+                            helperText={errors.heure || heureError}
                         />
-                
+
                     </Grid>
                 </Grid>
 

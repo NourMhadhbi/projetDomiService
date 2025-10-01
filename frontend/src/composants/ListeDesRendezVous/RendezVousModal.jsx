@@ -1,4 +1,4 @@
-import React from 'react';
+import { React, useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -9,8 +9,9 @@ import {
     Grid,
     IconButton,
     Box,
-    Typography
+    Typography, Snackbar, Alert
 } from '@mui/material';
+
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 
@@ -21,15 +22,18 @@ export default function RendezVousModal({
     eventData,
     intervenant,
     setEventData,
-
+    errors, setHeureError, heureError,
 }) {
 
-
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
     const handleChange = (key, value) => {
         setEventData(prev => ({ ...prev, [key]: value }));
         // setEventData?.(prev => ({ ...prev, [key]: value }));
     };
-    console.log("intervenant", intervenant)
+    const today = new Date();
+    // const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    // const currentTime = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
+    const todayStr = new Date().toISOString().split("T")[0];
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
 
@@ -53,7 +57,7 @@ export default function RendezVousModal({
                     }
                     onChange={e => handleChange('intervenant', e.target.value)}
                     margin="normal"
-                    InputProps={{ readOnly: false }} // Toujours modifiable
+                    InputProps={{ readOnly: false }}
                 />
                 <TextField
                     label="Raison du rendez-vous"
@@ -61,6 +65,8 @@ export default function RendezVousModal({
                     value={eventData?.raison}
                     onChange={e => handleChange('raison', e.target.value)}
                     margin="normal"
+                    error={!!errors.raison}
+                    helperText={errors.raison}
 
                 />
 
@@ -70,7 +76,8 @@ export default function RendezVousModal({
                     value={eventData?.lieuDintervention}
                     onChange={e => handleChange('lieuDintervention', e.target.value)}
                     margin="normal"
-
+                    error={!!errors.lieuDintervention}
+                    helperText={errors.lieuDintervention}
                 />
 
                 <Grid container spacing={2}>
@@ -84,6 +91,10 @@ export default function RendezVousModal({
                             margin="normal"
                             InputProps={{ readOnly: false }}
                             InputLabelProps={{ shrink: true }}
+                            inputProps={{ min: todayStr }}
+                            error={!!errors?.date}
+                            helperText={errors?.date}
+
                         />
                     </Grid>
                     <Grid item xs={6}>
@@ -96,6 +107,8 @@ export default function RendezVousModal({
                             margin="normal"
 
                             InputLabelProps={{ shrink: true }}
+                            error={!!errors.heure || !!heureError}
+                            helperText={errors.heure || heureError}
                         />
                     </Grid>
                 </Grid>
@@ -129,7 +142,7 @@ export default function RendezVousModal({
                 </Button>
 
                 <Button
-                    // onClick={onSave}
+                    onClick={onSave}
                     variant="outlined"
                     startIcon={<SaveIcon />}
                     sx={{
@@ -152,6 +165,14 @@ export default function RendezVousModal({
                 </Button>
 
             </DialogActions>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={5000}
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+            </Snackbar>
         </Dialog>
     );
 }

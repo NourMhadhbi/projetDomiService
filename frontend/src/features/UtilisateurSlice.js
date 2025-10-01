@@ -135,6 +135,7 @@ const intervenantSlice = createSlice({
             .addCase(fetchPrestatairesProches.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
+                  state.intervenantsFetched = true;
             })
             .addCase(fetchUtilisateursParRole.pending, (state) => {
                 state.loading = true;

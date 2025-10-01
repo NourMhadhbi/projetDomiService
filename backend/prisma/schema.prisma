@@ -116,7 +116,7 @@ model Entreprise {
 
 model Service {
   id          Int         @id @default(autoincrement())
-  nom         String
+nom         String       @unique 
   description String?   @db.Text
  image         String? 
  etatArchive   Boolean    @default(false)
@@ -163,6 +163,7 @@ model Signalement {
   id             Int         @id @default(autoincrement())
   raison          String
   date           DateTime    @default(now())
+   etatArchive   Boolean    @default(false)
   clientId       Int @db.UnsignedInt
   prestataireId  Int @db.UnsignedInt
 
