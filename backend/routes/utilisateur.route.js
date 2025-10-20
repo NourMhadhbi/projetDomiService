@@ -14,8 +14,8 @@ const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_A
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'domiservicesm@gmail.com',
-        pass: 'kwql ykzw kdhd kggh' // Remplace par ton vrai mdp ou mieux variable env
+        user: 'domiservicesmm@gmail.com',
+        pass: 'qyxx txcw vzgf lvdu' // Remplace par ton vrai mdp ou mieux variable env
     },
     tls: { rejectUnauthorized: false }
 });
@@ -195,7 +195,7 @@ async function geocodeAdresse(adresse, ville) {
 //                 if (email && email.trim() !== '') {
 
 //                     const mailOption = {
-//                         from: '"DomiService" <domiservicesm@gmail.com>',
+//                         from: '"DomiService" <domiservicesmm@gmail.com>',
 //                         to: userCreate.email,
 //                         subject: 'Validation du compte',
 //                         html: `  
@@ -390,13 +390,13 @@ router.post('/register', async (req, res) => {
             const getImageByRole = (role) => {
                 switch (role) {
                     case 'ADMIN':
-                        return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713924474/images/xg1htshcaarthxvnj9vg.png';
+                        return 'https://res.cloudinary.com/dkhjej8yx/image/upload/v1760877894/admin-icon-vector_fholxu.jpg';
                     case 'CLIENT':
-                        return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/ze5ytyshmweusb4gypsr.png';
+                        return 'https://res.cloudinary.com/dkhjej8yx/image/upload/v1760877823/client_6009978_o69jxq.png';
                     case 'PRESTATAIRE':
-                        return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/xdvavia4ci9f25eywjxu.png';
+                        return 'https://res.cloudinary.com/dkhjej8yx/image/upload/v1760877824/prestataire_pivknb.png';
                     case 'ENTREPRISE':
-                        return 'https://res.cloudinary.com/dmbkofiro/image/upload/v1713923916/images/z2i2yr8gsct1qrgh1viv.png';
+                        return 'https://res.cloudinary.com/dkhjej8yx/image/upload/v1760878175/images_h3rzon.png';
                     default:
                         return " ";
                 }
@@ -432,7 +432,7 @@ router.post('/register', async (req, res) => {
                 });
                 if (email && email.trim() !== '') {
                     const mailOption = {
-                        from: '"DomiService" <domiservicesm@gmail.com>',
+                        from: '"DomiService" <domiservicesmm@gmail.com>',
                         to: userCreate.email,
                         subject: 'Validation du compte',
                         html: `  
@@ -467,6 +467,7 @@ router.post('/register', async (req, res) => {
                     } catch (smsError) {
                         console.error(`Erreur lors de l'envoi du SMS de validation:`, smsError);
                     }
+                    return res.status(202).send({ success: true, message: "Succes", user: client });
                 }
             }
             else if (userCreate.role === 'PRESTATAIRE') {
@@ -786,13 +787,13 @@ router.put('/activeUtilisateur', async (req, res) => {
         }
 
         const mailOption = {
-            from: '"DomiService" <domiservicesm@gmail.com>',
+            from: '"DomiService" <domiservicesmm@gmail.com>',
             to: user.email,
             subject: 'Activation du compte',
             html: `
         <h2>Bonjour ${user.nom + '  ' + user.prenom},</h2>
         <p>Votre compte a été activé avec succès.</p>
-        <p>Si vous avez des questions, contactez-nous à domiservicesm@gmail.com.</p>
+        <p>Si vous avez des questions, contactez-nous à domiservicesmm@gmail.com.</p>
         <p>Cordialement,<br>DomiService</p>
     `
         };
@@ -852,14 +853,14 @@ router.put('/desactive', async (req, res) => {
         }
 
         const mailOption = {
-            from: '"DomiService" <domiservicesm@gmail.com>',
+            from: '"DomiService" <domiservicesmm@gmail.com>',
             to: user.email,
             subject: 'Désactivation du compte',
             html: `
         <h2>Bonjour ${user.nom},</h2>
         <p>Votre compte a été désactivé.</p>
         <p><strong>Raison :</strong> ${raison}</p>
-        <p>Si ce n’est pas vous ou si vous avez des questions, contactez-nous à domiservicesm@gmail.com.</p>
+        <p>Si ce n’est pas vous ou si vous avez des questions, contactez-nous à domiservicesmm@gmail.com.</p>
         <p>Cordialement,<br>DomiService</p>
       `
         };
@@ -1183,7 +1184,7 @@ router.put('/:id', async (req, res) => {
                 if (emailChanged) {
                     const mailOption = {
 
-                        from: '"DomiService" <domiservicesm@gmail.com>',
+                        from: '"DomiService" <domiservicesmm@gmail.com>',
                         to: email,
                         subject: 'Validation du compte',
                         html: `  
@@ -1380,7 +1381,7 @@ router.post('/forgot-password', async (req, res) => {
         // Envoi email ou SMS
         if (identifier.includes('@')) {
             const mailOptions = {
-                from: '"Réinitialisation" <domiservicesm@gmail.com>',
+                from: '"Réinitialisation" <domiservicesmm@gmail.com>',
                 to: identifier,
                 subject: 'Code de réinitialisation',
                 text: `Votre code est : ${code}\nValide 10 minutes.`

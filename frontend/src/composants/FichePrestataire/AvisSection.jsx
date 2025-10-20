@@ -435,7 +435,7 @@ emptyStars = 2 ☆☆ */}
                                                 value={formData.note}
                                                 onChange={handleInputChange}
 
-
+                                                required
                                                 style={{ width: "30%" }}
                                             />
                                         </div>

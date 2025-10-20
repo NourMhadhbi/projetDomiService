@@ -3,8 +3,10 @@ import { enregistrerConsultation } from '../services/historiqueAppservice';
 
 export const enregistrerHistoriqueApp = createAsyncThunk(
   'historiqueApp/enregistrer',
-  async (utilisateurId) => await enregistrerConsultation(utilisateurId)
-);
+  async (utilisateurId) => {
+    const response = await enregistrerConsultation(utilisateurId);
+    return response;
+  });
 
 const historiqueAppSlice = createSlice({
   name: 'historiqueApp',

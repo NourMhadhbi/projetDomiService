@@ -7,7 +7,7 @@ import HomePage from './composants/Accueil/HomePage';
 import FichePrestataire from './composants/FichePrestataire/FichePrestataire';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import CalendrierRendezVous from './composants/FichePrestataire/CalendrierRendezVous'
-import TestCalendrie from './composants/FichePrestataire/TestCalendrie';
+
 import Login from './composants/Login';
 import MotDePasseOublie from './composants/Password/MotDePasseOublie';
 import VerificationCode from './composants/Password/VerificationCode';

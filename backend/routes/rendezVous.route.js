@@ -9,8 +9,8 @@ const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_A
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'domiservicesm@gmail.com',
-        pass: 'kwql ykzw kdhd kggh'
+        user: 'domiservicesmm@gmail.com',
+        pass: 'qyxx txcw vzgf lvdu'
     },
     tls: {
         rejectUnauthorized: false
@@ -19,7 +19,7 @@ var transporter = nodemailer.createTransport({
 const sendMailToUser = async (userEmail, subject, htmlContent) => {
     try {
         const mailOptions = {
-            from: '"DomiService" <domiservicesm@gmail.com>',
+            from: '"DomiService" <domiservicesmm@gmail.com>',
             to: userEmail,
             subject: subject,
             html: htmlContent,

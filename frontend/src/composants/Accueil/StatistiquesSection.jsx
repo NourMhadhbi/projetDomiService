@@ -22,7 +22,7 @@ const StatistiquesSection = () => {
     { value: successfulProjects, label: "Projets Réussis" },
     { value: satisfiedCustomerCount, label: "Clients Satisfaits" },
     { value: expertPrestataires, label: "Prestataires Experts" },
-    { value: `${qualityPercent}%`, label: "Produits de Qualité" }
+    { value: `${qualityPercent}%`, label: "Prestataires de Qualité" }
   ];
 
   return (

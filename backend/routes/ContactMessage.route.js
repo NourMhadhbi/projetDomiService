@@ -7,8 +7,8 @@ router.use(express.json());
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'domiservicesm@gmail.com',
-        pass: 'kwql ykzw kdhd kggh'
+        user: 'domiservicesmm@gmail.com',
+        pass: 'qyxx txcw vzgf lvdu'
     },
     tls: {
         rejectUnauthorized: false
@@ -17,7 +17,7 @@ var transporter = nodemailer.createTransport({
 const sendMailToUser = async (userEmail, subject, htmlContent) => {
     try {
         const mailOptions = {
-            from: '"DomiService" <domiservicesm@gmail.com>',
+            from: '"DomiService" <domiservicesmm@gmail.com>',
             to: userEmail,
             subject: subject,
             html: htmlContent,
@@ -43,8 +43,8 @@ router.post('/ajout', async (req, res) => {
         const contactLabel = email ? 'Email' : 'Téléphone';
 
         const mailOptions = {
-            from: '"DomiService" <domiservicesm@gmail.com>',
-            to: 'domiservicesm@gmail.com',
+            from: '"DomiService" <domiservicesmm@gmail.com>',
+            to: 'domiservicesmm@gmail.com',
             replyTo: email || undefined, // replyTo fonctionne uniquement si email fourni
             subject: `Nouveau message : ${sujet || 'Sans sujet'}`,
             html: `
@@ -95,8 +95,8 @@ router.post('/ajout', async (req, res) => {
 
 
 //         const mailOptions = {
-//             from: '"DomiService" <domiservicesm@gmail.com>',
-//             to: 'domiservicesm@gmail.com',
+//             from: '"DomiService" <domiservicesmm@gmail.com>',
+//             to: 'domiservicesmm@gmail.com',
 //             replyTo: utilisateur.email,
 //             subject: `Nouveau message : ${sujet || 'Sans sujet'}`,
 //             html: `

@@ -12,18 +12,14 @@ import EtapesRendezVous from './EtapesRendezVous';
 import ContactForm from './ContactForm';
 import PrestatairesProche from './PrestatiresProche'
 import StatistiquesSection from './StatistiquesSection';
-import { enregistrerHistoriqueApp } from '../../features/historiqueAppSlice';
+
 const HomePage = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
     const { intervenants, loading, error } = useSelector(state => state.utilisateur);
     const { isLoggedIn, user } = useSelector((state) => state.auth);
-    useEffect(() => {
-        if (user && user.utilisateur.id) {
-            dispatch(enregistrerHistoriqueApp(user.utilisateur.id));
-        }
-    }, [dispatch, user]);
+
     useEffect(() => {
         dispatch(fetchIntervenant());
     }, [dispatch]);
@@ -49,7 +45,12 @@ const HomePage = () => {
                     {/* <PrestatairesProche /> */}
                 </div>
             )}
-            <EtapesRendezVous />
+            {user?.utilisateur?.role === 'CLIENT' ? (
+                <EtapesRendezVous />) : (
+                <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+
+                </div>
+            )}
             <StatistiquesSection />
             <ContactForm isClientConnected={isLoggedIn} user={user} />
 

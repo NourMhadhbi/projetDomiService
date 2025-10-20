@@ -137,7 +137,7 @@ const PageContact = () => {
               <div>
                 <i className="bi bi-chat-dots-fill" style={{ fontSize: 40, color: '#ff3c00' }}></i>
                 <p className="text-muted mt-2">EMAIL</p>
-                <h5><strong>domiservicesm@gmail.com</strong></h5>
+                <h5><strong>domiservicesmm@gmail.com</strong></h5>
               </div>
             </Col>
           </Row>

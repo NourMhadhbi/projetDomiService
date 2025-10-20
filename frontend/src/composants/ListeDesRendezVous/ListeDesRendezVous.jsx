@@ -623,14 +623,19 @@ const ListeRendezVous = () => {
             return;
         }
         const dateTime = `${formData.date}T${formData.heure}:00`;
+        setPanelOpen(false);
         Swal.fire({
             title: 'Mise à jour en cours...',
             text: 'Veuillez patienter',
-            didOpen: () => Swal.showLoading(),
+
             allowOutsideClick: false,
             allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
         try {
+            await new Promise(resolve => setTimeout(resolve, 200));
             await dispatch(updateRendezVous({ ...formData, date: dateTime })).unwrap();
 
             Swal.fire({
@@ -819,6 +824,7 @@ const ListeRendezVous = () => {
 
     const handleConfirmSelection = async () => {
         const toConfirm = rows.filter(row => selectedIds.includes(row.id) && row.statut === 'EN_ATTENTE');
+
         Swal.fire({ title: 'Confirmation en cours...', text: 'Veuillez patienter', didOpen: () => Swal.showLoading(), allowOutsideClick: false, allowEscapeKey: false });
         for (const r of toConfirm) await dispatch(confirmRendezVous(r.rdv)).unwrap();
 
@@ -902,6 +908,7 @@ const ListeRendezVous = () => {
     // };
 
     const handleCancelSelection = () => {
+ 
         const toCancel = rows.filter(row => selectedIds.includes(row.id) && (row.statut === 'EN_ATTENTE' || row.statut === 'CONFIRME'));
         handleOpenAnnulationModal(toCancel, true);
     };
@@ -1557,7 +1564,7 @@ const ListeRendezVous = () => {
                                 <IconButton
                                     onClick={() => handleCancelSingle(rdv)}
                                     color="warning"
-                                    disabled={!(isEditable || isAnnule)}
+                                    disabled={!(isAnnule)}
                                     size="small"
                                     sx={{
                                         backgroundColor: '#fff3e0',
@@ -1872,6 +1879,7 @@ const ListeRendezVous = () => {
                     userRole={user?.utilisateur?.role}
                 />
             )}
+
         </>
     );
 };

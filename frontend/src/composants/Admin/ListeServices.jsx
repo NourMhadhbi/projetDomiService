@@ -848,7 +848,7 @@ const ListeServicesAdmin = () => {
     // Configuration des colonnes pour MaterialReactTable
     const columns = useMemo(
         () => [
-        
+
             {
                 accessorKey: 'image',
                 header: 'Image',
@@ -999,7 +999,7 @@ const ListeServicesAdmin = () => {
                 open={snackbar.open}
                 autoHideDuration={4000}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
                 <Alert
                     onClose={() => setSnackbar({ ...snackbar, open: false })}

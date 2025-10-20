@@ -72,6 +72,7 @@ const AvisModal = ({ show, onClose, onSubmit, formData, setFormData, reaction, s
                                     value={formData.note}
                                     onChange={handleInputChange}
                                     style={{ width: "30%" }}
+                                    required
                                 />
                             </div>
                         </div>

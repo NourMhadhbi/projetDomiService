@@ -77,7 +77,7 @@ const CalendrierRendezVous = () => {
     } = useSelector((state) => state.utilisateur);
     const handleOpenAnnulationModal = (rdv, isMultiple = false) => {
         setRdvToCancel(rdv);
-       
+
         setAnnulationModalOpen(true);
     };
     useEffect(() => {
@@ -453,7 +453,7 @@ const CalendrierRendezVous = () => {
     const events = liste.map(rdv => ({
         id: rdv.id?.toString() || '',
         title: `RDV ${rdv.id ?? ''}`,
-        date: (rdv.date && rdv.date.split('T')[0]) || '',
+        date: (rdv.date /*&& rdv.date.split('T')[0]*/) || '',
         backgroundColor: STATUTS[rdv.statut]?.color || '#198754',
         textColor: 'white',
         extendedProps: {
@@ -500,6 +500,8 @@ const CalendrierRendezVous = () => {
                 <div className="border rounded-3 bg-white shadow-sm">
                     <div className="p-2">
                         <FullCalendar
+                            timeZone="UTC"
+
                             ref={calendarRef}
                             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, bootstrap5Plugin]}
                             initialView="dayGridMonth"
@@ -593,7 +595,7 @@ const CalendrierRendezVous = () => {
                             onConfirmer={onConfirmer}
                             onAnnuler={onAnnuler}
                             onTerminer={onTerminer}
-                             onOpenAnnulationModal={handleOpenAnnulationModal} 
+                            onOpenAnnulationModal={handleOpenAnnulationModal}
                         />
                     </div>
                 </div>

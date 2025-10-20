@@ -57,7 +57,12 @@ const ListFavorisPrestataires = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => [
-
+        {
+            header: '#',
+            accessorKey: 'rowNumber',
+            Cell: ({ row }) => row.index + 1,
+            size: 50,
+        },
         {
             accessorKey: 'nom',
             header: 'Nom / Responsable',
@@ -218,7 +223,7 @@ const ListFavorisPrestataires = () => {
                             enableColumnResizing
                             enableColumnFilters={false}
                             enablePagination
-                            enableSorting
+
                             enableStickyHeader
                             enableFullScreenToggle={false}
                             enableDensityToggle={false}
@@ -227,7 +232,7 @@ const ListFavorisPrestataires = () => {
                             initialState={{
                                 pagination: { pageSize: 10, pageIndex: 0 },
                                 density: 'comfortable',
-                                sorting: [{ id: 'dateAjout', desc: true }]
+                                // sorting: [{ id: 'dateAjout', desc: true }]
                             }}
                             muiTableContainerProps={{
                                 sx: {

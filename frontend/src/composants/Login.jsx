@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Form, InputGroup } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import Typography from '@mui/material/Typography';
 import image from '../assets/img/background.jpg';
 import '../assets/css/Login.css';
@@ -10,7 +10,7 @@ import { login } from '../features/AuthSlice';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
 import { useGoogleLogin } from '@react-oauth/google';
 import * as jwt_decode from "jwt-decode";
-
+import { enregistrerHistoriqueApp } from '../features/historiqueAppSlice';
 const Login = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -27,34 +27,76 @@ const Login = () => {
     const [message, setMessage] = useState('');
 
 
-    const handleSubmit = (event) => {
+    // const handleSubmit = (event) => {
+    //     event.preventDefault();
+    //     if (!utilisateur.identifiant || !utilisateur.motDePasse) {
+    //         setErrors({ email: !utilisateur.identifiant ? "L'adresse e-mail est requise" : '', password: !utilisateur.motDePasse ? 'Le mot de passe est requis' : '' });
+    //     } else {
+    //         dispatch(login(utilisateur)).then((res) => {
+    //             if (res.type === "auth/login/rejected") {
+
+    //                 setMessage(res.payload);
+    //             } else if (res.type === "auth/login/fulfilled") {
+    //                 setMessage("");
+    //                 (async () => {
+    //                     if (res.payload.user?.id) {
+    //                         await dispatch(enregistrerHistoriqueApp(res.payload.user.id));
+    //                     }
+    //                 })();
+
+    //                 if (res.payload.user?.utilisateur?.role === "ADMIN") {
+    //                     navigate("/admin/dashboard");
+    //                 } else {
+    //                     navigate("/accueil");
+    //                 }
+    //             }
+    //         })
+    //     }
+    // };
+    const handleSubmit = async (event) => {
         event.preventDefault();
+
+        // Vérification des champs
         if (!utilisateur.identifiant || !utilisateur.motDePasse) {
-            setErrors({ email: !utilisateur.identifiant ? "L'adresse e-mail est requise" : '', password: !utilisateur.motDePasse ? 'Le mot de passe est requis' : '' });
-        } else {
-            dispatch(login(utilisateur)).then((res) => {
-                if (res.type === "auth/login/rejected") {
+            setErrors({
+                email: !utilisateur.identifiant ? "L'adresse e-mail est requise" : '',
+                password: !utilisateur.motDePasse ? 'Le mot de passe est requis' : ''
+            });
+            return;
+        }
+        const res = await dispatch(login(utilisateur));
 
-                    setMessage(res.payload);
-                } else if (res.type === "auth/login/fulfilled") {
-                    setMessage("");
+        if (res.type === "auth/login/rejected") {
+            setMessage(res.payload);
+        } else if (res.type === "auth/login/fulfilled") {
+            setMessage("");
 
-                    if (res.payload.user?.utilisateur?.role === "ADMIN") {
-                        navigate("/admin/dashboard");
-                    } else {
-                        navigate("/accueil");
-                    }
-                }
-            })
+            if (res.payload.user?.utilisateur?.id) {
+                await dispatch(enregistrerHistoriqueApp(res.payload.user?.utilisateur?.id));
+            }
+
+            // Navigation selon le rôle
+            if (res.payload.user?.utilisateur?.role === "ADMIN") {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/accueil");
+            }
         }
     };
-    React.useEffect(() => {
-        if (isLoggedIn && user?.utilisateur?.role === "ADMIN") {
-            navigate("/admin/dashboard");
-        } else if (isLoggedIn) {
-            navigate("/accueil");
+
+    useEffect(() => {
+        if (isLoggedIn && user?.id) {
+
+            // dispatch(enregistrerHistoriqueApp(user.id));
+
+
+            if (user.utilisateur?.role === "ADMIN") {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/accueil");
+            }
         }
-    }, [navigate, isLoggedIn, user]);
+    }, [isLoggedIn, user, dispatch, navigate]);
     const loginGoogle = useGoogleLogin({
         onSuccess: (tokenResponse) => {
 
@@ -86,7 +128,9 @@ const Login = () => {
             <Row className="shadow-lg rounded" style={{ width: '900px', height: '600px', backgroundColor: 'white' }}>
                 <Col md={6} className="p-5 d-flex flex-column justify-content-center">
                     <div className="mb-4 d-flex align-items-center logo-title-container">
-                        <img src={logo} alt="logo" className="login-logo" />
+                        <NavLink to="/accueil">
+                            <img src={logo} alt="logo" className="login-logo" style={{ cursor: 'pointer' }} />
+                        </NavLink>
                         <h3 className="login-title">Connectez-vous</h3>
                     </div>
 

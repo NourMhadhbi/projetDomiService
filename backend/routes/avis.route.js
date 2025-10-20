@@ -6,8 +6,8 @@ const router = express.Router();
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'domiservicesm@gmail.com',
-        pass: 'kwql ykzw kdhd kggh'
+        user: 'domiservicesmm@gmail.com',
+        pass: 'qyxx txcw vzgf lvdu'
     },
     tls: {
         rejectUnauthorized: false
@@ -73,7 +73,7 @@ router.post("/Ajouteravis", async (req, res) => {
 
         destinataireUser = nouvelAvis.prestataire.utilisateur;
         const commentairePreview = nouvelAvis.commentaire
-            ? nouvelAvis.commentaire.split('.')[0] + '...' 
+            ? nouvelAvis.commentaire.split('.')[0] + '...'
             : '';
         if (destinataireUser?.email && destinataireUser?.email.trim() !== "") {
             const sujet = "Nouvel avis reçu - DomiService";
@@ -307,8 +307,8 @@ router.get("/statistiques/:id", async (req, res) => {
 
         const totalAvis = avis.length;
         const totalAime = avis.filter(a => a.aime).length;
-        const sommeNotes = avis.reduce((sum, a) => sum + (a.note ?? 0), 0);
-
+        const sommeNotes = avis.reduce((sum, a) => sum + (a.note ?? 0), 0);/*reduce est une méthode JavaScript utilisée sur les tableaux.
+Elle sert à transformer un tableau en une seule valeur (par exemple : une somme, une moyenne, un objet, etc.).*/
         const moyenneNote = totalAvis ? (sommeNotes / totalAvis) : 0;
         const tauxSatisfaction = totalAvis ? (totalAime / totalAvis) * 100 : 0;
 
@@ -333,7 +333,11 @@ router.get("/", async (req, res) => {
         //  Récupérer les données nécessaires
         const [rendezVous, avis, favoris, prestataires] = await Promise.all([
             prisma.rendezVous.findMany(),
-            prisma.avis.findMany(),
+            prisma.avis.findMany({
+                where: {
+                    etatArchive: false
+                }
+            }),
             prisma.favorisPrestataire.findMany(),
             prisma.prestataire.findMany(),
         ]);

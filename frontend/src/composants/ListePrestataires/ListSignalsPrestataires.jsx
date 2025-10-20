@@ -93,7 +93,11 @@ const ListSignalsPrestataires = () => {
     const columns = useMemo(
         () => [
 
-
+            {
+                header: '#',
+                accessorFn: (row, i) => i + 1,
+                size: 50,
+            },
             {
                 accessorKey: 'responsable',
                 header: 'Nom/Responsable',
@@ -354,7 +358,7 @@ const ListSignalsPrestataires = () => {
                             enableColumnResizing
                             enableColumnFilters={false}
                             enablePagination
-                            enableSorting
+
                             enableStickyHeader
                             enableFullScreenToggle={false}
                             enableDensityToggle={false}
@@ -362,7 +366,7 @@ const ListSignalsPrestataires = () => {
                             initialState={{
                                 pagination: { pageSize: 10, pageIndex: 0 },
                                 density: 'comfortable',
-                                sorting: [{ id: 'id', desc: true }]
+                                // sorting: [{ id: 'id', desc: true }]
                             }}
                             muiTableContainerProps={{
                                 sx: {

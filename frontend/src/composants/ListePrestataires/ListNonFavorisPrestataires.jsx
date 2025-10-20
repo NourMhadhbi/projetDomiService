@@ -48,7 +48,7 @@ const ListNonFavorisPrestataires = () => {
                     : `${utilisateur.nom || ""} ${utilisateur.prenom || ""}`.trim(),
                 entrepriseNom: entreprise.nomEntreprise || "—",
                 service: service.nom || "—",
-                telephone: utilisateur.numTel || "—",
+                telephone: prestataire.numTel || "—",
                 email: utilisateur.email || "—",
                 dateAjout: item.dateAjout
                     ? new Date(item.dateAjout).toLocaleDateString("fr-FR", {
@@ -64,7 +64,12 @@ const ListNonFavorisPrestataires = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => [
-
+        {
+            header: '#',
+            accessorKey: 'rowNumber',
+            Cell: ({ row }) => row.index + 1,
+            size: 50,
+        },
         {
             accessorKey: 'nom',
             header: 'Nom / Responsable',
@@ -225,7 +230,7 @@ const ListNonFavorisPrestataires = () => {
                             enableColumnResizing
                             enableColumnFilters={false}
                             enablePagination
-                            enableSorting
+
                             enableStickyHeader
                             enableFullScreenToggle={false}
                             enableDensityToggle={false}
@@ -234,7 +239,7 @@ const ListNonFavorisPrestataires = () => {
                             initialState={{
                                 pagination: { pageSize: 10, pageIndex: 0 },
                                 density: 'comfortable',
-                                sorting: [{ id: 'dateAjout', desc: true }]
+                                // sorting: [{ id: 'dateAjout', desc: true }]
                             }}
                             muiTableContainerProps={{
                                 sx: {

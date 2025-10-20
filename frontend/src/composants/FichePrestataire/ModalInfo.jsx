@@ -102,9 +102,9 @@ export default function ModalInfo({
                                     >
                                         <DeleteIcon sx={{ color: grey[600] }} />
                                     </IconButton>
-                                    <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
+                                    {/* <IconButton size="small" color="error" onClick={() => onOpenAnnulationModal(rendezVousActuel)} title="Annuler">
                                         <CancelIcon />
-                                    </IconButton>
+                                    </IconButton> */}
 
                                 </>
                             )}

@@ -1,302 +1,4 @@
-// import React, { useEffect, useMemo, useState } from 'react';
-// import {
-//     Box, Paper, IconButton, Tooltip, Typography
-// } from '@mui/material';
-// import { Link } from 'react-router-dom';
-// import EditIcon from '@mui/icons-material/Edit';
-// import DeleteIcon from '@mui/icons-material/Delete';
-// import Swal from 'sweetalert2';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faCommentDots, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
-// import { useSelector, useDispatch } from 'react-redux';
-// import Header from '../Header/Header';
-// import Footer from '../Footer/Footer';
-// import AvisModal from './AvisModal';
-// import {
-//     updateAvis,
-//     archiverAvis,
-//     getAvisByClient,
-//     getAvisByPrestataire
-// } from '../../features/AvisSlice';
 
-// import { MaterialReactTable } from "material-react-table";
-
-// const ListeAvis = () => {
-//     const [reaction, setReaction] = useState('');
-//     const dispatch = useDispatch();
-//     const listeAvis = useSelector((state) => state.avis.listeAvis || []);
-//     const { isLoggedIn, user } = useSelector((state) => state.auth);
-//     const [panelOpen, setPanelOpen] = useState(false);
-//     const [selectionModel, setSelectionModel] = useState([]);
-//     const isIntervenant = user?.utilisateur?.role === 'PRESTATAIRE' || user?.utilisateur?.role === 'ENTREPRISE';
-
-//     const [intervenantModal, setIntervenantModal] = useState(null);
-
-//     const [formData, setFormData] = useState({
-//         id: '', commentaire: '', note: '', aime: false,
-//         clientId: user?.utilisateurIdCl || null,
-//         prestataireId: null
-//     });
-
-//     useEffect(() => {
-//         if (!isLoggedIn || !user?.utilisateur) return;
-//         if (user.utilisateur.role === 'CLIENT') dispatch(getAvisByClient(user.utilisateurIdCl));
-//         if (user.utilisateur.role === 'PRESTATAIRE' || user.utilisateur.role === 'ENTREPRISE') dispatch(getAvisByPrestataire(user.utilisateurIdPre));
-//     }, [isLoggedIn, user, dispatch]);
-
-//     const rows = useMemo(() => listeAvis.map((avis) => {
-//         const client = avis.client?.utilisateur;
-//         return {
-//             id: avis.id,
-//             commentaire: avis.commentaire,
-//             date: new Date(avis.date).toLocaleString('fr-FR'),
-//             note: avis.note,
-//             prestataire: avis.prestataire?.entreprise?.nomEntreprise || `${avis.prestataire?.utilisateur?.prenom ?? ''} ${avis.prestataire?.utilisateur?.nom ?? ''}`,
-//             nomClient: `${client?.prenom ?? ''} ${client?.nom ?? ''}`,
-//             contactClient: client?.email || client?.telephone || '',
-//             adresseClient: `${avis.client?.ville ?? ''}, ${avis.client?.adresse ?? ''}`,
-//             aime: avis.aime,
-//             avis,
-//         }
-//     }), [listeAvis]);
-
-//     const handleEdit = (avis) => {
-//         setFormData({
-//             id: avis.id,
-//             commentaire: avis.commentaire || '',
-//             note: avis.note || '',
-//             aime: avis.aime || false,
-//             clientId: user?.utilisateurIdCl,
-//             prestataireId: avis.prestataireId || null,
-//         });
-//         setReaction(avis.aime === true ? 'like' : avis.aime === false ? 'dislike' : false);
-//         setIntervenantModal(avis.prestataire || null);
-//         setPanelOpen(true);
-//     };
-
-//     const handleDelete = async (avis) => {
-//         const confirm = await Swal.fire({ icon: 'warning', title: 'Supprimer ?', showCancelButton: true });
-//         if (confirm.isConfirmed) {
-//             await dispatch(archiverAvis({ id: avis.id })).unwrap();
-//             Swal.fire('Supprimé', 'Avis supprimé avec succès', 'success');
-//             if (isIntervenant) dispatch(getAvisByPrestataire(user.utilisateurIdPre));
-//             else dispatch(getAvisByClient(user.utilisateurIdCl));
-//         }
-//     };
-
-//     const handleSave = async () => {
-//         try {
-//             await dispatch(updateAvis(formData)).unwrap();
-//             Swal.fire('Succès', 'Avis mis à jour', 'success');
-//             setPanelOpen(false);
-//             if (isIntervenant) dispatch(getAvisByPrestataire(user.utilisateurIdPre));
-//             else dispatch(getAvisByClient(user.utilisateurIdCl));
-//         } catch (err) {
-//             Swal.fire('Erreur', err.message || 'Erreur inconnue', 'error');
-//         }
-//     };
-
-//     // Colonnes MRT
-//     const columns = useMemo(() => isIntervenant ? [
-//         {
-//             accessorKey: 'id',
-//             header: 'ID',
-//             size: 30,
-//             Cell: ({ cell }) => (
-//                 <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-//                     #{cell.getValue()}
-//                 </Box>
-//             ),
-//         },
-//         { accessorKey: 'nomClient', header: 'Client', size: 200 },
-//         { accessorKey: 'contactClient', header: 'Contact', size: 200 },
-//         { accessorKey: 'commentaire', header: 'Commentaire', size: 200 },
-//         { accessorKey: 'note', header: 'Note', Cell: ({ cell }) => `${cell.getValue()} / 10`, size: 200 },
-//         {
-//             accessorKey: 'aime', header: 'Réaction', Cell: ({ cell }) =>
-//                 cell.getValue() === true ? (
-//                     <FontAwesomeIcon icon={faThumbsUp} style={{ color: '#034813ff', fontSize: '1.5rem' }} />
-//                 ) : cell.getValue() === false ? (
-//                     <FontAwesomeIcon icon={faThumbsDown} style={{ color: '#790e19ff', fontSize: '1.5rem' }} />
-//                 ) : null,
-//             size: 200
-//         },
-//         { accessorKey: 'date', header: 'Date', size: 200, },
-//         {
-//             accessorKey: 'adresseClient', header: 'Adresse', Cell: ({ cell }) => (
-//                 <Link to={`/MapAdresse?adresseA=${encodeURIComponent(cell.getValue())}`} style={{ color: '#1976d2' }}>{cell.getValue()}</Link>
-//             ), size: 200,
-//         }
-//     ] : [
-//         {
-//             accessorKey: 'id',
-//             header: 'ID',
-//             size: 30,
-//             Cell: ({ cell }) => (
-//                 <Box sx={{ textAlign: 'center', fontWeight: 'bold', color: '#1a3a6c' }}>
-//                     #{cell.getValue()}
-//                 </Box>
-//             ),
-//         },
-//         { accessorKey: 'prestataire', header: 'Prestataire/Entreprise', size: 200, },
-//         { accessorKey: 'commentaire', header: 'Commentaire', size: 200, },
-//         { accessorKey: 'note', header: 'Note', Cell: ({ cell }) => `${cell.getValue()} / 10`, size: 200, },
-//         {
-//             accessorKey: 'aime', header: 'Réaction', Cell: ({ cell }) =>
-//                 cell.getValue() === true ? (
-//                     <FontAwesomeIcon icon={faThumbsUp} style={{ color: '#034813ff', fontSize: '1.5rem' }} />
-//                 ) : cell.getValue() === false ? (
-//                     <FontAwesomeIcon icon={faThumbsDown} style={{ color: '#790e19ff', fontSize: '1.5rem' }} />
-//                 ) : null, size: 200,
-//         },
-//         { accessorKey: 'date', header: 'Date', size: 200, },
-//         {
-//             accessorKey: 'actions', header: 'Actions',
-//             Cell: ({ row }) => (
-//                 <Box display="flex" gap={1}>
-//                     <Tooltip title="Modifier">
-//                         <IconButton onClick={() => handleEdit(row.original.avis)} color="primary"><EditIcon /></IconButton>
-//                     </Tooltip>
-//                     <Tooltip title="Supprimer">
-//                         <IconButton onClick={() => handleDelete(row.original.avis)} color="error"><DeleteIcon /></IconButton>
-//                     </Tooltip>
-//                 </Box>
-//             ), size: 200,
-//         }
-//     ], [isIntervenant]);
-
-//     return (
-//         <>
-//             <Header isClientConnected={isLoggedIn} />
-//             <Box
-//                 sx={{
-//                     minHeight: '80vh',
-//                     width: "100%",
-//                     maxWidth: "100vw",
-//                     p: 3,
-//                     backgroundColor: '#f9fafb'
-//                 }}
-//             >
-//                 <Box className="container mt-4" sx={{ minHeight: 600, width: '100%' }}>
-//                     <Box mb={3} display="flex" alignItems="center">
-//                         <FontAwesomeIcon icon={faCommentDots} style={{ fontSize: 35, color: '#ff6b00', marginRight: 10 }} />
-//                         <Box>
-//                             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a3a6c' }}>Mes Avis</Typography>
-//                             <Box sx={{ height: 4, width: '80px', backgroundColor: '#ff6b00', borderRadius: 2, mt: 1 }} />
-//                         </Box>
-//                     </Box>
-
-//                     <Paper elevation={0}
-//                         sx={{
-//                             width: '100%',
-//                             overflow: 'hidden',
-//                             border: '1px solid',
-//                             borderColor: 'grey.300',
-//                             borderRadius: 2,
-//                             bgcolor: 'background.paper'
-//                         }}>
-//                         <MaterialReactTable
-//                             columns={columns}
-//                             data={rows}
-//                             enableColumnFilters
-//                             enableSorting
-//                             enableRowSelection
-//                             enablePagination
-
-//                             enableColumnResizing
-//                             enableGlobalFilter
-//                                layoutMode="table"
-//                             initialState={{
-//                                 pagination: { pageSize: 5, pageIndex: 0 },
-//                             }}
-//                             muiTableContainerProps={{
-//                                 sx: {
-//                                     maxHeight: '65vh',
-//                                     width: '100%',
-//                                     '&::-webkit-scrollbar': {
-//                                         width: 8,
-//                                         height: 8,
-//                                     },
-//                                     '&::-webkit-scrollbar-thumb': {
-//                                         backgroundColor: '#c1c1c1',
-//                                         borderRadius: 4,
-//                                     },
-//                                 },
-//                             }}
-//                             muiTablePaperProps={{
-//                                 sx: {
-//                                     width: '100%',
-//                                     boxShadow: 'none',
-//                                 },
-//                             }}
-//                             muiTableHeadCellProps={{
-//                                 sx: {
-//                                     fontWeight: 'bold',
-//                                     backgroundColor: '#f5f5f5',
-//                                     color: '#333',
-//                                     fontSize: '0.9rem',
-//                                     py: 1.5,
-//                                     borderRight: '1px solid #e0e0e0',
-//                                     '&:last-child': {
-//                                         borderRight: 'none'
-//                                     }
-//                                 },
-//                             }}
-//                             muiTableBodyCellProps={{
-//                                 sx: {
-//                                     py: 1.5,
-//                                     borderBottom: '1px solid',
-//                                     borderColor: 'grey.100',
-//                                     borderRight: '1px solid #f0f0f0',
-//                                     '&:last-child': {
-//                                         borderRight: 'none'
-//                                     }
-//                                 },
-//                             }}
-//                             muiTableBodyRowProps={{
-//                                 sx: {
-//                                     '&:hover': {
-//                                         backgroundColor: 'grey.50',
-//                                     },
-//                                 },
-//                             }}
-//                             muiBottomToolbarProps={{
-//                                 sx: {
-//                                     backgroundColor: 'grey.100',
-//                                     borderTop: '1px solid',
-//                                     borderColor: 'grey.300',
-//                                 },
-//                             }}
-
-//                             displayColumnDefOptions={{
-//                                 'mrt-row-actions': {
-//                                     header: 'Actions',
-//                                     size: 120,
-//                                 },
-//                             }}
-//                             defaultColumn={{
-//                                 minSize: 40,
-//                                 maxSize: 500,
-//                             }}
-//                         />
-//                     </Paper>
-//                 </Box>
-//             </Box>
-//             <Footer />
-//             <AvisModal
-//                 show={panelOpen}
-//                 onClose={() => setPanelOpen(false)}
-//                 onSubmit={handleSave}
-//                 formData={formData}
-//                 setFormData={setFormData}
-//                 reaction={reaction}
-//                 setReaction={setReaction}
-//             />
-//         </>
-//     );
-// };
-
-// export default ListeAvis;
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     Box, Paper, IconButton, Tooltip, Typography, Chip, Rating, useTheme
@@ -496,7 +198,11 @@ const ListeAvis = () => {
 
     // Colonnes MRT
     const columns = useMemo(() => isIntervenant ? [
-       
+        {
+            header: '#',
+            accessorFn: (row, i) => i + 1,
+            size: 50,
+        },
         {
             accessorKey: 'nomClient',
             header: 'Client',
@@ -635,7 +341,11 @@ const ListeAvis = () => {
             size: 200
         },
     ] : [
-    
+        {
+            header: '#',
+            accessorFn: (row, i) => i + 1,
+            size: 50,
+        },
         {
             accessorKey: 'prestataire',
             header: 'Prestataire/Entreprise',
@@ -862,8 +572,6 @@ const ListeAvis = () => {
                             columns={columns}
                             data={rows}
                             enableColumnFilters
-                            enableSorting
-                            enableRowSelection
                             enablePagination
                             enableColumnResizing
                             enableGlobalFilter

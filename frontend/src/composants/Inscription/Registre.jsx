@@ -102,7 +102,10 @@ export default function Registre() {
                     }}
                 >
                     <div className="text-center mb-4">
-                        <img src={logo} alt="logo" />
+                        <NavLink to="/accueil">
+                            <img src={logo} alt="logo" style={{ cursor: 'pointer' }} />
+
+                        </NavLink>
                         <h3 className="mt-2 h3">Inscription à DomiService</h3>
                     </div>
                     <form onSubmit={formik.handleSubmit} noValidate >
@@ -504,7 +507,7 @@ export default function Registre() {
                         <div className="text-center mt-3">
                             <p className="mb-0 text-muted fst-italic " style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
                                 Vous avez déjà un compte ?{" "}
-                              
+
                                 <a href="#" onClick={e => {
                                     e.preventDefault();
                                     navigate('/login');
@@ -652,15 +655,33 @@ export default function Registre() {
                     <h4 className="modal-title mb-4">Félicitations ! Votre compte a été créé avec succès</h4>
 
                     {submittedRole === 'CLIENT' ? (
-                        <div>
-                            <p className="mb-4">Un email de confirmation a été envoyé à votre adresse. Veuillez cliquer sur le lien dans l'email pour activer votre compte.</p>
-                            <div className="alert alert-info">
-                                <p className="mb-0">
-                                    <i className="fas fa-envelope me-2 text-primary"></i>
-                                    Si vous n'avez pas reçu l'email, vérifiez votre dossier spam ou contactez-nous à <strong>DomiService@gmail.com</strong>
-                                </p>
-                            </div>
-                        </div>
+                        <>
+                            {formik.values.email ? (
+                                <div>
+                                    <p className="mb-4">
+                                        Un email de confirmation a été envoyé à votre adresse. Veuillez cliquer sur le lien dans l'email pour activer votre compte.
+                                    </p>
+                                    <div className="alert alert-info">
+                                        <p className="mb-0">
+                                            <i className="fas fa-envelope me-2 text-primary"></i>
+                                            Si vous n'avez pas reçu l'email, vérifiez votre dossier spam ou contactez-nous à <strong>DomiService@gmail.com</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="mb-4">
+                                        Votre compte sera activé via SMS. Vous allez recevoir un lien sur le numéro fourni pour activer votre compte.
+                                    </p>
+                                    <div className="alert alert-info">
+                                        <p className="mb-0">
+                                            <i className="fas fa-mobile-alt me-2 text-success"></i>
+                                            Si vous ne recevez pas le SMS, vérifiez votre numéro ou contactez notre support.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div>
                             <p className="mb-4">Votre compte est en cours de validation par l'administrateur.</p>
